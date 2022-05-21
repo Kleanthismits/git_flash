@@ -25,7 +25,16 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'thor', '~> 1.2.1'
   spec.add_dependency 'tty-prompt', '~> 0.23.1'
 
-  spec.add_development_dependency 'pry'
+  if ENV['TEST_RAILS_VERSION'].nil?
+    spec.add_development_dependency 'rails', '~> 6.0.3'
+  else
+    spec.add_development_dependency 'rails', ENV['TEST_RAILS_VERSION'].to_s
+  end
+  spec.add_development_dependency 'codecov', '~> 0.6'
+  spec.add_development_dependency 'rake', '~> 13.0.6'
+  spec.add_development_dependency 'rspec', '~> 3.11.0'
+  spec.add_development_dependency 'rspec-rails', '~> 5.1.2'
+  spec.add_development_dependency 'pry', '~> 0.14.1'
   spec.add_development_dependency 'rubocop', '~> 1.28.2'
   spec.add_development_dependency 'rubocop-performance', '~> 1.13.3'
   spec.add_development_dependency 'rubocop-rspec', '~> 2.10.0'
