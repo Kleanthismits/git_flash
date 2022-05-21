@@ -1,4 +1,4 @@
-# git_flash/Gemfile
+# gitflash/Gemfile
 
 source 'http://rubygems.org'
 

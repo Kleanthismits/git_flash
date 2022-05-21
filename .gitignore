@@ -1,10 +1,2 @@
-*.gem
 Gemfile.lock
-*~
-.bundle
-.rvmrc
-pkg/*
-.DS_Store
-.env
-spec/dummy/tmp/*
-spec/dummy/log/*.log
+
