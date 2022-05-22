@@ -1,15 +1,6 @@
 {
   "RSpec": {
     "coverage": {
-      "/Users/kmitsioulis/projects/git_flash/lib/gitflash/version.rb": {
-        "lines": [
-          null,
-          null,
-          1,
-          1,
-          null
-        ]
-      },
       "/Users/kmitsioulis/projects/git_flash/lib/gitflash.rb": {
         "lines": [
           null,
@@ -240,8 +231,19 @@
         ],
         "branches": {
         }
+      },
+      "/Users/kmitsioulis/projects/git_flash/lib/gitflash/version.rb": {
+        "lines": [
+          null,
+          null,
+          0,
+          0,
+          0
+        ],
+        "branches": {
+        }
       }
     },
-    "timestamp": 1653156367
+    "timestamp": 1653219314
   }
 }
