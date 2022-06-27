@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'tty-prompt', '~> 0.23.1'
 
   if ENV['TEST_RAILS_VERSION'].nil?
-    spec.add_development_dependency 'rails', '~> 6.0.3'
+    spec.add_development_dependency 'rails', '~> 6.0.4.8'
   else
     spec.add_development_dependency 'rails', ENV['TEST_RAILS_VERSION'].to_s
   end
