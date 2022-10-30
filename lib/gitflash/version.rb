@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
-module GitFlash
-  VERSION = '0.1.0'
+module Gitflash
+  VERSION = '0.1.0.alpha'
 end

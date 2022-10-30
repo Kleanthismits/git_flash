@@ -1,24 +1,26 @@
 # frozen_string_literal: true
 
 require 'thor'
-require 'gitflash/prompt'
-require 'gitflash/git_wrapper'
-require 'pry'
 
-module GitFlash
+module Gitflash
   class Cli < Thor
+    def self.exit_on_failure?
+      true
+    end
+
     desc 'checkout', 'Checkout the selected branch'
     long_desc <<-TEXT
 
     Presents a list with all the available local branches.
 
     You can use the arrow keys to navigate through the branches.
+    Type for quick searching a specific branch.
     Press `enter` to choose and checkout the branch.
     Press `ctrl+c` to cancel the operation.
     TEXT
 
     def checkout
-      has_branches? ? checkout_branch : prompt.ok('You only have one branch!')
+      branches? ? checkout_branch : prompt.ok('You only have one branch!')
     end
 
     desc 'delete', 'Delete the selected branches'
@@ -27,6 +29,7 @@ module GitFlash
     Presents a list with all the available local branches(without current or main/master).
 
     You can use the arrow keys to navigate through the branches.
+    Type for quick searching a specific branch.
     Press `space` to choose multiple branches.
     Press `enter` to confirm selection and delete branches.
     Press `ctrl+c` to cancel the operation.
@@ -35,7 +38,7 @@ module GitFlash
     TEXT
 
     def delete
-      has_branches? ? delete_branch : prompt.ok('You only have one branch!')
+      branches? ? delete_branch : prompt.ok('You only have one branch!')
     end
 
     private
@@ -47,13 +50,13 @@ module GitFlash
         **checkout_options
       )
 
-      GitWrapper.checkout(selection)
+      git.checkout(selection)
     end
 
     def delete_branch
       selection = prompt.multi_select(
         'Select branches to delete',
-        branches(options: { master: false, current: false }),
+        branches(options: { master: false, current: false })
       )
 
       prompt.warn(<<~TEXT
@@ -63,12 +66,11 @@ module GitFlash
       TEXT
                  )
       answer = prompt.yes?('Do you want to proceed?')
-      response = GitWrapper.delete(selection)
-      puts response
+      puts answer ? git.delete(selection) : 'Exited'
     end
 
-    def has_branches?
-      branches && !branches.empty?
+    def branches?
+      all_branches && all_branches.size > 1
     end
 
     def prompt
@@ -77,16 +79,24 @@ module GitFlash
 
     def checkout_options
       {}.tap do |opt|
-        opt[:default] = current if current && !current.empty?
+        opt[:default] = current unless current.nil?
       end
     end
 
     def branches(options: {})
-      @branches ||= GitWrapper.get_local_branches(**options)
+      git.local_branches(**options)
+    end
+
+    def all_branches
+      @all_branches ||= git.all_local_branches
     end
 
     def current
-      GitWrapper.current_branch
+      @current ||= git.current_branch
+    end
+
+    def git
+      Gitflash::Git::Wrapper
     end
   end
 end

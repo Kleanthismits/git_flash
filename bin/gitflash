@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby -wU
 
 require 'gitflash'
+require 'gitflash/cli'
 
-GitFlash::Cli.start(ARGV)
+Gitflash::Cli.start(ARGV)

@@ -1,3 +1,6 @@
-## 0.1.0 (18-May-22)
+## [Unreleased]
 
-* Initial release
+## [0.1.0.alpha] - 2023-06-17
+
+- Initial release
+
