@@ -1,14 +1,12 @@
+require: rubocop-rspec
+
 AllCops:
   NewCops: enable
   SuggestExtensions: false
   TargetRubyVersion: 2.5.0
   Exclude:
-    - 'db/schema.rb'
-    - 'db_origami/schema.rb'
-    - 'db/migrate/*'
-    - 'vendor/**/*'
-    - 'config/**/*'
-    - 'spec/**/*'
+    - 'spec/dummy/**/*'
+    - /*.gemspec
 
 Layout/SpaceInLambdaLiteral:
   Enabled: false
@@ -26,6 +24,11 @@ Naming/PredicateName:
 
 Naming/AccessorMethodName:
   Enabled: false
+
+Naming/FileName:
+  Enabled: true
+  Exclude:
+    - ./Rakefile
 
 Style/DateTime:
   Enabled: false
@@ -56,3 +59,17 @@ Style/HashTransformValues:
 
 Style/BlockDelimiters:
   EnforcedStyle: braces_for_chaining
+
+RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/MessageSpies:
+  EnforcedStyle: receive
+
+RSpec/FilePath:
+  Enabled: false
+  IgnoreMethods: true
+  SpecSuffixOnly: true
+
+RSpec/AnyInstance:
+  Enabled: false

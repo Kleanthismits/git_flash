@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-require 'gitflash/cli'
+require 'zeitwerk'
+loader = Zeitwerk::Loader.for_gem
+loader.setup # ready!
 
-module GitFlash
+module Gitflash
 end
