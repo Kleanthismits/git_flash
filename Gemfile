@@ -18,6 +18,8 @@ group :development do
   gem 'rubocop', '~> 1.7'
   gem 'rubocop-performance', '~> 1.13.3'
   gem 'rubocop-rspec', '~> 2.10.0'
+  gem 'simplecov'
+  gem 'simplecov-lcov'
 end
 
 group :test do

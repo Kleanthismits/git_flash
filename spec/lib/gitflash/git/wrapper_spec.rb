@@ -1,4 +1,4 @@
-describe Gitflash::Git::Wrapper do
+RSpec.describe Gitflash::Git::Wrapper do
   let(:mock_bash) do
     allow(bash_command).to receive(:exec).with('git branch').and_return(branches)
     allow(bash_command).to receive(:exec).with('git branch --show-current').and_return('current')
@@ -8,7 +8,7 @@ describe Gitflash::Git::Wrapper do
     expect(described_class::HIDDEN_BRANCHES).to eq(%w[–show-current])
   end
 
-  context '.local branches' do
+  describe '.local branches' do
     it 'returns proper response with no arguments' do
       mock_bash
 
