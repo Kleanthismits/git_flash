@@ -4,7 +4,7 @@ require 'tty-prompt'
 
 module Gitflash
   # A wrapper class for TTY::Prompt gem
-  class Prompt
+  class Prompt < TTY::Prompt
     class << self
       def create(options: {})
         new(options)
@@ -12,11 +12,11 @@ module Gitflash
     end
 
     def initialize(options)
-      @prompt = TTY::Prompt.new(**default_create_options(options))
+      super(**default_create_options(options))
     end
 
     def select(message, collection, options = {})
-      prompt.select(message, collection, default_select_options(options))
+      super(message, collection, default_select_options(options))
     end
 
     private
