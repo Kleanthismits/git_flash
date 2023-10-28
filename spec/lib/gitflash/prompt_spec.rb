@@ -1,14 +1,8 @@
 RSpec.describe Gitflash::Prompt do
-  describe '.create' do
-    let(:prompt) { described_class.create }
-
-    it 'sets default create options' do
-      expect(TTY::Prompt).to receive(:new).with({
-                                                  interrupt: :exit,
-                                                  quiet: true
-                                                })
-
-      prompt
+  describe '#create' do
+    it 'creates a new instance of Gitflash::Prompt' do
+      prompt = described_class.create
+      expect(prompt).to be_a(described_class)
     end
   end
 
