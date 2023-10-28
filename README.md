@@ -22,7 +22,7 @@ Or install it yourself as:
 
 ## Requirements
 
-This gem requires Ruby 2.5+.
+This gem requires Ruby 2.7+.
 ## Usage
 
 Run `gitflash` to get a list with the available commands and their description.
