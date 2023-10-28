@@ -21,11 +21,11 @@ module Gitflash
         end
 
         def checkout(branch)
-          exec "git checkout #{branch}"
+          system('git', 'checkout', branch)
         end
 
         def delete(selection)
-          `git branch -D #{selection.join(' ')}`
+          system('git', 'branch', '-D', selection.join(' '))
         end
 
         private
