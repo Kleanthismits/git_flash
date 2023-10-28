@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.executables = ['gitflash']
 
   # prevents Gem::InvalidSpecificationException
-  spec.files = Dir.glob('{bin,lib,template}/**/*') + %w[LICENSE.txt README.md]
+  spec.files = Dir.glob('{bin,lib,template}/**/*') + %w[LICENSE README.md]
 
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = spec.homepage
