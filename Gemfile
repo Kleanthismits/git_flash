@@ -14,7 +14,6 @@ group :development do
   gem 'codecov', '~> 0.6'
   gem 'pry', '~> 0.14.1'
   gem 'rspec', '~> 3.0'
-  gem 'rspec-rails', '~> 5.1.2'
   gem 'rubocop', '~> 1.7'
   gem 'rubocop-performance', '~> 1.13.3'
   gem 'rubocop-rspec', '~> 2.10.0'
