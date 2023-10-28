@@ -4,3 +4,9 @@
 
 - Initial release
 
+## [0.1.1.alpha] - 2023-10-28
+
+- Fix delete method
+- Added and updated test
+- bug fixes
+
