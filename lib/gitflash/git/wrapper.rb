@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Gitflash
   module Git
     class Wrapper
@@ -23,8 +24,28 @@ module Gitflash
           bash.system_exec('git', 'checkout', branch)
         end
 
-        def delete(selection)
-          bash.system_exec('git', 'branch', '-D', *selection)
+        def delete(branch)
+          bash.system_exec('git', 'branch', '-D', *branch)
+        end
+
+        def reset(commit_hash:, hard:)
+          params = [].tap do |ar|
+            ar << '--hard' if hard
+          end
+
+          bash.system_exec('git', 'reset', *params, commit_hash)
+        end
+
+        def branch_commits
+          commits_string = bash.exec('git log --oneline')
+          {}.tap do |hsh|
+            commits_string.each_line do |line|
+              parts = line.strip.split
+              commit_code = parts[0]
+              commit_name = parts[1..].join(' ')
+              hsh[commit_name] = commit_code
+            end
+          end
         end
 
         private

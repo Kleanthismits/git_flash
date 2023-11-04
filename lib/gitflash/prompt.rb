@@ -23,6 +23,14 @@ module Gitflash
       super(message, collection, default_select_options(options))
     end
 
+    def proceed_with_warning(message, &block)
+      raise ArgumentError, 'A block is required for this method' unless block_given?
+
+      warn(message)
+      answer = yes?('Do you want to proceed?')
+      answer ? block.call : 'Exited'
+    end
+
     private
 
     attr_reader :prompt
