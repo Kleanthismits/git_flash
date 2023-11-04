@@ -7,6 +7,10 @@ module Gitflash
         def exec(command)
           `#{command}`
         end
+
+        def system_exec(*args)
+          system(*args)
+        end
       end
     end
   end
