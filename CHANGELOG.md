@@ -10,3 +10,10 @@
 - Added and updated test
 - bug fixes
 
+## [0.1.2.alpha] - 2023-11-4
+
+- Refactors and code improvements
+- Zeitwerk warning suppress
+- Update READRME
+- Bug fixes
+

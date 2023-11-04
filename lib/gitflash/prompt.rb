@@ -19,6 +19,10 @@ module Gitflash
       super(message, collection, default_select_options(options))
     end
 
+    def multi_select(message, collection, options = {})
+      super(message, collection, default_select_options(options))
+    end
+
     private
 
     attr_reader :prompt

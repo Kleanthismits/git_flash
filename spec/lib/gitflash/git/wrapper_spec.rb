@@ -1,5 +1,5 @@
 RSpec.describe Gitflash::Git::Wrapper do
-  let(:mock_bash) do
+  before do
     allow(bash_command).to receive(:exec).with('git branch').and_return(branches)
     allow(bash_command).to receive(:exec).with('git branch --show-current').and_return('current')
   end
@@ -10,30 +10,22 @@ RSpec.describe Gitflash::Git::Wrapper do
 
   describe '.local branches' do
     it 'returns proper response with no arguments' do
-      mock_bash
-
       expect(described_class.local_branches).to eq(%w[branch1 current main branch2 branch3])
     end
 
     it 'returns proper response with master false' do
-      mock_bash
-
       expect(described_class.local_branches(master: false)).to eq(
         %w[branch1 current branch2 branch3]
       )
     end
 
     it 'returns proper response with current false' do
-      mock_bash
-
       expect(described_class.local_branches(current: false)).to eq(
         %w[branch1 main branch2 branch3]
       )
     end
 
     it 'returns proper response with master and current false' do
-      mock_bash
-
       expect(described_class.local_branches(master: false, current: false)).to eq(
         %w[branch1 branch2 branch3]
       )
@@ -41,14 +33,10 @@ RSpec.describe Gitflash::Git::Wrapper do
   end
 
   it '.all_local_branches returns proper response' do
-    mock_bash
-
     expect(described_class.all_local_branches).to eq(%w[branch1 current main branch2 branch3])
   end
 
   it '.current_branch returns proper value' do
-    mock_bash
-
     expect(described_class.current_branch).to eq('current')
   end
 

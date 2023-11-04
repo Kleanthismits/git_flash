@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 module Gitflash
   module Git
     class Wrapper
@@ -17,15 +16,15 @@ module Gitflash
         end
 
         def current_branch
-          exec('git branch --show-current').strip
+          bash.exec('git branch --show-current').strip
         end
 
         def checkout(branch)
-          system('git', 'checkout', branch)
+          bash.system_exec('git', 'checkout', branch)
         end
 
         def delete(selection)
-          system('git', 'branch', '-D', selection.join(' '))
+          bash.system_exec('git', 'branch', '-D', *selection)
         end
 
         private
@@ -47,11 +46,11 @@ module Gitflash
         end
 
         def raw_branches
-          exec('git branch').strip.split("\n").map(&:strip)
+          bash.exec('git branch').strip.split("\n").map(&:strip)
         end
 
-        def exec(command)
-          BashCommand.exec(command)
+        def bash
+          BashCommand
         end
       end
     end
