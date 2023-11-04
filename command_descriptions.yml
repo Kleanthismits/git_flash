@@ -1,0 +1,33 @@
+checkout:
+  short: 'Checkout the selected branch'
+  long: |
+    Presents a list with all the available local branches.
+
+    You can use the arrow keys to navigate through the branches.
+    Type for quick searching a specific branch.
+    Press `enter` to choose and checkout the branch.
+    Press `ctrl+c` to cancel the operation.
+
+delete:
+  short: 'Delete the selected branches'
+  long: |
+    Presents a list with all the available local branches (without current or main/master).
+
+    You can use the arrow keys to navigate through the branches.
+    Type for quick searching a specific branch.
+    Press `space` to choose multiple branches.
+    Press `enter` to confirm selection and delete branches.
+    Press `ctrl+c` to cancel the operation.
+
+reset:
+  short: 'Reset your code to the selected commit'
+  long: |
+    Accepts an optional parameter (hard) if you want to hard reset.
+
+    Presents a list with all the available commits.
+
+    You can use the arrow keys to navigate through the commits.
+    Type for quick searching a specific commit.
+    Press `space` to choose multiple commits.
+    Press `enter` to confirm selection and reset to that commit.
+    Press `ctrl+c` to cancel the operation.
