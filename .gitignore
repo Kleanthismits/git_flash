@@ -3,3 +3,4 @@ coverage/
 .DS_Store
 spec/dummy/log/
 .rspec_status
+gitflash-*

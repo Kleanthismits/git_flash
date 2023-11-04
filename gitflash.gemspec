@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.email                 = ['kleanthismits@hotmail.gr']
   spec.summary               = 'Simplified usage of some git cli commands'
   spec.description           = 'This gem allows you to perform a number of git commands using interactive cli prompts'
-  spec.homepage              = 'https://github.com/Kleanthismits/gitflash.git'
+  spec.homepage              = 'https://github.com/Kleanthismits/git_flash'
   spec.license               = 'MIT'
   spec.platform              = Gem::Platform::RUBY
   spec.required_ruby_version = Gem::Requirement.new('>= 2.7.0')

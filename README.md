@@ -1,5 +1,7 @@
 # GitFlash
 
+[![Gem Version](https://badge.fury.io/rb/gitflash.svg)](https://badge.fury.io/rb/gitflash)
+
 ⚠️ **This project is stil under development**: Use at your own risk!
 
 This gem allows you to use some of the most common git commands in a more user intuitive way.
@@ -9,7 +11,7 @@ This gem allows you to use some of the most common git commands in a more user i
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'git_flash'
+gem 'gitflash'
 ```
 
 And then execute:
@@ -18,7 +20,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install git_flash
+    $ gem install gitflash
 
 ## Requirements
 
