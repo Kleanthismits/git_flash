@@ -17,3 +17,6 @@
 - Update READRME
 - Bug fixes
 
+## [0.2.0.alpha] - 2023-11-4
+
+- Add reset command

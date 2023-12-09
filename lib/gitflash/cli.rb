@@ -1,44 +1,36 @@
 # frozen_string_literal: true
 
 require 'thor'
+require 'pry'
 
 module Gitflash
   class Cli < Thor
+    extend Configuration::Descriptions
+
     def self.exit_on_failure?
       true
     end
 
-    desc 'checkout', 'Checkout the selected branch'
-    long_desc <<-TEXT
-
-    Presents a list with all the available local branches.
-
-    You can use the arrow keys to navigate through the branches.
-    Type for quick searching a specific branch.
-    Press `enter` to choose and checkout the branch.
-    Press `ctrl+c` to cancel the operation.
-    TEXT
+    desc 'checkout', descriptions.checkout.short
+    long_desc descriptions.checkout.long
 
     def checkout
       branches? ? checkout_branch : prompt.ok('You only have one branch!')
     end
 
-    desc 'delete', 'Delete the selected branches'
-    long_desc <<-TEXT
-
-    Presents a list with all the available local branches(without current or main/master).
-
-    You can use the arrow keys to navigate through the branches.
-    Type for quick searching a specific branch.
-    Press `space` to choose multiple branches.
-    Press `enter` to confirm selection and delete branches.
-    Press `ctrl+c` to cancel the operation.
-
-    WARNING: The branches will be deleted even if they have unmerged changes!!
-    TEXT
+    desc 'delete', descriptions.delete.short
+    long_desc descriptions.delete.long
 
     def delete
       branches? ? delete_branch : prompt.ok('You only have one branch!')
+    end
+
+    desc 'reset', descriptions.reset.short
+    long_desc descriptions.reset.long
+
+    option :hard, type: :boolean, default: false, desc: 'Perform a hard reset'
+    def reset
+      commits? ? reset_to_commit : prompt.ok('You only have one branch!')
     end
 
     private
@@ -59,22 +51,43 @@ module Gitflash
         branches(options: { master: false, current: false })
       )
 
-      prompt.warn(<<~TEXT
+      warning_message = <<~TEXT
         You are about to permanently delete the following branches even if they have unmerged changes:
 
         #{selection.map { |br| "* #{br}" }.join("\n")}
       TEXT
-                 )
-      answer = prompt.yes?('Do you want to proceed?')
-      puts answer ? git.delete(selection) : 'Exited'
+
+      prompt_proceed_warning(warning_message) { git.delete(selection) }
+    end
+
+    def reset_to_commit
+      selection = prompt.select('Select a commit to reset to', branch_commits)
+      reset_options = { commit_hash: selection, hard: options[:hard] }
+
+      if options[:hard]
+        warning_message = 'You are about to reset your branch and lose all your current changes'
+        prompt.proceed_with_warning(warning_message) { git.reset(**reset_options) }
+      else
+        git.reset(**reset_options)
+      end
     end
 
     def branches?
       all_branches && all_branches.size > 1
     end
 
+    def commits?
+      branch_commits && branch_commits.size > 1
+    end
+
     def prompt
       @prompt ||= Prompt.create
+    end
+
+    def prompt_proceed_warning(message)
+      prompt.warn(message)
+      answer = prompt.yes?('Do you want to proceed?')
+      puts answer ? yield : 'Exited'
     end
 
     def checkout_options
@@ -93,6 +106,10 @@ module Gitflash
 
     def current
       @current ||= git.current_branch
+    end
+
+    def branch_commits
+      @branch_commits = git.branch_commits
     end
 
     def git

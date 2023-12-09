@@ -40,4 +40,20 @@ RSpec.describe Gitflash::Cli do
       end
     end
   end
+
+  describe 'Configuration::Descriptions module' do
+    let(:descriptions_hash) { YAML.load_file('command_descriptions.yml') }
+
+    it 'loads descriptions from YAML file' do
+      descriptions = described_class.descriptions
+      expect(descriptions).to be_a(Struct)
+    end
+
+    it 'loads specific keys and values' do
+      descriptions = described_class.descriptions
+
+      expect(descriptions.checkout.short).to eq(descriptions_hash.dig('checkout', 'short'))
+      expect(descriptions.checkout.long).to eq(descriptions_hash.dig('checkout', 'long'))
+    end
+  end
 end

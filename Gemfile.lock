@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    gitflash (0.1.2.alpha)
+    gitflash (0.2.0.alpha)
 
 GEM
   remote: https://rubygems.org/
