@@ -14,9 +14,10 @@
 
 - Refactors and code improvements
 - Zeitwerk warning suppress
-- Update READRME
+- Update README
 - Bug fixes
 
-## [0.2.0.alpha] - 2023-11-4
+## [0.2.0.alpha] - 2023-12-9
 
 - Add reset command
+- Code improvements
