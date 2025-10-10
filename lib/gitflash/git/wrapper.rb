@@ -43,7 +43,8 @@ module Gitflash
               parts = line.strip.split
               commit_code = parts[0]
               commit_name = parts[1..].join(' ')
-              hsh[commit_name] = commit_code
+              label = "#{commit_code} - #{commit_name}"
+              hsh[label] = commit_code
             end
           end
         end
