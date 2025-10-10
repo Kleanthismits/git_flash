@@ -13,11 +13,11 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 2.7
+        ruby-version: 3.0
 
     - name: Bundle install
       run: |
-        gem install bundler -v 2.4.22 # Last version compatible with Ruby 2.7
+        gem install bundler -v 2.5.23
         bundle install
 
     - name: Run RSpec
