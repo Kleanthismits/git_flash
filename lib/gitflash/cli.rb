@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'thor'
-require 'pry'
 
 module Gitflash
   class Cli < Thor

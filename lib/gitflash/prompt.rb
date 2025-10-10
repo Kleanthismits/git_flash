@@ -33,8 +33,6 @@ module Gitflash
 
     private
 
-    attr_reader :prompt
-
     def default_create_options(options)
       {
         interrupt: :exit,
