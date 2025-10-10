@@ -5,7 +5,6 @@ original_verbose = $VERBOSE
 $VERBOSE = nil
 
 require 'zeitwerk'
-require 'pry'
 
 loader = Zeitwerk::Loader.for_gem
 loader.setup
