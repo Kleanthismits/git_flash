@@ -18,7 +18,6 @@ RSpec.describe Gitflash::Prompt do
           collection,
           {
             cycle: true,
-            per_page: 50,
             filter: true,
             symbols: { marker: '>' }
           }
@@ -50,7 +49,6 @@ RSpec.describe Gitflash::Prompt do
           collection,
           {
             cycle: true,
-            per_page: 50,
             filter: true,
             symbols: { marker: '>' }
           }

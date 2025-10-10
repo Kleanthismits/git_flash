@@ -43,7 +43,6 @@ module Gitflash
     def default_select_options(options)
       {
         cycle: true,
-        per_page: 50,
         filter: true,
         symbols: { marker: '>' }
       }.merge(options)

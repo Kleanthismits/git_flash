@@ -10,7 +10,8 @@ module Gitflash
       private
 
       def load_descriptions
-        transform_to_struct(YAML.load_file('command_descriptions.yml'))
+        file = File.expand_path('../../command_descriptions.yml', __dir__)
+        transform_to_struct(YAML.load_file(file))
       end
 
       def transform_to_struct(data)
