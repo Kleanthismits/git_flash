@@ -11,7 +11,15 @@ Gem::Specification.new do |spec|
   spec.homepage              = 'https://github.com/Kleanthismits/git_flash'
   spec.license               = 'MIT'
   spec.platform              = Gem::Platform::RUBY
-  spec.required_ruby_version = Gem::Requirement.new('>= 2.7.0')
+  spec.required_ruby_version = Gem::Requirement.new('>= 3.0')
+
+  # Runtime dependencies
+  spec.add_dependency 'thor', '~> 1.2'
+  spec.add_dependency 'tty-prompt', '~> 0.23'
+  spec.add_dependency 'zeitwerk', '~> 2.6'
+
+  # Development dependencies
+  spec.add_development_dependency 'rake', '~> 13.0'
 
   spec.executables = ['gitflash']
 

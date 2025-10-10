@@ -21,3 +21,9 @@
 
 - Add reset command
 - Code improvements
+
+## [0.3.0] - 2025-10-10
+
+- Fix reset method
+- Update to Ruby version 3.3.2
+- Bug fixes
