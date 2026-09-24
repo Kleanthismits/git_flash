@@ -4,7 +4,9 @@
 
 ⚠️ **This project is still under development**: Use at your own risk!
 
-This gem allows you to use some of the most common git commands in a more user intuitive way.
+A safety net and cleanup tool for git repositories that AI coding agents work in. It works on plain git, with nothing new to adopt, and every command can be run by a person in a terminal or by an agent with a stable JSON contract.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for where the project is going.
 
 ## Installation
 
@@ -36,6 +38,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash checkout [BRANCH]` | Check out a branch, or pick one from a list |
 | `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current, default, `main` and `master` branches are protected. Unmerged branches are kept unless you pass `--force` |
 | `gitflash reset [COMMIT]` | Reset to a commit, or pick one of the latest 100. Mixed by default; `--soft` keeps changes staged, `--hard` discards them after confirmation |
+| `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
 
 Without an argument, a command shows an interactive list. With arguments it runs directly, which also works in scripts.
@@ -55,8 +58,25 @@ Run `gitflash help <command>` for details on a command.
 Without a terminal (for example in a script, CI or an AI coding agent), gitflash never waits for input:
 
 - A command that needs a list selection fails with exit code 2 and says which argument to pass.
-- A destructive action (`delete`, `reset --hard`) fails with exit code 2 and prints the plan unless you pass `--yes`.
-- `--json` output always starts with `"schema": 1`. Errors are printed as `{"schema": 1, "error": {...}}`.
+- A destructive action (`delete`, `reset --hard`) fails with exit code 2 and returns the plan unless you pass `--yes`.
+
+With `--json`, every command prints one object in the same envelope, defined in [schema/v1.json](schema/v1.json) (also printed by `gitflash schema`):
+
+```json
+{
+  "schema": 1,
+  "command": "delete",
+  "ok": true,
+  "status": "done",
+  "dry_run": false,
+  "plan": { "branches": ["old-feature"], "force": false },
+  "result": { "deleted": [{ "branch": "old-feature", "sha": "3551cba" }], "failed": [] }
+}
+```
+
+- `status`: `done`, `planned` (`--dry-run`), `noop`, `cancelled`, `failed`, `confirmation_required` or `error`. `ok` is true for the first four.
+- `result` includes what you need to revert: the SHA of each deleted branch (`git branch NAME SHA`), the previous branch after `checkout`, the previous commit after `reset`.
+- `error.code` is a stable identifier such as `unknown_branch`, `protected_branch` or `confirmation_required`.
 
 ```bash
 gitflash branches --merged --json

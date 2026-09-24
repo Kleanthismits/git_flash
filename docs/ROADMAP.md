@@ -1,220 +1,168 @@
 # gitflash roadmap (0.5 → 1.0)
 
-This roadmap comes from a discovery done after the 0.4.0 release. The goals: make gitflash more useful, keep it fast, modernize it, and make it usable by today's LLM coding agents. Each finding below was measured on the code or checked against a source. Sources are listed at the end.
+This roadmap comes from a discovery done after the 0.4.0 release, revised after phase 1 was built. Each finding was measured on the code or checked against a source. Sources are listed at the end.
 
-## Where gitflash stands today
+## Positioning
 
-gitflash 0.4.0 is a Thor + tty-prompt CLI with three interactive commands: `checkout`, `delete` and `reset`.
+> **gitflash is a safety net and cleanup tool for git repositories that AI coding agents work in. It works on plain git, with no new tool or model to adopt, and speaks one JSON contract through the CLI, an Agent Skill, MCP and agent hooks.**
 
-### Agents cannot use it
+Every feature must pass this test: *does it make git safer or easier for agents in a way other tools do not?* Features that only polish the human terminal experience are low priority; lazygit and fzf already do that well.
 
-Every command needs a TTY menu. Commands take no arguments, have no `--yes` flag, and produce no machine-readable output. An agent that runs shell commands cannot pick a branch or answer a confirmation prompt. This is the main blocker. It also blocks an MCP server, because MCP tools need the same non-interactive core.
+### What already exists
 
-### Performance is fine
+| Tool | What it does | What it does not cover |
+| --- | --- | --- |
+| Official `mcp-server-git` | Generic git tools for agents | Guardrails, undo |
+| `selfagency/git-mcp` | 80+ git actions over MCP, confirmations for destructive operations, worktrees, pull requests (TypeScript) | Undo; little adoption |
+| jj (Jujutsu) | Operation log and `jj undo` | Requires adopting a new version control tool |
+| GitButler | MCP server, Claude Code hooks, virtual branches | Requires the GitButler app and its branch model |
+| agentjj | Git layer for agents with checkpoints and undo | Archived in February 2026 |
+| Claude Code checkpoints | Undo for Claude's file edits | Changes made through shell commands and by most subagents |
 
-Measured with Ruby 3.3.2 and the installed gem:
+Undo on its own is not unique. What no tool covers is **undo for plain git, with nothing new to adopt, for the operations agent harnesses do not track**: Claude Code's documentation states that changes made by shell commands (such as `git reset --hard` or `git branch -D`) cannot be undone with `/rewind`.
+
+### The four standards
+
+1. **One flow for every change.** Every command that changes the repository follows the same steps: plan, confirm, snapshot, execute, report. The report always has the same shape and says how to undo the change.
+2. **Protection for commands agents run themselves.** A hook snapshots the repository before an agent runs a destructive git command, and can block it with a safer alternative. The agent keeps using plain git.
+3. **Cleanup for parallel agent work.** gitflash knows which branches and worktrees agents created, reports which are merged, stale, dirty or orphaned, and removes them safely.
+4. **One published contract.** A versioned JSON Schema and fixed exit codes, identical for the CLI, the Skill, MCP and hooks. The contract does not depend on Ruby.
+
+### Risks
+
+- **Ruby as the runtime.** Agent tools are mostly installed with `npx` or `uvx`, and many agent environments have no Ruby. gitflash stays on Ruby for now; keeping the contract language-neutral keeps a later port possible without breaking agents.
+- **The name.** "gitflash" is easy to confuse with "git-flow". Keep the name, but always pair it with a tagline that says what it does.
+
+## Where gitflash stands
+
+### Phase 1 — Non-interactive core (implemented, not yet released)
+
+- `Repo` service layer returning `Branch` and `Commit` records; the CLI and future integrations share it.
+- `gitflash branches` reports last commit, ahead/behind, upstream gone and merge status against the default branch (`origin/HEAD`, else `main` or `master`). Filters: `--merged`, `--gone`, `--stale DAYS`.
+- `checkout BRANCH`, `delete BRANCH...` and `reset COMMIT` run without menus. `--json`, `--yes` and `--dry-run` work on every command.
+- Without a terminal, gitflash never waits for input: it exits with code 2 and explains what to pass, or returns the plan and asks for `--yes`.
+- `delete` keeps unmerged branches unless `--force` is given and protects the default branch. `reset --soft` was added.
+
+### The JSON contract, version 1 (implemented, not yet released)
+
+Every `--json` run prints one object in the same envelope, defined in [`schema/v1.json`](../schema/v1.json) and printed by `gitflash schema`:
+
+```json
+{
+  "schema": 1,
+  "command": "delete",
+  "ok": false,
+  "status": "confirmation_required",
+  "dry_run": false,
+  "plan": { "branches": ["old-feature"], "force": false },
+  "error": { "code": "confirmation_required", "message": "...", "exit_code": 2 }
+}
+```
+
+- `status` is one of `done`, `planned`, `noop`, `cancelled`, `failed`, `confirmation_required` or `error`. `ok` is true for the first four.
+- `plan` describes the change; `result` describes what happened and what is needed to revert it (for example, each deleted branch with its last commit, and the previous HEAD after a reset).
+- `error.code` is a stable identifier to branch on; `error.message` is for humans.
+- Exit codes: `0` ok, `1` git failed, `2` invalid usage or confirmation required.
+- Every JSON test output is validated against the schema, so the contract cannot drift silently.
+
+### Measurements
+
+Measured with Ruby 3.3.2 and the installed gem 0.4.0:
 
 | Measurement | Time |
 | --- | --- |
 | `gitflash help` | ~0.35 s |
 | `ruby -e 1` (Ruby startup alone) | ~0.29 s |
-| `require 'tty-prompt'` | ~136 ms |
-| `require 'thor'` | ~33 ms |
-| `require 'zeitwerk'` | ~27 ms |
+| `require 'tty-prompt'` | ~136 ms, only when a menu is shown |
 
-- tty-prompt is loaded only when a menu is shown (Zeitwerk autoloads `Gitflash::Prompt` on first use), so `help`, `version` and non-interactive runs do not pay its ~136 ms. An earlier version of this roadmap said otherwise; that was wrong.
-- `checkout` starts 4 git processes (`rev-parse`, `for-each-ref` twice, `branch --show-current`). One `for-each-ref` call using `%(HEAD)` can replace three of them.
-- A rewrite in another language, or YJIT, would not make a noticeable difference for a short-lived CLI.
-
-### Gaps in usefulness
-
-- `delete` always force-deletes (`git branch -D`). It shows nothing that helps decide what is safe to delete: no merged status, no "upstream gone", no last-commit date, no ahead/behind counts.
-- Protected branches are hard-coded as `main` and `master`. The repository's real default branch (`origin/HEAD`) is not detected.
-- `checkout` lists local branches alphabetically. It does not sort by recent use, does not include remote-only branches, and shows no preview.
-- `reset` has no `--soft` option and no undo. Recovering from a mistaken `reset --hard` needs manual `git reflog` work.
-- There are no commands for worktrees, cherry-picking, stashes or undo.
-
-## Ecosystem research
-
-- **Official MCP Ruby SDK** ([`mcp` gem](https://github.com/modelcontextprotocol/ruby-sdk), v1.6.0):
-  - Stable 1.x API, Ruby >= 2.7, and a single runtime dependency (`json_schemer`).
-  - Supports stdio transport, tool annotations (`read_only_hint`, `destructive_hint`, `idempotent_hint`, `open_world_hint`), `output_schema` for structured results, form elicitation (`server_context.create_form_elicitation`), prompts and resources.
-- **MCP specification 2026-07-28**:
-  - The protocol core is now stateless and adds multi round-trip requests.
-  - Sampling and roots are deprecated (SEP-2577), so gitflash should not depend on them. Elicitation remains supported.
-- **Elicitation in Claude Code**:
-  - Supported since Claude Code 2.1.76.
-  - The Cowork desktop app has an open bug where elicitation confirmations hang (anthropics/claude-code#94806). Elicitation cannot be the only way to confirm an action.
-- **Tool annotations are hints only.** Clients must treat them as untrusted, so real safety has to be enforced inside the server.
-- **Official `mcp-server-git`**:
-  - The Python reference server offers generic tools: status, diff, add, commit, reset, log, branch and checkout.
-  - Every tool takes a `repo_path`, and the server has no guardrails.
-  - gitflash should not copy it. Its niche is safe, opinionated branch and worktree hygiene, with previews and undo.
-- **Agent Skills** (`SKILL.md`) became an open standard in December 2025 (agentskills.io).
-  - More than 30 agents read it, including Claude Code, Codex, Cursor, Gemini CLI and GitHub Copilot.
-  - It is the cheapest way to teach any agent to use a CLI.
-- **Claude Code plugins** bundle skills and an `.mcp.json` into one installable unit. They are distributed through a git-repository marketplace.
-- **Parallel agents rely on git worktrees.**
-  - Claude Code (`--worktree`), Cursor 2026.1 and JetBrains 2026.1 all create worktrees.
-  - Stale worktrees and branches pile up. This is a growing problem that fits gitflash's purpose.
-- **RubyGems trusted publishing** (GitHub OIDC with the `rubygems/release-gem` action) releases from CI. It removes the local `rake release` step, stored API keys and SSH problems.
+Speed is not a problem worth solving further; a rewrite in another language is not justified by performance.
 
 ## Roadmap
 
-### Phase 1 — Non-interactive core and `--json` (0.5.0) — implemented, not yet released
+### Phase 2 — Snapshots, undo and the agent hook (0.6.0)
 
-Everything else depends on this phase.
+This is the core of the positioning.
 
-- **Service layer.** Extract a `Gitflash::Repo` layer from `Git::Wrapper`. It is plain Ruby and returns data objects built with `Data.define`. The CLI, JSON output, the Agent Skill and the MCP server all use it.
-- **Rich branch records** from a single `for-each-ref` call:
-  - name, current or not, upstream, whether the upstream is gone
-  - ahead/behind counts, last commit date, subject and author
-  - whether the branch is merged into the default branch
-- **Default branch detection.** Use `git symbolic-ref refs/remotes/origin/HEAD`, falling back to `main` or `master`.
-- **Arguments on every command**, so menus can be skipped:
-  - `gitflash checkout feat-x`
-  - `gitflash delete a b --yes`
-  - `gitflash reset <sha> [--soft|--hard] --yes`
-- **New read-only command:** `gitflash branches [--merged|--stale DAYS|--gone] [--json]`.
-- **Global flags `--json`, `--dry-run` and `--yes`.**
-  - `--json` output has a stable, versioned schema (`schema: 1`).
-  - Menus appear only when stdin is a TTY.
-  - Without a TTY and without `--yes`, destructive commands print what they would do and exit with code 2.
-- **Safer delete.** `delete` uses `git branch -d` by default. `--force` switches to `-D`.
-- **Startup.** tty-prompt already loads only when a menu is shown; keep it that way (for example, print plain messages with `puts` instead of `prompt.ok`).
+- **Snapshots.** Before any change, gitflash records:
+  - the refs it will touch, as `refs/gitflash/snapshots/<id>/...`
+  - uncommitted work, with `git stash create` (captures the working tree without changing it)
+  - a journal entry in `.git/gitflash/journal.jsonl`
+- **`undo` in every result.** Every `done` result gets an `undo` id. `gitflash undo [ID] [--list] [--json]` restores branches, HEAD and uncommitted work.
+- **`gitflash hook`**, a Claude Code `PreToolUse` hook for shell commands (and a generic form for other agents):
+  - recognises destructive git commands: `reset --hard`, `clean -f`, `checkout -- .`, `restore .`, `branch -D`, `push --force`, `stash drop`/`clear`, `rebase`
+  - takes a snapshot before the command runs
+  - optionally blocks the command and suggests the gitflash equivalent
+- **`gitflash gc --older-than 30d`** removes old snapshots.
 
-### Phase 2 — Safety net: snapshots and undo (0.6.0)
+### Phase 3 — Cleanup for parallel agent work (0.7.0)
 
-This is what sets gitflash apart from other tools.
+- **Ownership.** Branches and worktrees created through gitflash, or by an agent session, are marked as agent-created (for example in git config), so cleanup can tell them apart from human work.
+- **`gitflash clean`** selects merged, upstream-gone, stale and agent-created branches and removes them with snapshots.
+- **Worktree management — `gitflash worktree` (alias `wt`)**, agent-first:
+  - `wt list [--json]`: path, branch, HEAD, dirty state, ahead/behind, merged status, lock state, missing directory, owner.
+  - `wt add [branch]`: from an existing, remote or new branch, at a configurable location (default `../<repo>.worktrees/<branch>`).
+  - `wt remove` and `wt clean`: refuse dirty worktrees unless `--force`, snapshot first. `wt prune`, `wt lock`, `wt unlock`, `wt move`.
+  - Agents use the absolute paths from `wt list`; no directory switching is needed.
+- **Cherry-pick picker — `gitflash pick`**, useful for moving fixes between agent branches:
+  1. Choose a source branch.
+  2. gitflash lists the commits on it whose change is not on the current branch yet (`git log --cherry-mark --right-only HEAD...<source>`). Commits already applied are marked and not selected.
+  3. Choose commits. Rows show SHA, subject, author, date and a diff summary.
+  4. gitflash snapshots, then applies them oldest first (`-x` records the origin, `--no-commit` combines them).
+  5. On a conflict it stops and lists the conflicted files; `pick --continue`, `--abort` and `--skip` wrap git's own commands, and `undo` returns to the starting point.
+  - For agents: `gitflash pick <source> --list --json` and `gitflash pick <source> <sha>... --yes --json`.
+- **Configuration.** `.gitflash.yml` in the repository and `~/.config/gitflash.yml` for protected branch patterns, the stale threshold and default flags.
 
-- **Snapshots.** Before any destructive operation, gitflash writes a backup ref (for example `refs/gitflash/backup/<timestamp>/<branch>`). It also appends a record to `.git/gitflash/journal.jsonl`.
-- **Undo.** `gitflash undo [--list] [--json]` restores the last operation: it recreates deleted branches and moves HEAD back after a reset. It also reads `git reflog` to cover actions done outside gitflash.
-- **Cleanup of backups.** `gitflash gc --older-than 30d` removes old backup refs.
-- **Why it matters.** Agents make mistakes. A single undo command makes it acceptable to let an agent delete branches or reset.
+### Phase 4 — Agent integrations (0.8.0)
 
-### Phase 3 — Features people need (0.7.0)
+All of them use the same JSON contract.
 
-#### Branch cleanup
+1. **Agent Skill.** `skills/gitflash/SKILL.md` ships in the gem and explains when to use gitflash, the envelope, the plan → `--yes` flow and `undo`. `gitflash skill install [--claude|--path DIR]` copies it into an agent's skills directory. Works in any agent that runs shell commands.
+2. **MCP server — `gitflash mcp`.**
+   - Uses stdio and the official `mcp` Ruby gem, loaded only when `gitflash mcp` runs.
+   - Works only on the repository in its working directory; tools take no `repo_path`.
+   - Read-only tools (`read_only_hint: true`): `list_branches`, `branch_report`, `list_worktrees`, `list_commits`, `list_pickable_commits`, `list_snapshots`.
+   - Additive tools (`destructive_hint: false`): `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`.
+   - Destructive tools (`destructive_hint: true`): `delete_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo`.
+   - Confirmation that works in every client: a first call returns the plan and a short-lived token, a second call with the token runs it. When the client supports elicitation, the user is also asked through `create_form_elicitation`; the token flow still works when elicitation fails (the Cowork desktop app currently hangs on it, anthropics/claude-code#94806).
+   - Every destructive call snapshots first, so `undo` is always available. Sampling and roots are not used (deprecated in the 2026-07-28 specification).
+3. **Claude Code plugin.** `.claude-plugin/plugin.json`, an `.mcp.json` that starts `gitflash mcp`, the skill, and the hook from phase 2. Installed with `/plugin marketplace add Kleanthismits/git_flash`.
 
-`gitflash clean` shows one screen with merged, upstream-gone and stale branches preselected. The chosen branches are deleted, with snapshots taken first.
+### Phase 5 — Distribution and codebase (alongside)
 
-#### Worktree management — `gitflash worktree` (alias `wt`)
+- **Trusted publishing:** a tag push releases the gem from GitHub Actions (`rubygems/release-gem`, `id-token: write`).
+- **Dependabot** for Bundler and GitHub Actions.
+- **CI:** add Ruby 3.5/head with failures allowed.
+- **Code:** replace the Struct builder in `Configuration::Descriptions` with a frozen Hash or `Data`; add RBS signatures for `Repo`.
+- **Shell completions** for zsh, bash and fish.
 
-This supports parallel-agent workflows directly.
+### Deferred
 
-- `wt list [--json]` shows each worktree's path, branch, HEAD commit, dirty/clean state, ahead/behind counts, merged status, lock state, and whether its directory is missing.
-- `wt add [branch]` creates a worktree from an existing branch, a remote branch or a new branch name. The location is configurable, with `../<repo>.worktrees/<branch>` as the default.
-- `wt switch` lets you pick another worktree and go to it. A program cannot change its parent shell's directory, so there are three modes:
-  1. `gitflash wt path <name>` prints the path, for use as `cd "$(gitflash wt path <name>)"`.
-  2. `gitflash shell-init zsh|bash|fish` installs a small `gf` shell function. It runs the picker and then changes directory, the same way zoxide works.
-  3. `--open` opens a new terminal tab or `$EDITOR` in the chosen worktree.
-- `wt move <worktree> <new-path>` moves a worktree's directory (`git worktree move`).
-- `wt remove` removes several worktrees at once. It refuses to remove a worktree with uncommitted changes unless `--force` is given, and it takes snapshots first.
-- `wt clean` preselects merged, orphaned and missing worktrees.
-- `wt prune`, `wt lock` and `wt unlock` wrap the matching git commands.
+Human-only features that other tools already cover well:
 
-#### Cherry-pick picker — `gitflash pick`
-
-1. Select a source branch. Branches are sorted by recent use; local and remote branches are both included.
-2. gitflash lists the commits on the source branch that are not on the current branch (`git log --cherry-mark --right-only HEAD...<source>`). A commit whose change already exists on the current branch is marked "already applied" and is not selected.
-3. Select one or more commits. Each row shows the short SHA, subject, author, date and a diff summary. The list can be filtered by typing.
-4. Review the selection and confirm. gitflash takes a snapshot (Phase 2).
-5. The commits are applied oldest first with `git cherry-pick`. `-x` records the original commit in the message. `--no-commit` combines the changes into one uncommitted change.
-6. On a conflict, gitflash stops and lists the conflicted files.
-   - `gitflash pick --continue`, `--abort` and `--skip` wrap git's own cherry-pick commands.
-   - `gitflash undo` returns to the state before the pick.
-
-For scripts and agents: `gitflash pick <source> <sha>... [--yes] [--json]`, and `gitflash pick <source> --list --json` to list the commits that can be picked.
-
-#### Other improvements
-
-- `checkout` sorts branches by recent use (`--sort=-committerdate`). It includes remote-only branches and creates a tracking branch for them. Each row shows the last commit and ahead/behind counts.
-- `gitflash stash` lets you pick a stash to apply, pop or drop, with a diff summary preview.
-- Configuration files: `.gitflash.yml` in the repository and `~/.config/gitflash.yml` for the user. They hold protected-branch patterns, the stale threshold and default flags.
-
-### Phase 4 — LLM integration (0.8.0)
-
-#### 1. Agent Skill
-
-This is the lowest-cost option, and it works in any agent that can run shell commands.
-
-- The gem ships `skills/gitflash/SKILL.md`. It explains:
-  - when to use gitflash
-  - the `--json` schemas
-  - the dry-run, then `--yes` flow
-  - how to use `undo`
-- `gitflash skill install [--claude|--path DIR]` copies the skill to `~/.claude/skills/` or to another agent's skills directory.
-
-#### 2. MCP server — `gitflash mcp`
-
-- **Setup.** The server uses stdio and the official `mcp` gem. The gem is a runtime dependency but is loaded only when `gitflash mcp` runs.
-- **Scope.** The server works only on the repository in its working directory. Tools take no `repo_path` argument, which is safer than `mcp-server-git`.
-- **Read-only tools** (`read_only_hint: true`). Each defines an `output_schema` and returns structured results.
-  - `list_branches`
-  - `branch_report` (merged, stale, gone)
-  - `list_worktrees`
-  - `list_commits`
-  - `list_pickable_commits` (commits on a source branch that are not yet on HEAD, with "already applied" marks)
-  - `list_backups`
-- **Additive tools** (`destructive_hint: false`):
-  - `add_worktree`
-  - `cherry_pick_commits`. Conflicts come back as a structured status, and the agent then calls `cherry_pick_control` with continue or abort.
-- **Destructive tools** (`destructive_hint: true`):
-  - `delete_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo`
-- **No `wt switch` tool.** Agents have no shell directory to change. `list_worktrees` returns absolute paths, which agents use directly.
-- **Two-step confirmation that works in every client:**
-  1. A call without a `confirm_token` returns a dry-run plan and a short-lived token.
-  2. A second call with that token runs the operation.
-  - If the client supports elicitation, the server also asks the user through `create_form_elicitation`.
-  - If elicitation fails or is not supported, the token flow still works. This avoids the Cowork hang.
-- **Undo is always possible.** Every destructive call takes a snapshot (Phase 2).
-- **Guided workflows** as MCP prompts: `cleanup_branches` and `recover_lost_work`.
-- **Not used:** sampling and roots, because both are deprecated.
-
-#### 3. Claude Code plugin and marketplace
-
-The repository gets a `.claude-plugin/plugin.json`, an `.mcp.json` that starts `gitflash mcp`, and the `skills/` folder. Users install everything with `/plugin marketplace add Kleanthismits/git_flash`.
-
-### Phase 5 — Modern distribution and codebase
-
-This phase can run alongside the others.
-
-- **Trusted publishing.** Pushing a tag triggers a GitHub Actions workflow that runs `rubygems/release-gem` with `id-token: write`. This replaces the local `rake release`.
-- **Dependabot** for Bundler and GitHub Actions updates.
-- **CI:** add Ruby 3.5/head, with failures allowed.
-- **Code cleanup:**
-  - Replace the Struct builder in `Configuration::Descriptions` with a frozen Hash or `Data`.
-  - Add RBS type signatures for the `Repo` layer.
-- **Shell completions** for zsh, bash and fish, generated from the Thor commands (`gitflash completion zsh`). They ship together with `shell-init`, so one line in `.zshrc` enables both.
-- **Homebrew** tap formula for users who do not have Ruby set up.
-- **Integration tests** against real temporary repositories (`Dir.mktmpdir` + `git init`), alongside the existing stubbed unit specs.
+- a stash picker
+- a richer interactive checkout menu (recent-first sorting and remote branches are still useful in `branches --json`)
+- a `wt switch` shell function
+- a Homebrew formula
 
 ## Out of scope
 
-- **Calling an LLM from inside gitflash** (for example, to generate commit messages). It would need API keys, it duplicates what agents already do, and MCP sampling is deprecated.
-- **Copying the generic tools of `mcp-server-git`** (add, commit, diff). Agents already have them.
-- **Rewriting in Go or Rust for speed.** The measured overhead is under 150 ms.
-
-## Files affected in later phases
-
-- `lib/gitflash/git/wrapper.rb`: becomes, or feeds, `lib/gitflash/repo.rb` and its data records.
-- `lib/gitflash/cli.rb`: arguments, `--json`/`--yes`/`--dry-run`, new commands.
-- New subcommands: `lib/gitflash/cli/worktree.rb` (`wt`), `lib/gitflash/cli/pick.rb`.
-- New shell-init scripts: `lib/gitflash/shell_init/{zsh,bash,fish}`.
-- `lib/gitflash/prompt.rb`: loaded only when a menu is needed.
-- MCP server: `lib/gitflash/mcp/server.rb` and `lib/gitflash/mcp/tools/*.rb`.
-- Agent integration files: `skills/gitflash/SKILL.md`, `.claude-plugin/plugin.json`, `.mcp.json`.
+- **Calling an LLM from inside gitflash** (for example, commit message generation): it needs API keys, duplicates what agents already do, and MCP sampling is deprecated.
+- **Generic git access** (add, commit, diff, push): agents already have git itself and several MCP servers for it.
+- **A rewrite in Go or Rust for speed:** measured overhead is under 150 ms.
 
 ## Sources
 
 - [Official MCP Ruby SDK (GitHub)](https://github.com/modelcontextprotocol/ruby-sdk) and [documentation](https://ruby.sdk.modelcontextprotocol.io/)
-- [The official Ruby SDK for MCP reaches 1.0](https://blog.modelcontextprotocol.io/posts/ruby-sdk-1-0/)
 - [MCP specification 2025-11-25: Tools](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
 - [Tool annotations as risk vocabulary (MCP blog)](https://blog.modelcontextprotocol.io/posts/2026-03-16-tool-annotations/)
 - [The 2026-07-28 specification (MCP blog)](https://blog.modelcontextprotocol.io/posts/2026-07-28/)
 - [SEP-2577: Deprecate roots, sampling and logging](https://modelcontextprotocol.io/seps/2577-deprecate-roots-sampling-and-logging)
 - [Official Git MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/git)
-- [Claude Code changelog](https://code.claude.com/docs/en/changelog)
+- [selfagency/git-mcp](https://github.com/selfagency/git-mcp)
+- [agentjj](https://github.com/2389-research/agentjj)
+- [GitButler AI integration](https://docs.gitbutler.com/features/ai-integration/ai-overview)
+- [jj (Jujutsu)](https://github.com/jj-vcs/jj) and [jj for AI coding agents](https://www.panozzaj.com/blog/2025/11/22/avoid-losing-work-with-jujutsu-jj-for-ai-coding-agents/)
+- [Claude Code checkpointing](https://code.claude.com/docs/en/checkpointing)
 - [anthropics/claude-code#94806: Cowork elicitation hang](https://github.com/anthropics/claude-code/issues/94806)
 - [Agent Skills overview (Claude docs)](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)
 - [Agent Skills open standard across agents](https://codex.danielvaughan.com/2026/05/05/agent-skills-open-standard-portable-skills-codex-cli-cross-agent/)
