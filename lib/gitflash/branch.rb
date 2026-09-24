@@ -5,16 +5,17 @@ require 'time'
 module Gitflash
   # A local branch as reported by `git for-each-ref`
   Branch = Data.define(
-    :name, :current, :default, :upstream, :upstream_gone, :ahead, :behind,
+    :name, :sha, :current, :default, :upstream, :upstream_gone, :ahead, :behind,
     :merged, :last_commit_at, :last_commit_author, :last_commit_subject
   ) do
     # Parses one line produced with Repo::BRANCH_FORMAT.
     # `merged_names` is nil when merge status is unknown.
     def self.parse(line, default_branch: nil, merged_names: nil)
-      name, head, upstream, track, date, author, subject = line.split(Repo::SEPARATOR, 7)
+      name, sha, head, upstream, track, date, author, subject = line.split(Repo::SEPARATOR, 8)
 
       new(
         name: name,
+        sha: sha,
         current: head == '*',
         default: name == default_branch,
         upstream: upstream.to_s.empty? ? nil : upstream,

@@ -15,6 +15,14 @@ RSpec.describe Gitflash::Cli, :git_repo do
     git('checkout', '-q', 'main')
   end
 
+  def short_sha(ref)
+    git('rev-parse', '--short', ref).strip
+  end
+
+  def names(json)
+    json.dig('result', 'branches').map { |branch| branch['name'] }
+  end
+
   it 'exits on failure' do
     expect(described_class.exit_on_failure?).to be true
   end
@@ -22,6 +30,16 @@ RSpec.describe Gitflash::Cli, :git_repo do
   describe 'version' do
     it 'prints the version for --version' do
       expect(run_cli('--version').stdout).to eq("#{Gitflash::VERSION}\n")
+    end
+  end
+
+  describe 'schema' do
+    it 'prints the JSON Schema without needing a repository' do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          expect(JSON.parse(run_cli('schema').stdout)['title']).to include('schema version 1')
+        end
+      end
     end
   end
 
@@ -35,11 +53,15 @@ RSpec.describe Gitflash::Cli, :git_repo do
       end
     end
 
-    it 'reports the error as JSON with --json' do
+    it 'reports the error in the JSON envelope' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           expect(run_cli('branches', '--json').json).to eq(
-            'schema' => 1, 'error' => { 'message' => 'Not a git repository', 'exit_code' => 1 }
+            'schema' => 1, 'command' => 'branches', 'ok' => false, 'status' => 'error',
+            'dry_run' => false,
+            'error' => {
+              'code' => 'not_a_repository', 'message' => 'Not a git repository', 'exit_code' => 1
+            }
           )
         end
       end
@@ -49,27 +71,26 @@ RSpec.describe Gitflash::Cli, :git_repo do
   describe 'branches' do
     it 'prints a table' do
       stdout = run_cli('branches').stdout
-      expect(stdout.lines.map do |line|
-        line[0, 13].rstrip
-      end).to eq(['  feature', '* main', '  merged-one'])
+      rows = stdout.lines.map { |line| line[0, 13].rstrip }
+      expect(rows).to eq(['  feature', '* main', '  merged-one'])
       expect(stdout).to include('default').and include('merged')
     end
 
     it 'prints JSON' do
       json = run_cli('branches', '--json').json
-      expect(json).to include('schema' => 1, 'default_branch' => 'main')
-      expect(json['branches'].map { |branch| branch['name'] }).to eq(%w[feature main merged-one])
+
+      expect(json).to include('command' => 'branches', 'ok' => true, 'status' => 'done')
+      expect(json.dig('result', 'default_branch')).to eq('main')
+      expect(names(json)).to eq(%w[feature main merged-one])
+      expect(json.dig('result', 'branches', 0, 'sha')).to eq(short_sha('feature'))
     end
 
     it 'filters merged branches, excluding the default branch' do
-      names = run_cli('branches', '--merged', '--json').json['branches'].map do |branch|
-        branch['name']
-      end
-      expect(names).to eq(%w[merged-one])
+      expect(names(run_cli('branches', '--merged', '--json').json)).to eq(%w[merged-one])
     end
 
     it 'filters stale branches' do
-      expect(run_cli('branches', '--stale', '1', '--json').json['branches']).to eq([])
+      expect(names(run_cli('branches', '--stale', '1', '--json').json)).to eq([])
       expect(run_cli('branches', '--stale', '1').stdout).to eq("No branches match.\n")
     end
 
@@ -78,39 +99,47 @@ RSpec.describe Gitflash::Cli, :git_repo do
       git('branch', '--set-upstream-to=temp', 'feature')
       git('branch', '-D', 'temp')
 
-      names = run_cli('branches', '--gone', '--json').json['branches'].map do |branch|
-        branch['name']
-      end
-      expect(names).to eq(%w[feature])
+      expect(names(run_cli('branches', '--gone', '--json').json)).to eq(%w[feature])
     end
   end
 
   describe 'checkout' do
     it 'checks out the given branch' do
-      run = run_cli('checkout', 'feature', '--json')
-      expect(run.json).to eq('schema' => 1, 'action' => 'checkout', 'branch' => 'feature',
-                             'changed' => true, 'dry_run' => false)
+      expect(run_cli('checkout', 'feature', '--json').json).to eq(
+        'schema' => 1, 'command' => 'checkout', 'ok' => true, 'status' => 'done',
+        'dry_run' => false,
+        'plan' => { 'branch' => 'feature' },
+        'result' => { 'branch' => 'feature', 'previous_branch' => 'main' }
+      )
       expect(git('branch', '--show-current')).to eq("feature\n")
     end
 
     it 'does nothing for the current branch' do
       expect(run_cli('checkout', 'main').stdout).to eq("Already on 'main'\n")
+      json = run_cli('checkout', 'main', '--json').json
+      expect(json).to include('ok' => true, 'status' => 'noop')
     end
 
     it 'does nothing with --dry-run' do
-      expect(run_cli('checkout', 'feature',
-                     '--dry-run').stdout).to eq("Would check out 'feature'\n")
+      stdout = run_cli('checkout', 'feature', '--dry-run').stdout
+      expect(stdout).to eq("Would check out 'feature'\n")
+      expect(run_cli('checkout', 'feature', '--dry-run', '--json').json).to include(
+        'status' => 'planned', 'dry_run' => true, 'plan' => { 'branch' => 'feature' }
+      )
       expect(git('branch', '--show-current')).to eq("main\n")
     end
 
     it 'rejects an unknown branch with exit code 2' do
-      expect(run_cli('checkout',
-                     'nope')).to have_attributes(status: 2, stderr: "Unknown branch 'nope'\n")
+      run = run_cli('checkout', 'nope')
+      expect(run).to have_attributes(status: 2, stderr: "Unknown branch 'nope'\n")
+      error = run_cli('checkout', 'nope', '--json').json['error']
+      expect(error).to include('code' => 'unknown_branch')
     end
 
     it 'requires a branch without a terminal' do
-      expect(run_cli('checkout')).to have_attributes(status: 2,
-                                                     stderr: /Pass the branch to check out/)
+      run = run_cli('checkout')
+      expect(run).to have_attributes(status: 2, stderr: /Pass the branch to check out/)
+      expect(run_cli('checkout', '--json').json['error']).to include('code' => 'input_required')
     end
 
     context 'with a terminal' do
@@ -146,27 +175,30 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(branch_names).to include('merged-one')
     end
 
-    it 'reports the plan as JSON when confirmation is required' do
-      error = run_cli('delete', 'merged-one', '--json').json['error']
-      plan = { 'action' => 'delete', 'force' => false, 'branches' => ['merged-one'] }
-      expect(error).to include('exit_code' => 2, 'details' => plan)
+    it 'returns the plan when confirmation is required' do
+      json = run_cli('delete', 'merged-one', '--json').json
+
+      expect(json).to include('ok' => false, 'status' => 'confirmation_required',
+                              'plan' => { 'branches' => ['merged-one'], 'force' => false })
+      expect(json['error']).to include('code' => 'confirmation_required', 'exit_code' => 2)
     end
 
-    it 'deletes merged branches and keeps unmerged ones without --force' do
+    it 'deletes merged branches, keeps unmerged ones and reports how to restore' do
+      sha = short_sha('merged-one')
       run = run_cli('delete', 'merged-one', 'feature', '--yes', '--json')
 
       expect(run.status).to eq(1)
-      expect(run.json['results']).to match([
-                                             { 'branch' => 'merged-one', 'deleted' => true },
-                                             hash_including('branch' => 'feature',
-                                                            'deleted' => false)
-                                           ])
+      expect(run.json).to include('ok' => false, 'status' => 'failed')
+      expect(run.json['error']).to include('code' => 'git_failed')
+      expect(run.json.dig('result', 'deleted')).to eq([{ 'branch' => 'merged-one', 'sha' => sha }])
+      expect(run.json.dig('result', 'failed')).to match([hash_including('branch' => 'feature')])
       expect(branch_names).to eq(%w[feature main])
     end
 
     it 'deletes unmerged branches with --force' do
+      sha = short_sha('feature')
       run = run_cli('delete', 'feature', '--force', '--yes')
-      expect(run).to have_attributes(status: 0, stdout: "Deleted branch feature\n")
+      expect(run).to have_attributes(status: 0, stdout: "Deleted branch feature (was #{sha})\n")
     end
 
     it 'shows the plan with --dry-run' do
@@ -175,29 +207,33 @@ RSpec.describe Gitflash::Cli, :git_repo do
     end
 
     it 'refuses protected branches' do
-      run = run_cli('delete', 'main', '--yes')
-      expect(run).to have_attributes(status: 2, stderr: /protected branches: main/)
+      expect(run_cli('delete', 'main', '--yes')).to have_attributes(
+        status: 2, stderr: /protected branches: main/
+      )
+      expect(run_cli('delete', 'main', '--yes', '--json').json['error'])
+        .to include('code' => 'protected_branch')
     end
 
     it 'refuses unknown branches' do
-      expect(run_cli('delete', 'nope',
-                     '--yes')).to have_attributes(status: 2, stderr: "Unknown branch: nope\n")
+      run = run_cli('delete', 'nope', '--yes')
+      expect(run).to have_attributes(status: 2, stderr: "Unknown branch: nope\n")
     end
 
     it 'requires branch names without a terminal' do
-      expect(run_cli('delete',
-                     '--yes')).to have_attributes(status: 2, stderr: /Pass the branches to delete/)
+      run = run_cli('delete', '--yes')
+      expect(run).to have_attributes(status: 2, stderr: /Pass the branches to delete/)
     end
 
     context 'with a terminal' do
       let(:tty) { true }
 
       it 'offers only unprotected branches and deletes the confirmed selection' do
+        sha = short_sha('merged-one')
         allow(prompt).to receive(:multi_select)
           .with('Select branches to delete', %w[feature merged-one]).and_return(%w[merged-one])
         allow(prompt).to receive(:proceed_with_warning) { |_message, &block| block.call }
 
-        expect(run_cli('delete').stdout).to eq("Deleted branch merged-one\n")
+        expect(run_cli('delete').stdout).to eq("Deleted branch merged-one (was #{sha})\n")
       end
 
       it 'prints Exited when the user declines' do
@@ -223,10 +259,14 @@ RSpec.describe Gitflash::Cli, :git_repo do
   describe 'reset' do
     let!(:first) { git('rev-parse', 'HEAD~1').strip }
 
-    it 'performs a mixed reset to the given commit' do
-      run = run_cli('reset', 'HEAD~1', '--json')
-      expect(run.json).to eq('schema' => 1, 'action' => 'reset', 'commit' => first,
-                             'mode' => 'mixed')
+    it 'performs a mixed reset and reports the previous commit' do
+      previous = head_sha
+
+      expect(run_cli('reset', 'HEAD~1', '--json').json).to include(
+        'command' => 'reset', 'ok' => true, 'status' => 'done',
+        'plan' => { 'commit' => first, 'mode' => 'mixed' },
+        'result' => { 'commit' => first, 'mode' => 'mixed', 'previous_commit' => previous }
+      )
       expect(head_sha).to eq(first)
       expect(git('status', '--porcelain')).to eq("?? b\n")
     end
@@ -237,30 +277,34 @@ RSpec.describe Gitflash::Cli, :git_repo do
     end
 
     it 'requires --yes for a hard reset without a terminal' do
-      expect(run_cli('reset', 'HEAD~1',
-                     '--hard')).to have_attributes(status: 2, stderr: /Re-run with --yes/)
+      run = run_cli('reset', 'HEAD~1', '--hard')
+      expect(run).to have_attributes(status: 2, stderr: /Re-run with --yes/)
       expect(head_sha).not_to eq(first)
     end
 
     it 'performs a hard reset with --yes' do
-      expect(run_cli('reset', 'HEAD~1', '--hard',
-                     '--yes').stdout).to eq("Reset to #{first[0, 7]} (hard)\n")
+      run = run_cli('reset', 'HEAD~1', '--hard', '--yes')
+      expect(run.stdout).to eq("Reset to #{first[0, 7]} (hard)\n")
       expect(git('status', '--porcelain')).to eq('')
     end
 
     it 'shows the plan with --dry-run' do
-      expect(run_cli('reset', 'HEAD~1',
-                     '--dry-run').stdout).to eq("Would reset to #{first[0, 7]} (mixed)\n")
+      run = run_cli('reset', 'HEAD~1', '--dry-run')
+      expect(run.stdout).to eq("Would reset to #{first[0, 7]} (mixed)\n")
       expect(head_sha).not_to eq(first)
     end
 
     it 'rejects --soft together with --hard' do
-      expect(run_cli('reset', 'HEAD~1', '--soft', '--hard').status).to eq(2)
+      run = run_cli('reset', 'HEAD~1', '--soft', '--hard', '--json')
+      expect(run.status).to eq(2)
+      expect(run.json['error']).to include('code' => 'invalid_options')
     end
 
     it 'rejects an unknown commit' do
-      expect(run_cli('reset',
-                     'nope')).to have_attributes(status: 2, stderr: "Unknown commit 'nope'\n")
+      run = run_cli('reset', 'nope')
+      expect(run).to have_attributes(status: 2, stderr: "Unknown commit 'nope'\n")
+      error = run_cli('reset', 'nope', '--json').json['error']
+      expect(error).to include('code' => 'unknown_commit')
     end
 
     context 'with a terminal' do

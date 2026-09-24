@@ -10,7 +10,7 @@ module Gitflash
 
         if name.nil?
           require_interactive!('Pass the branch to check out: gitflash checkout BRANCH')
-          return report(nil, changed: false, text: 'You only have one branch!') if branches.size < 2
+          return noop(current, 'You only have one branch!') if branches.size < 2
 
           name = pick(branches, current)
         end
@@ -26,21 +26,21 @@ module Gitflash
       end
 
       def checkout(name, names, current)
-        raise UsageError, "Unknown branch '#{name}'" unless names.include?(name)
-        return report(name, changed: false, text: "Already on '#{name}'") if name == current
-        if ui.dry_run?
-          return report(name, changed: false, dry_run: true, text: "Would check out '#{name}'")
-        end
+        usage_error!('unknown_branch', "Unknown branch '#{name}'") unless names.include?(name)
+        return noop(name, "Already on '#{name}'") if name == current
+
+        plan = { branch: name }
+        return planned(plan, "Would check out '#{name}'") if ui.dry_run?
 
         result = repo.checkout(name)
-        raise Error, "git checkout failed:\n#{result.output}" unless result.success?
+        git_error!('checkout', result) unless result.success?
 
-        report(name, changed: true, text: "Switched to branch '#{name}'")
+        ui.report(status: 'done', plan: plan, result: { branch: name, previous_branch: current },
+                  text: "Switched to branch '#{name}'")
       end
 
-      def report(name, changed:, text:, dry_run: false)
-        ui.emit({ action: 'checkout', branch: name, changed: changed, dry_run: dry_run }, text)
-        0
+      def noop(branch, text)
+        ui.report(status: 'noop', result: { branch: branch, previous_branch: branch }, text: text)
       end
     end
   end

@@ -1,17 +1,23 @@
 # frozen_string_literal: true
 
 module Gitflash
-  # Base class for errors reported to the user. `details` carries extra data for JSON output.
+  # Base class for errors reported to the user.
+  # `code` is a stable machine-readable identifier; `plan` is the planned change, if any.
   class Error < StandardError
-    attr_reader :details
+    attr_reader :code, :plan
 
-    def initialize(message = nil, details: nil)
+    def initialize(message = nil, code: 'failed', plan: nil)
       super(message)
-      @details = details
+      @code = code
+      @plan = plan
     end
 
     def exit_code
       1
+    end
+
+    def status
+      'error'
     end
   end
 end

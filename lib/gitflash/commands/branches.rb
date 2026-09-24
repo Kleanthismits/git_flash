@@ -6,9 +6,8 @@ module Gitflash
     class Branches < Base
       def call
         branches = filter(repo.branches(merged_status: true))
-        payload = { default_branch: repo.default_branch, branches: branches.map(&:to_h) }
-        ui.emit(payload, table(branches))
-        0
+        result = { default_branch: repo.default_branch, branches: branches.map(&:to_h) }
+        ui.report(status: 'done', result: result, text: table(branches))
       end
 
       private

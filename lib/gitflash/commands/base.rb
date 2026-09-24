@@ -15,7 +15,23 @@ module Gitflash
       attr_reader :repo, :ui, :options
 
       def require_interactive!(message)
-        raise UsageError, message unless ui.interactive?
+        usage_error!('input_required', message) unless ui.interactive?
+      end
+
+      def usage_error!(code, message)
+        raise UsageError.new(message, code: code)
+      end
+
+      def git_error!(command, result)
+        raise Error.new("git #{command} failed:\n#{result.output}", code: 'git_failed')
+      end
+
+      def planned(plan, text)
+        ui.report(status: 'planned', plan: plan, text: text)
+      end
+
+      def cancelled(plan)
+        ui.report(status: 'cancelled', plan: plan, text: 'Exited')
       end
     end
   end

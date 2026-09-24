@@ -4,6 +4,7 @@ module Gitflash
   module Commands
     # Deletes local branches given as arguments or picked from a menu.
     # Uses `git branch -d` (merged branches only) unless --force is given.
+    # The result lists each deleted branch with its last commit, so it can be recreated.
     class Delete < Base
       PROTECTED_NAMES = %w[main master].freeze
 
@@ -15,7 +16,7 @@ module Gitflash
         return 0 if names.nil?
 
         validate!(names.uniq, branches)
-        delete(names.uniq)
+        delete(names.uniq, branches.to_h { |branch| [branch.name, branch.sha] })
       end
 
       private
@@ -40,29 +41,23 @@ module Gitflash
       def validate!(names, branches)
         by_name = branches.to_h { |branch| [branch.name, branch] }
         unknown = names.reject { |name| by_name.key?(name) }
-        raise UsageError, "Unknown branch: #{unknown.join(', ')}" if unknown.any?
+        usage_error!('unknown_branch', "Unknown branch: #{unknown.join(', ')}") if unknown.any?
 
         refused = names.select { |name| protected?(by_name[name]) }
         return if refused.empty?
 
-        raise UsageError, "Refusing to delete protected branches: #{refused.join(', ')} " \
-                          '(current, default, main and master are protected)'
+        usage_error!('protected_branch',
+                     "Refusing to delete protected branches: #{refused.join(', ')} " \
+                     '(current, default, main and master are protected)')
       end
 
-      def delete(names)
-        plan = { action: 'delete', force: force?, branches: names }
-        return report_dry_run(plan) if ui.dry_run?
-        return report_cancelled(plan) unless ui.confirm?(summary(names), details: plan)
+      def delete(names, shas)
+        plan = { branches: names, force: force? }
+        return planned(plan, "Would delete:\n#{bullets(names)}") if ui.dry_run?
+        return cancelled(plan) unless ui.confirm?(summary(names), plan: plan)
 
-        results = names.map { |name| delete_one(name) }
-        report_results(plan, results)
-      end
-
-      def delete_one(name)
-        result = repo.delete_branch(name, force: force?)
-        return { branch: name, deleted: true } if result.success?
-
-        { branch: name, deleted: false, error: result.output }
+        outcomes = names.map { |name| [name, repo.delete_branch(name, force: force?)] }
+        report_results(plan, outcomes, shas)
       end
 
       def summary(names)
@@ -75,33 +70,35 @@ module Gitflash
       end
 
       def report_nothing(text)
-        ui.emit({ action: 'delete', force: force?, branches: [], results: [] }, text)
+        ui.report(status: 'noop', result: { deleted: [], failed: [] }, text: text)
         nil
       end
 
-      def report_dry_run(plan)
-        ui.emit(plan.merge(dry_run: true), "Would delete:\n#{bullets(plan[:branches])}")
-        0
+      def report_results(plan, outcomes, shas)
+        deleted, failed = outcomes.partition { |_name, result| result.success? }
+        result = {
+          deleted: deleted.map { |name, _result| { branch: name, sha: shas[name] } },
+          failed: failed.map { |name, result| { branch: name, error: result.output } }
+        }
+        ui.report(status: failed.empty? ? 'done' : 'failed', plan: plan, result: result,
+                  error: failure(failed, outcomes), text: results_text(result))
       end
 
-      def report_cancelled(plan)
-        ui.emit(plan.merge(cancelled: true), 'Exited')
-        0
+      def failure(failed, outcomes)
+        return nil if failed.empty?
+
+        message = "#{failed.size} of #{outcomes.size} branches were not deleted"
+        { code: 'git_failed', message: message, exit_code: 1 }
       end
 
-      def report_results(plan, results)
-        failed = results.reject { |result| result[:deleted] }
-        ui.emit(plan.merge(results: results), results_text(results, failed))
-        failed.empty? ? 0 : 1
+      def force_hint?(result)
+        result[:failed].any? && !force?
       end
 
-      def results_text(results, failed)
-        lines = results.map do |result|
-          next "Deleted branch #{result[:branch]}" if result[:deleted]
-
-          "Not deleted #{result[:branch]}: #{result[:error]}"
-        end
-        lines << 'Use --force to delete branches with unmerged changes.' if failed.any? && !force?
+      def results_text(result)
+        lines = result[:deleted].map { |row| "Deleted branch #{row[:branch]} (was #{row[:sha]})" }
+        lines += result[:failed].map { |row| "Not deleted #{row[:branch]}: #{row[:error]}" }
+        lines << 'Use --force to delete branches with unmerged changes.' if force_hint?(result)
         lines.join("\n")
       end
     end

@@ -8,6 +8,7 @@ gem 'rake', '~> 13.0'
 
 group :development do
   gem 'awesome_print'
+  gem 'json_schemer', '~> 2.4'
   gem 'pry', '~> 0.14.1'
   gem 'rspec', '~> 3.0'
   gem 'rubocop', '~> 1.72'
