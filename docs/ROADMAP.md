@@ -22,7 +22,7 @@ Measured with Ruby 3.3.2 and the installed gem:
 | `require 'thor'` | ~33 ms |
 | `require 'zeitwerk'` | ~27 ms |
 
-- tty-prompt is loaded even for `help` and `version`. Loading it only when a menu is shown removes the biggest part of gitflash's own overhead.
+- tty-prompt is loaded only when a menu is shown (Zeitwerk autoloads `Gitflash::Prompt` on first use), so `help`, `version` and non-interactive runs do not pay its ~136 ms. An earlier version of this roadmap said otherwise; that was wrong.
 - `checkout` starts 4 git processes (`rev-parse`, `for-each-ref` twice, `branch --show-current`). One `for-each-ref` call using `%(HEAD)` can replace three of them.
 - A rewrite in another language, or YJIT, would not make a noticeable difference for a short-lived CLI.
 
@@ -61,7 +61,7 @@ Measured with Ruby 3.3.2 and the installed gem:
 
 ## Roadmap
 
-### Phase 1 — Non-interactive core and `--json` (0.5.0)
+### Phase 1 — Non-interactive core and `--json` (0.5.0) — implemented, not yet released
 
 Everything else depends on this phase.
 
@@ -81,7 +81,7 @@ Everything else depends on this phase.
   - Menus appear only when stdin is a TTY.
   - Without a TTY and without `--yes`, destructive commands print what they would do and exit with code 2.
 - **Safer delete.** `delete` uses `git branch -d` by default. `--force` switches to `-D`.
-- **Faster startup.** Load tty-prompt only when a menu is shown.
+- **Startup.** tty-prompt already loads only when a menu is shown; keep it that way (for example, print plain messages with `puts` instead of `prompt.ok`).
 
 ### Phase 2 — Safety net: snapshots and undo (0.6.0)
 
