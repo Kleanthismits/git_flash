@@ -24,15 +24,14 @@ RSpec.describe Gitflash::Git::BashCommand do
     end
   end
 
-  describe '.system_exec' do
-    it 'executes a command and prints its output' do
-      expect { described_class.system_exec('echo', 'Hello, World!') }.to(
-        output(a_string_including('Hello, World!')).to_stdout_from_any_process
-      )
+  describe '.capture' do
+    it 'returns stdout, stderr and success without raising' do
+      stdout, stderr, success = described_class.capture('sh', '-c', 'echo 1; echo 2 >&2; exit 3')
+      expect([stdout, stderr, success]).to eq(["1\n", "2\n", false])
     end
 
-    it 'returns nil for a missing executable' do
-      expect(described_class.system_exec('non_existent_command')).to be_nil
+    it 'raises CommandError when the executable is missing' do
+      expect { described_class.capture('non_existent_command') }.to raise_error(Gitflash::Git::CommandError)
     end
   end
 end
