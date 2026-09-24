@@ -4,7 +4,9 @@
 
 ⚠️ **This project is still under development**: Use at your own risk!
 
-This gem allows you to use some of the most common git commands in a more user intuitive way.
+A safety net and cleanup tool for git repositories that AI coding agents work in. It works on plain git, with nothing new to adopt, and every command can be run by a person in a terminal or by an agent with a stable JSON contract.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for where the project is going.
 
 ## Installation
 
