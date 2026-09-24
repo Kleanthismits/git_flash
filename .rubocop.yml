@@ -8,6 +8,7 @@ AllCops:
   TargetRubyVersion: 3.2
   Exclude:
     - 'spec/dummy/**/*'
+    - 'vendor/**/*'
 
 Layout/SpaceInLambdaLiteral:
   Enabled: false
