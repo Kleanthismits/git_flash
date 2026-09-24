@@ -24,7 +24,7 @@ Or install it yourself as:
 
 ## Requirements
 
-This gem requires Ruby 3.3.2+.
+This gem requires Ruby 3.2+.
 ## Usage
 
 Run `gitflash` to get a list with the available commands and their description.
