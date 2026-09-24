@@ -2,29 +2,38 @@ name: RSpec
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: ['3.3', '3.4']
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v7
 
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 3.0
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: true
 
-    - name: Bundle install
-      run: |
-        gem install bundler -v 2.5.23
-        bundle install
+    - name: Run RuboCop
+      run: bundle exec rubocop
 
     - name: Run RSpec
       run: bundle exec rspec
 
     # Using the current repo to perform coverage analysis
-    - uses: joshmfrankel/simplecov-check-action@main
+    - uses: joshmfrankel/simplecov-check-action@e4d24394253366c3b96d9e73e9b68127b2bad081 # 1.1.0
+      if: matrix.ruby-version == '3.3'
       with:
         minimum_suite_coverage: 85
         minimum_file_coverage: 70

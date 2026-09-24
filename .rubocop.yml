@@ -1,12 +1,14 @@
-require: rubocop-rspec
+plugins:
+  - rubocop-performance
+  - rubocop-rspec
 
 AllCops:
   NewCops: enable
   SuggestExtensions: false
-  TargetRubyVersion: 3.0
+  TargetRubyVersion: 3.3
   Exclude:
     - 'spec/dummy/**/*'
-    - /*.gemspec
+    - 'vendor/**/*'
 
 Layout/SpaceInLambdaLiteral:
   Enabled: false
@@ -19,7 +21,7 @@ Metrics/BlockLength:
   Exclude:
     - spec/**/*
 
-Naming/PredicateName:
+Naming/PredicatePrefix:
   Enabled: false
 
 Naming/AccessorMethodName:
@@ -66,13 +68,17 @@ RSpec/ExampleLength:
 RSpec/MessageSpies:
   EnforcedStyle: receive
 
-RSpec/FilePath:
+RSpec/SpecFilePathFormat:
   Enabled: false
-  IgnoreMethods: true
-  SpecSuffixOnly: true
+
+RSpec/StubbedMock:
+  Enabled: false
 
 RSpec/AnyInstance:
   Enabled: false
 
 RSpec/MultipleExpectations:
   Enabled: false
+
+RSpec/NestedGroups:
+  Max: 4

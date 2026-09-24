@@ -27,3 +27,17 @@
 - Fix reset method
 - Update to Ruby version 3.3.2
 - Bug fixes
+
+## [0.4.0] - 2026-09-24
+
+- Run git commands without a shell and raise on failure
+- List branches with `git for-each-ref`; detached HEAD no longer shows as a branch
+- List the latest 100 commits for `reset`, unaffected by `log.decorate`
+- Exit with an error when a git command fails or outside a git repository
+- `delete` does nothing when no branches are available or selected
+- `reset --hard` prints `Exited` when declined; fix single-commit message
+- Correct `reset` help text
+- Portable `bin/gitflash` shebang
+- Require thor >= 1.4 (CVE-2025-54314) and Ruby >= 3.3
+- Add `version` command (`--version`, `-v`)
+- CI: pin third-party action to a commit SHA, restrict token permissions, test Ruby 3.3–3.4
