@@ -2,7 +2,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/gitflash.svg)](https://badge.fury.io/rb/gitflash)
 
-⚠️ **This project is stil under development**: Use at your own risk!
+⚠️ **This project is still under development**: Use at your own risk!
 
 This gem allows you to use some of the most common git commands in a more user intuitive way.
 
@@ -24,10 +24,21 @@ Or install it yourself as:
 
 ## Requirements
 
-This gem requires Ruby 3.3+.
+This gem requires Ruby 3.3+ and git.
+
 ## Usage
 
-Run `gitflash` to get a list with the available commands and their description.
+Run `gitflash` inside a git repository to get a list with the available commands and their description.
+
+| Command | Description |
+| --- | --- |
+| `gitflash checkout` | Select a local branch and check it out |
+| `gitflash delete` | Select local branches (excluding the current branch and main/master) and force-delete them |
+| `gitflash reset` | Select one of the latest 100 commits and reset to it (mixed reset) |
+| `gitflash reset --hard` | Same as `reset`, but discard all current changes after confirmation |
+| `gitflash version` | Print the installed version (also `--version`, `-v`) |
+
+Run `gitflash help <command>` for details on a command.
 
 ## Development
 

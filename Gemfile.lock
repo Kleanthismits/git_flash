@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    gitflash (0.3.0)
+    gitflash (0.4.0)
       thor (>= 1.4, < 2)
       tty-prompt (~> 0.23)
       zeitwerk (~> 2.6)

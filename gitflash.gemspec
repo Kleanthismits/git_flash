@@ -22,9 +22,9 @@ Gem::Specification.new do |spec|
   spec.executables = ['gitflash']
 
   # prevents Gem::InvalidSpecificationException
-  spec.files = Dir.glob('{bin,lib}/**/*') + %w[LICENSE README.md command_descriptions.yml]
+  spec.files = Dir.glob('lib/**/*') +
+               %w[bin/gitflash CHANGELOG.md LICENSE README.md command_descriptions.yml]
 
-  spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = spec.homepage
   spec.metadata['changelog_uri'] = 'https://github.com/Kleanthismits/git_flash/blob/main/CHANGELOG.md'
   spec.metadata['rubygems_mfa_required'] = 'true'
