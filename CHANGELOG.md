@@ -8,8 +8,8 @@
 - `reset --hard` prints `Exited` when declined; fix single-commit message
 - Correct `reset` help text
 - Portable `bin/gitflash` shebang
-- Require thor >= 1.4 (CVE-2025-54314) and Ruby >= 3.2
-- CI: pin third-party action to a commit SHA, restrict token permissions, test Ruby 3.2–3.4
+- Require thor >= 1.4 (CVE-2025-54314) and Ruby >= 3.3
+- CI: pin third-party action to a commit SHA, restrict token permissions, test Ruby 3.3–3.4
 
 ## [0.1.0.alpha] - 2023-06-17
 

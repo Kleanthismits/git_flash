@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.homepage              = 'https://github.com/Kleanthismits/git_flash'
   spec.license               = 'MIT'
   spec.platform              = Gem::Platform::RUBY
-  spec.required_ruby_version = Gem::Requirement.new('>= 3.2')
+  spec.required_ruby_version = Gem::Requirement.new('>= 3.3')
 
   # Runtime dependencies
   spec.add_dependency 'thor', '>= 1.4', '< 2'
