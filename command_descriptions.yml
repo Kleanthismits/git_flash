@@ -22,12 +22,12 @@ delete:
 reset:
   short: 'Reset your code to the selected commit'
   long: |
-    Accepts an optional parameter (hard) if you want to hard reset.
+    By default performs a mixed reset: your changes are kept as unstaged changes.
+    Pass --hard to discard all your current changes.
 
-    Presents a list with all the available commits.
+    Presents a list with the latest 100 commits of the current branch.
 
     You can use the arrow keys to navigate through the commits.
     Type for quick searching a specific commit.
-    Press `space` to choose multiple commits.
     Press `enter` to confirm selection and reset to that commit.
     Press `ctrl+c` to cancel the operation.
