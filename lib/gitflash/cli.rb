@@ -14,6 +14,7 @@ module Gitflash
     long_desc descriptions.checkout.long
 
     def checkout
+      ensure_git_repo!
       branches? ? checkout_branch : prompt.ok('You only have one branch!')
     end
 
@@ -21,6 +22,7 @@ module Gitflash
     long_desc descriptions.delete.long
 
     def delete
+      ensure_git_repo!
       branches? ? delete_branch : prompt.ok('You only have one branch!')
     end
 
@@ -29,7 +31,8 @@ module Gitflash
 
     option :hard, type: :boolean, default: false, desc: 'Perform a hard reset'
     def reset
-      commits? ? reset_to_commit : prompt.ok('You only have one branch!')
+      ensure_git_repo!
+      commits? ? reset_to_commit : prompt.ok('You only have one commit!')
     end
 
     private
@@ -41,14 +44,15 @@ module Gitflash
         **checkout_options
       )
 
-      git.checkout(selection)
+      run_git('checkout') { git.checkout(selection) }
     end
 
     def delete_branch
-      selection = prompt.multi_select(
-        'Select branches to delete',
-        branches(options: { master: false, current: false })
-      )
+      choices = branches(options: { master: false, current: false })
+      return prompt.ok('No branches available to delete') if choices.empty?
+
+      selection = prompt.multi_select('Select branches to delete', choices)
+      return prompt.ok('No branches selected') if selection.empty?
 
       warning_message = <<~TEXT
         You are about to permanently delete the following branches even if they have unmerged changes:
@@ -56,7 +60,9 @@ module Gitflash
         #{selection.map { |br| "* #{br}" }.join("\n")}
       TEXT
 
-      prompt_proceed_warning(warning_message) { git.delete(selection) }
+      proceed_with_warning(warning_message) do
+        run_git('delete') { git.delete(selection) }
+      end
     end
 
     def reset_to_commit
@@ -65,10 +71,25 @@ module Gitflash
 
       if options[:hard]
         warning_message = 'You are about to reset your branch and lose all your current changes'
-        prompt.proceed_with_warning(warning_message) { git.reset(**reset_options) }
+        proceed_with_warning(warning_message) { run_git('reset') { git.reset(**reset_options) } }
       else
-        git.reset(**reset_options)
+        run_git('reset') { git.reset(**reset_options) }
       end
+    end
+
+    def proceed_with_warning(message, &)
+      result = prompt.proceed_with_warning(message, &)
+      puts result if result == 'Exited'
+    end
+
+    def run_git(command)
+      raise Thor::Error, "git #{command} failed" unless yield
+    end
+
+    def ensure_git_repo!
+      git.inside_work_tree!
+    rescue Git::CommandError
+      raise Thor::Error, 'Not a git repository'
     end
 
     def branches?
@@ -83,15 +104,9 @@ module Gitflash
       @prompt ||= Prompt.create
     end
 
-    def prompt_proceed_warning(message)
-      prompt.warn(message)
-      answer = prompt.yes?('Do you want to proceed?')
-      puts answer ? yield : 'Exited'
-    end
-
     def checkout_options
       {}.tap do |opt|
-        opt[:default] = current unless current.nil?
+        opt[:default] = current unless current.to_s.empty?
       end
     end
 
@@ -108,7 +123,7 @@ module Gitflash
     end
 
     def branch_commits
-      @branch_commits = git.branch_commits
+      @branch_commits ||= git.branch_commits
     end
 
     def git

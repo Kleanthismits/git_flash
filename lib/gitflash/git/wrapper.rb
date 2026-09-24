@@ -14,6 +14,12 @@ module Gitflash
           formatted_branches
         end
 
+        # Raises CommandError when the working directory is not inside a git repository
+        def inside_work_tree!
+          output = bash.exec('git', 'rev-parse', '--is-inside-work-tree').strip
+          raise CommandError, 'Not inside a git work tree' unless output == 'true'
+        end
+
         def current_branch
           bash.exec('git', 'branch', '--show-current').strip
         end
@@ -58,10 +64,10 @@ module Gitflash
         end
 
         def hidden_branches(current, master)
-          [].tap do |hb|
+          [].tap { |hb|
             hb.push('master', 'main') unless master
             hb.push(current_branch) unless current
-          end.reject(&:empty?)
+          }.reject(&:empty?)
         end
 
         def formatted_branches
