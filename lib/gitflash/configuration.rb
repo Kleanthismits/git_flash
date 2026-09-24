@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'yaml'
 
 module Gitflash
@@ -20,7 +22,7 @@ module Gitflash
         keys = data.keys.map(&:to_sym)
         Struct.new(*keys).new(*data.values).tap do |st|
           keys.each do |method|
-            st.send("#{method}=".to_sym, transform_to_struct(st.send(method)))
+            st.public_send("#{method}=", transform_to_struct(st.public_send(method)))
           end
         end
       end
