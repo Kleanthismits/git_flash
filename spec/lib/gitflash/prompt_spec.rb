@@ -76,7 +76,7 @@ RSpec.describe Gitflash::Prompt do
     describe '#proceed_with_warning' do
       let(:warning_message) { 'This is a warning message' }
 
-      context 'user agrees' do
+      context 'when user agrees' do
         before do
           allow(prompt).to receive(:warn)
           allow(prompt).to receive(:yes?).and_return(true)
@@ -87,7 +87,7 @@ RSpec.describe Gitflash::Prompt do
           expect(prompt).to receive(:yes?).with('Do you want to proceed?')
 
           expect(
-            prompt.proceed_with_warning(warning_message) { puts '' }
+            prompt.proceed_with_warning(warning_message) { nil }
           ).to be_nil
         end
 
@@ -101,7 +101,7 @@ RSpec.describe Gitflash::Prompt do
         end
       end
 
-      context 'user disagrees' do
+      context 'when user disagrees' do
         before do
           allow(prompt).to receive(:warn)
           allow(prompt).to receive(:yes?).and_return(false)
@@ -112,7 +112,7 @@ RSpec.describe Gitflash::Prompt do
           expect(prompt).to receive(:yes?).with('Do you want to proceed?')
 
           expect(
-            prompt.proceed_with_warning(warning_message) { puts '' }
+            prompt.proceed_with_warning(warning_message) { nil }
           ).to eq('Exited')
         end
 

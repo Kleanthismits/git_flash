@@ -17,8 +17,8 @@ module Gitflash
           raise CommandError, "#{args.join(' ')} failed: #{e.message}"
         end
 
-        def system_exec(*args)
-          system(*args)
+        def system_exec(*)
+          system(*)
         end
       end
     end

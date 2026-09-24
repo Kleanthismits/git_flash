@@ -1,15 +1,16 @@
 PATH
   remote: .
   specs:
-    gitflash (0.3.0.alpha)
+    gitflash (0.3.0)
+      thor (>= 1.4, < 2)
+      tty-prompt (~> 0.23)
+      zeitwerk (~> 2.6)
 
 GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
     awesome_print (1.9.2)
-    codecov (0.6.0)
-      simplecov (>= 0.15, < 0.22)
     coderay (1.1.3)
     diff-lcs (1.6.2)
     docile (1.4.1)
@@ -58,11 +59,13 @@ GEM
     rubocop-ast (1.47.1)
       parser (>= 3.3.7.2)
       prism (~> 1.4)
-    rubocop-performance (1.13.3)
-      rubocop (>= 1.7.0, < 2.0)
-      rubocop-ast (>= 0.4.0)
-    rubocop-rspec (2.10.0)
-      rubocop (~> 1.19)
+    rubocop-performance (1.26.1)
+      lint_roller (~> 1.1)
+      rubocop (>= 1.75.0, < 2.0)
+      rubocop-ast (>= 1.47.1, < 2.0)
+    rubocop-rspec (3.9.0)
+      lint_roller (~> 1.1)
+      rubocop (~> 1.81)
     ruby-progressbar (1.13.0)
     simplecov (0.21.2)
       docile (~> 1.1)
@@ -71,7 +74,7 @@ GEM
     simplecov-html (0.13.2)
     simplecov-lcov (0.9.0)
     simplecov_json_formatter (0.1.4)
-    thor (1.2.2)
+    thor (1.5.0)
     tty-color (0.6.0)
     tty-cursor (0.7.1)
     tty-prompt (0.23.1)
@@ -86,7 +89,7 @@ GEM
       unicode-emoji (~> 4.1)
     unicode-emoji (4.1.0)
     wisper (2.0.1)
-    zeitwerk (2.6.18)
+    zeitwerk (2.8.3)
 
 PLATFORMS
   ruby
@@ -94,20 +97,16 @@ PLATFORMS
 
 DEPENDENCIES
   awesome_print
-  codecov (~> 0.6)
   gitflash!
   pry (~> 0.14.1)
   rake (~> 13.0)
   rspec (~> 3.0)
-  rubocop (~> 1.7)
-  rubocop-performance (~> 1.13.3)
-  rubocop-rspec (~> 2.10.0)
+  rubocop (~> 1.72)
+  rubocop-performance (~> 1.21)
+  rubocop-rspec (~> 3.5)
   simplecov
   simplecov-lcov
-  thor (~> 1.2.1)
-  tty-prompt (~> 0.23.1)
   tzinfo-data
-  zeitwerk (~> 2.6.8)
 
 BUNDLED WITH
    2.5.9

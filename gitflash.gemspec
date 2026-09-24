@@ -7,24 +7,22 @@ Gem::Specification.new do |spec|
   spec.authors               = ['Kleanthis Mitsioulis']
   spec.email                 = ['kleanthismits@hotmail.gr']
   spec.summary               = 'Simplified usage of some git cli commands'
-  spec.description           = 'This gem allows you to perform a number of git commands using interactive cli prompts'
+  spec.description           = 'This gem allows you to perform a number of git commands ' \
+                               'using interactive cli prompts'
   spec.homepage              = 'https://github.com/Kleanthismits/git_flash'
   spec.license               = 'MIT'
   spec.platform              = Gem::Platform::RUBY
-  spec.required_ruby_version = Gem::Requirement.new('>= 3.0')
+  spec.required_ruby_version = Gem::Requirement.new('>= 3.2')
 
   # Runtime dependencies
-  spec.add_dependency 'thor', '~> 1.2'
+  spec.add_dependency 'thor', '>= 1.4', '< 2'
   spec.add_dependency 'tty-prompt', '~> 0.23'
   spec.add_dependency 'zeitwerk', '~> 2.6'
-
-  # Development dependencies
-  spec.add_development_dependency 'rake', '~> 13.0'
 
   spec.executables = ['gitflash']
 
   # prevents Gem::InvalidSpecificationException
-  spec.files = Dir.glob('{bin,lib,template}/**/*') + %w[LICENSE README.md command_descriptions.yml]
+  spec.files = Dir.glob('{bin,lib}/**/*') + %w[LICENSE README.md command_descriptions.yml]
 
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = spec.homepage

@@ -99,12 +99,12 @@ RSpec.describe Gitflash::Cli do
         allow(Gitflash::Prompt).to receive(:create).and_return(prompt)
         allow(git).to receive_messages(all_local_branches: %w[main dev], local_branches: %w[dev])
         allow(prompt).to receive(:multi_select).and_return([])
-        allow(prompt).to receive(:ok) { |message| puts message }
       end
 
       it 'displays a message and deletes nothing' do
         expect(git).not_to receive(:delete)
-        expect { cli.delete }.to output(/No branches selected/).to_stdout
+        expect(prompt).to receive(:ok).with('No branches selected')
+        cli.delete
       end
     end
 
