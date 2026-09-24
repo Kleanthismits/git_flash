@@ -1,7 +1,7 @@
 RSpec.describe Gitflash::Git::Wrapper do
   before do
-    allow(bash_command).to receive(:exec).with('git branch').and_return(branches)
-    allow(bash_command).to receive(:exec).with('git branch --show-current').and_return('current')
+    allow(bash_command).to receive(:exec).with('git', 'branch').and_return(branches)
+    allow(bash_command).to receive(:exec).with('git', 'branch', '--show-current').and_return('current')
   end
 
   it 'constants have proper values' do

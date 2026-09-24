@@ -17,7 +17,7 @@ module Gitflash
         end
 
         def current_branch
-          bash.exec('git branch --show-current').strip
+          bash.exec('git', 'branch', '--show-current').strip
         end
 
         def checkout(branch)
@@ -37,7 +37,7 @@ module Gitflash
         end
 
         def branch_commits
-          commits_string = bash.exec('git log --oneline')
+          commits_string = bash.exec('git', 'log', '--oneline')
           {}.tap do |hsh|
             commits_string.each_line do |line|
               parts = line.strip.split
@@ -68,7 +68,7 @@ module Gitflash
         end
 
         def raw_branches
-          bash.exec('git branch').strip.split("\n").map(&:strip)
+          bash.exec('git', 'branch').strip.split("\n").map(&:strip)
         end
 
         def bash
