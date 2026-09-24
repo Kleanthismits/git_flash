@@ -5,10 +5,15 @@ require 'json'
 module Gitflash
   # Everything the user sees: human text or JSON, menus and confirmations.
   # Menus and confirmations are only shown in a terminal and never in JSON mode.
+  #
+  # JSON output always uses the same envelope (see schema/v1.json):
+  #   { schema, command, ok, status, dry_run, plan?, result?, error? }
   class Ui
     JSON_SCHEMA_VERSION = 1
+    OK_STATUSES = %w[done planned noop cancelled].freeze
 
-    def initialize(json: false, yes: false, dry_run: false)
+    def initialize(command:, json: false, yes: false, dry_run: false)
+      @command = command
       @json = json
       @yes = yes
       @dry_run = dry_run
@@ -26,20 +31,22 @@ module Gitflash
       !json? && $stdin.tty?
     end
 
-    # Prints `payload` as JSON in JSON mode, else prints `text`
-    def emit(payload, text = nil)
+    # Reports the outcome of a command and returns its exit status.
+    # `status` is one of done, planned, noop, cancelled or failed.
+    def report(status:, text:, plan: nil, result: nil, error: nil)
       if json?
-        $stdout.puts JSON.generate({ schema: JSON_SCHEMA_VERSION }.merge(payload))
-      elsif text
+        document = envelope(status: status, plan: plan, result: result, error: error)
+        $stdout.puts JSON.generate(document)
+      else
         $stdout.puts text
       end
+      OK_STATUSES.include?(status) ? 0 : 1
     end
 
     def error(error)
       if json?
-        details = { message: error.message, exit_code: error.exit_code,
-                    details: error.details }.compact
-        $stdout.puts JSON.generate({ schema: JSON_SCHEMA_VERSION, error: details })
+        details = { code: error.code, message: error.message, exit_code: error.exit_code }
+        $stdout.puts JSON.generate(envelope(status: error.status, plan: error.plan, error: details))
       else
         warn error.message
       end
@@ -54,18 +61,30 @@ module Gitflash
     end
 
     # True when the action may proceed: --yes was given or the user confirmed in a terminal.
-    # Raises ConfirmationRequired when nobody can confirm.
-    def confirm?(summary, details: nil)
+    # Raises ConfirmationRequired, carrying the plan, when nobody can confirm.
+    def confirm?(summary, plan:)
       return true if @yes
-      unless interactive?
-        raise ConfirmationRequired.new("#{summary}\nRe-run with --yes to confirm.",
-                                       details: details)
-      end
+
+      message = "#{summary}\nRe-run with --yes to confirm."
+      raise ConfirmationRequired.new(message, plan: plan) unless interactive?
 
       prompt.proceed_with_warning(summary) { true } == true
     end
 
     private
+
+    def envelope(status:, plan: nil, result: nil, error: nil)
+      {
+        schema: JSON_SCHEMA_VERSION,
+        command: @command,
+        ok: OK_STATUSES.include?(status),
+        status: status,
+        dry_run: dry_run?,
+        plan: plan,
+        result: result,
+        error: error
+      }.compact
+    end
 
     def prompt
       @prompt ||= Prompt.create

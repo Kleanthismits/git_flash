@@ -7,6 +7,9 @@
 - `delete` keeps unmerged branches unless `--force` is given (breaking: it used to always force-delete) and also protects the default branch
 - Detect the default branch from `origin/HEAD`, falling back to `main` or `master`
 - Add `reset --soft`
+- JSON contract version 1: every `--json` run prints one envelope (`schema`, `command`, `ok`, `status`, `dry_run`, `plan`, `result`, `error`) defined in `schema/v1.json`; stable error codes
+- Results include what is needed to revert: deleted branch SHAs, the previous branch after `checkout`, the previous commit after `reset`
+- Add `schema` command that prints the JSON Schema
 - Internal: new `Repo` service layer with `Branch` and `Commit` records; integration specs run against real temporary git repositories
 
 ## [0.1.0.alpha] - 2023-06-17

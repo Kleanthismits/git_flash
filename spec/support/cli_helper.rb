@@ -1,13 +1,21 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'json_schemer'
 require 'stringio'
 
 # Runs the CLI in-process and captures stdout, stderr and the exit status
 module CliHelper
+  SCHEMA = JSONSchemer.schema(Pathname.new(Gitflash::Cli::SCHEMA_PATH))
+
+  # Parsed --json output. Fails when the output does not match schema/v1.json.
   CliRun = Struct.new(:stdout, :stderr, :status) do
     def json
-      JSON.parse(stdout)
+      document = JSON.parse(stdout)
+      errors = SCHEMA.validate(document).map { |error| error['error'] }
+      raise "JSON output does not match schema/v1.json: #{errors.join('; ')}" if errors.any?
+
+      document
     end
   end
 

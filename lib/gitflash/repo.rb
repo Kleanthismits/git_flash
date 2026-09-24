@@ -6,7 +6,7 @@ module Gitflash
   class Repo
     SEPARATOR = "\x1f"
     BRANCH_FORMAT = %w[
-      refname:short HEAD upstream:short upstream:track,nobracket
+      refname:short objectname:short HEAD upstream:short upstream:track,nobracket
       committerdate:iso-strict authorname subject
     ].map { |field| "%(#{field})" }.join('%1f')
     COMMIT_FORMAT = %w[%h %s %an %cI].join('%x1f')
@@ -19,9 +19,9 @@ module Gitflash
 
     def ensure_work_tree!
       inside = @bash.exec('git', 'rev-parse', '--is-inside-work-tree').strip == 'true'
-      raise Error, 'Not a git repository' unless inside
+      raise Error.new('Not a git repository', code: 'not_a_repository') unless inside
     rescue Git::CommandError
-      raise Error, 'Not a git repository'
+      raise Error.new('Not a git repository', code: 'not_a_repository')
     end
 
     # Local branches. With `merged_status: true` each branch also reports whether it is
