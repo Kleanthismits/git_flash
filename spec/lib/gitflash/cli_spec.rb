@@ -162,6 +162,16 @@ RSpec.describe Gitflash::Cli do
     end
   end
 
+  describe '#version' do
+    it 'prints the gem version' do
+      expect { cli.version }.to output("#{Gitflash::VERSION}\n").to_stdout
+    end
+
+    it 'is available as --version' do
+      expect { described_class.start(['--version']) }.to output("#{Gitflash::VERSION}\n").to_stdout
+    end
+  end
+
   describe 'Configuration::Descriptions module' do
     let(:descriptions_hash) { YAML.load_file('command_descriptions.yml') }
 

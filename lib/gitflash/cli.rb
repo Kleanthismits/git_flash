@@ -35,6 +35,13 @@ module Gitflash
       commits? ? reset_to_commit : prompt.ok('You only have one commit!')
     end
 
+    desc 'version', 'Print the gitflash version'
+    map %w[--version -v] => :version
+
+    def version
+      puts VERSION
+    end
+
     private
 
     def checkout_branch
