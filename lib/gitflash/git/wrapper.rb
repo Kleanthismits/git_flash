@@ -3,13 +3,11 @@
 module Gitflash
   module Git
     class Wrapper
-      HIDDEN_BRANCHES = %w[–show-current].freeze
+      COMMITS_LIMIT = 100
 
       class << self
         def local_branches(current: true, master: true)
-          formatted_branches.tap do |branches|
-            hidden_branches(current, master).each { |br| branches.delete(br) }
-          end
+          formatted_branches - hidden_branches(current, master)
         end
 
         def all_local_branches
@@ -21,7 +19,7 @@ module Gitflash
         end
 
         def checkout(branch)
-          bash.system_exec('git', 'checkout', branch)
+          bash.system_exec('git', 'checkout', branch, '--')
         end
 
         def delete(branch)
@@ -33,42 +31,44 @@ module Gitflash
             ar << '--hard' if hard
           end
 
-          bash.system_exec('git', 'reset', *params, commit_hash)
+          bash.system_exec('git', 'reset', *params, commit_hash, '--')
         end
 
         def branch_commits
-          commits_string = bash.exec('git', 'log', '--oneline')
-          {}.tap do |hsh|
-            commits_string.each_line do |line|
-              parts = line.strip.split
-              commit_code = parts[0]
-              commit_name = parts[1..].join(' ')
-              label = "#{commit_code} - #{commit_name}"
-              hsh[label] = commit_code
-            end
-          end
+          commits_string = bash.exec(
+            'git', 'log', "--max-count=#{COMMITS_LIMIT}", '--format=%h%x09%s'
+          )
+          parse_commits(commits_string)
+        rescue CommandError
+          # `git log` fails on a branch without commits
+          {}
         end
 
         private
 
-        def hidden_branches(current, master)
-          [].tap { |hb|
-            hb.push('master') unless master
-            hb.push('main') unless master
-            hb.push(current_branch) unless current
-          } + HIDDEN_BRANCHES
-        end
+        def parse_commits(commits_string)
+          {}.tap do |hsh|
+            commits_string.each_line do |line|
+              commit_code, commit_name = line.chomp.split("\t", 2)
+              next if commit_code.nil? || commit_code.empty?
 
-        def formatted_branches
-          raw_branches.map do |str|
-            next str unless str.start_with?('* ')
-
-            str.gsub('* ', '')
+              hsh["#{commit_code} - #{commit_name}"] = commit_code
+            end
           end
         end
 
-        def raw_branches
-          bash.exec('git', 'branch').strip.split("\n").map(&:strip)
+        def hidden_branches(current, master)
+          [].tap do |hb|
+            hb.push('master', 'main') unless master
+            hb.push(current_branch) unless current
+          end.reject(&:empty?)
+        end
+
+        def formatted_branches
+          bash.exec('git', 'for-each-ref', '--format=%(refname:short)', 'refs/heads/')
+              .split("\n")
+              .map(&:strip)
+              .reject(&:empty?)
         end
 
         def bash
