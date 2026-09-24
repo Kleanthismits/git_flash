@@ -9,16 +9,18 @@ module Gitflash
         # Runs a command without a shell and returns its stdout.
         # Raises CommandError when the command exits with a non-zero status.
         def exec(*args)
-          stdout, stderr, status = Open3.capture3(*args)
-          raise CommandError, "#{args.join(' ')} failed: #{stderr.strip}" unless status.success?
+          stdout, stderr, success = capture(*args)
+          raise CommandError, "#{args.join(' ')} failed: #{stderr.strip}" unless success
 
           stdout
-        rescue SystemCallError => e
-          raise CommandError, "#{args.join(' ')} failed: #{e.message}"
         end
 
-        def system_exec(*)
-          system(*)
+        # Runs a command without a shell and returns [stdout, stderr, success].
+        def capture(*args)
+          stdout, stderr, status = Open3.capture3(*args)
+          [stdout, stderr, status.success?]
+        rescue SystemCallError => e
+          raise CommandError, "#{args.join(' ')} failed: #{e.message}"
         end
       end
     end

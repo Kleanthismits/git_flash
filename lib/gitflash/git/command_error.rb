@@ -2,6 +2,6 @@
 
 module Gitflash
   module Git
-    class CommandError < StandardError; end
+    class CommandError < Gitflash::Error; end
   end
 end

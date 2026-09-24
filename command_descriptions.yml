@@ -1,33 +1,48 @@
-checkout:
-  short: 'Checkout the selected branch'
+branches:
+  short: 'List local branches with merge and upstream status'
   long: |
-    Presents a list with all the available local branches.
+    Lists local branches with their last commit, upstream status (ahead, behind, gone)
+    and whether they are merged into the default branch.
 
-    You can use the arrow keys to navigate through the branches.
-    Type for quick searching a specific branch.
-    Press `enter` to choose and checkout the branch.
-    Press `ctrl+c` to cancel the operation.
+    The default branch is the one origin/HEAD points to, else main or master.
+
+    Filters (a branch is listed when it matches any of them):
+      --merged      merged into the default branch
+      --gone        upstream branch was deleted on the remote
+      --stale DAYS  no commits for DAYS days
+
+    Pass --json for machine-readable output.
+
+checkout:
+  short: 'Checkout a branch'
+  long: |
+    Checks out BRANCH when given.
+
+    Without BRANCH, presents a list with all the available local branches:
+    use the arrow keys to navigate, type to search, press `enter` to checkout
+    and `ctrl+c` to cancel. Without a terminal, BRANCH is required.
 
 delete:
-  short: 'Delete the selected branches'
+  short: 'Delete branches'
   long: |
-    Presents a list with all the available local branches (without current or main/master).
+    Deletes the given BRANCHES. Without them, presents a list with the local branches
+    (without the current, default, main or master branch): press `space` to choose
+    branches and `enter` to confirm. Without a terminal, BRANCHES are required.
 
-    You can use the arrow keys to navigate through the branches.
-    Type for quick searching a specific branch.
-    Press `space` to choose multiple branches.
-    Press `enter` to confirm selection and delete branches.
-    Press `ctrl+c` to cancel the operation.
+    Branches with unmerged changes are kept unless --force is given.
+
+    Asks for confirmation before deleting. Pass --yes to skip it, which is required
+    without a terminal, or --dry-run to only show what would be deleted.
 
 reset:
-  short: 'Reset your code to the selected commit'
+  short: 'Reset your code to a commit'
   long: |
+    Resets the current branch to COMMIT when given.
+
+    Without COMMIT, presents a list with the latest 100 commits of the current branch:
+    use the arrow keys to navigate, type to search, press `enter` to reset to that commit
+    and `ctrl+c` to cancel. Without a terminal, COMMIT is required.
+
     By default performs a mixed reset: your changes are kept as unstaged changes.
-    Pass --hard to discard all your current changes.
-
-    Presents a list with the latest 100 commits of the current branch.
-
-    You can use the arrow keys to navigate through the commits.
-    Type for quick searching a specific commit.
-    Press `enter` to confirm selection and reset to that commit.
-    Press `ctrl+c` to cancel the operation.
+    Pass --soft to keep them staged, or --hard to discard them. A hard reset asks for
+    confirmation; pass --yes to skip it, which is required without a terminal.
