@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Kleanthismits/git_flash/blob/main/schema/v1.json",
+  "title": "gitflash --json output, schema version 1",
+  "description": "Every gitflash command run with --json prints exactly one object in this envelope. `ok` is true for the statuses done, planned, noop and cancelled. Fields may be added in later releases of version 1; existing fields keep their meaning.",
+  "type": "object",
+  "required": ["schema", "command", "ok", "status", "dry_run"],
+  "properties": {
+    "schema": { "const": 1 },
+    "command": { "enum": ["branches", "checkout", "delete", "reset"] },
+    "ok": { "type": "boolean" },
+    "status": {
+      "description": "done: the change was made. planned: --dry-run, nothing changed. noop: nothing to do. cancelled: the user declined. failed: git refused part of the change. confirmation_required: re-run with --yes after reviewing `plan`. error: invalid input or environment.",
+      "enum": ["done", "planned", "noop", "cancelled", "failed", "confirmation_required", "error"]
+    },
+    "dry_run": { "type": "boolean" },
+    "plan": { "type": "object", "description": "The change that will be, would be or was made." },
+    "result": { "type": "object", "description": "What happened, including what is needed to revert it." },
+    "error": { "$ref": "#/$defs/error" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["done", "planned", "noop", "cancelled"] } } },
+      "then": { "properties": { "ok": { "const": true } }, "not": { "required": ["error"] } },
+      "else": { "properties": { "ok": { "const": false } }, "required": ["error"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "confirmation_required" } } },
+      "then": { "required": ["plan"] }
+    },
+    {
+      "if": { "properties": { "command": { "const": "branches" } } },
+      "then": { "properties": { "result": { "$ref": "#/$defs/branches_result" } } }
+    },
+    {
+      "if": { "properties": { "command": { "const": "checkout" } } },
+      "then": {
+        "properties": {
+          "plan": { "$ref": "#/$defs/checkout_plan" },
+          "result": { "$ref": "#/$defs/checkout_result" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "command": { "const": "delete" } } },
+      "then": {
+        "properties": {
+          "plan": { "$ref": "#/$defs/delete_plan" },
+          "result": { "$ref": "#/$defs/delete_result" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "command": { "const": "reset" } } },
+      "then": {
+        "properties": {
+          "plan": { "$ref": "#/$defs/reset_plan" },
+          "result": { "$ref": "#/$defs/reset_result" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{4,64}$" },
+    "error": {
+      "type": "object",
+      "required": ["code", "message", "exit_code"],
+      "properties": {
+        "code": {
+          "description": "Stable identifier to branch on; the message is for humans.",
+          "enum": [
+            "not_a_repository", "input_required", "invalid_usage", "invalid_options",
+            "unknown_branch", "unknown_commit", "protected_branch",
+            "confirmation_required", "git_failed", "failed"
+          ]
+        },
+        "message": { "type": "string" },
+        "exit_code": { "enum": [1, 2] }
+      }
+    },
+    "branch": {
+      "type": "object",
+      "required": [
+        "name", "sha", "current", "default", "upstream", "upstream_gone", "ahead", "behind",
+        "merged", "last_commit_at", "last_commit_author", "last_commit_subject"
+      ],
+      "properties": {
+        "name": { "type": "string" },
+        "sha": { "$ref": "#/$defs/sha" },
+        "current": { "type": "boolean" },
+        "default": { "type": "boolean", "description": "The branch origin/HEAD points to, else main or master." },
+        "upstream": { "type": ["string", "null"] },
+        "upstream_gone": { "type": "boolean", "description": "The upstream branch was deleted on the remote." },
+        "ahead": { "type": "integer", "minimum": 0 },
+        "behind": { "type": "integer", "minimum": 0 },
+        "merged": { "type": ["boolean", "null"], "description": "Merged into the default branch; null when there is no default branch." },
+        "last_commit_at": { "type": "string", "format": "date-time" },
+        "last_commit_author": { "type": "string" },
+        "last_commit_subject": { "type": "string" }
+      }
+    },
+    "branches_result": {
+      "type": "object",
+      "required": ["default_branch", "branches"],
+      "properties": {
+        "default_branch": { "type": ["string", "null"] },
+        "branches": { "type": "array", "items": { "$ref": "#/$defs/branch" } }
+      }
+    },
+    "checkout_plan": {
+      "type": "object",
+      "required": ["branch"],
+      "properties": { "branch": { "type": "string" } }
+    },
+    "checkout_result": {
+      "type": "object",
+      "required": ["branch", "previous_branch"],
+      "properties": {
+        "branch": { "type": ["string", "null"] },
+        "previous_branch": { "type": ["string", "null"], "description": "Check this out to go back; null on a detached HEAD." }
+      }
+    },
+    "delete_plan": {
+      "type": "object",
+      "required": ["branches", "force"],
+      "properties": {
+        "branches": { "type": "array", "items": { "type": "string" } },
+        "force": { "type": "boolean" }
+      }
+    },
+    "delete_result": {
+      "type": "object",
+      "required": ["deleted", "failed"],
+      "properties": {
+        "deleted": {
+          "type": "array",
+          "description": "Recreate a branch with: git branch NAME SHA",
+          "items": {
+            "type": "object",
+            "required": ["branch", "sha"],
+            "properties": { "branch": { "type": "string" }, "sha": { "$ref": "#/$defs/sha" } }
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["branch", "error"],
+            "properties": { "branch": { "type": "string" }, "error": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "reset_plan": {
+      "type": "object",
+      "required": ["commit", "mode"],
+      "properties": {
+        "commit": { "$ref": "#/$defs/sha" },
+        "mode": { "enum": ["soft", "mixed", "hard"] }
+      }
+    },
+    "reset_result": {
+      "type": "object",
+      "required": ["commit", "mode", "previous_commit"],
+      "properties": {
+        "commit": { "$ref": "#/$defs/sha" },
+        "mode": { "enum": ["soft", "mixed", "hard"] },
+        "previous_commit": { "$ref": "#/$defs/sha", "description": "Reset to this commit to go back. Uncommitted changes lost by a hard reset cannot be restored this way." }
+      }
+    }
+  }
+}
