@@ -38,8 +38,39 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash checkout [BRANCH]` | Check out a branch, or pick one from a list |
 | `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current, default, `main` and `master` branches are protected. Unmerged branches are kept unless you pass `--force` |
 | `gitflash reset [COMMIT]` | Reset to a commit, or pick one of the latest 100. Mixed by default; `--soft` keeps changes staged, `--hard` discards them after confirmation |
+| `gitflash undo [SNAPSHOT]` | Restore a snapshot, the latest by default: deleted branches, moved branches, HEAD, uncommitted and untracked files, dropped stashes |
+| `gitflash snapshot` | Save the current state on request (`--scope`, `--message`) |
+| `gitflash snapshots` | List snapshots, newest first |
+| `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`) |
+| `gitflash hook install` | Protect plain git commands run by Claude Code (see below) |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
+
+### Undo
+
+Before every change it makes, gitflash saves a snapshot: branches, HEAD, tracked, staged and untracked files, and stash entries. Snapshots are plain git objects under `refs/gitflash/snapshots/`; the working tree is never touched while saving. Git's own `revert` and `reflog` cover committed work; snapshots also cover what git never recorded: uncommitted and untracked files, deleted branches (git deletes their reflog) and dropped stashes.
+
+```bash
+gitflash delete old-feature --yes
+```
+
+```bash
+gitflash undo --yes
+```
+
+`gitflash undo` restores only what the snapshot saved and what differs, and saves the current state first, so an undo can itself be undone.
+
+### Protect plain git commands run by AI agents
+
+Agents often run git directly. Claude Code's own checkpoints do not cover changes made by shell commands, so a `git reset --hard` or `git clean -fd` run by an agent cannot be rewound there. Install the gitflash hook once per repository:
+
+```bash
+gitflash hook install
+```
+
+Before Claude Code runs a command that can discard work git cannot restore (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...), the hook saves a snapshot and tells the agent how to undo it. Other commands pass through; the hook adds about 0.1 s to commands that do not mention git. `--mode ask` also asks you to approve such commands, `--mode deny` blocks them. `--scope project` shares the hook with your team through `.claude/settings.json`, `--scope user` enables it for every project.
+
+### Scripts
 
 Without an argument, a command shows an interactive list. With arguments it runs directly, which also works in scripts.
 
@@ -76,6 +107,7 @@ With `--json`, every command prints one object in the same envelope, defined in 
 
 - `status`: `done`, `planned` (`--dry-run`), `noop`, `cancelled`, `failed`, `confirmation_required` or `error`. `ok` is true for the first four.
 - `result` includes what you need to revert: the SHA of each deleted branch (`git branch NAME SHA`), the previous branch after `checkout`, the previous commit after `reset`.
+- `undo` names the snapshot saved before the change and the command that restores it (`gitflash undo ID`).
 - `error.code` is a stable identifier such as `unknown_branch`, `protected_branch` or `confirmation_required`.
 
 ```bash
