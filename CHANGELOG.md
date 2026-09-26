@@ -62,3 +62,13 @@ Security fixes for names and text that come from the repository:
 - Branch and default-branch detection use full ref names. A tag named like `origin/<default>` could change the short name of `origin/HEAD`, so the default branch lost its deletion protection and its merge status; `origin/HEAD` must now point inside `refs/remotes/origin/`
 - `delete` passes `--` before the branch name; `resolve_commit` refuses references that start with a dash
 - Text output shows terminal control characters of repository-controlled text (commit subjects, git errors) as escapes such as `\x1B`, so a crafted commit subject cannot move the cursor, rewrite output or set the clipboard (OSC 52). JSON output keeps the original text
+
+## [0.6.0] - Unreleased
+
+- Snapshots: gitflash saves branches, HEAD, tracked, staged and untracked files and stash entries before every change it makes, as git objects under `refs/gitflash/snapshots/` (the working tree is never touched; untracked files over 50 MB are skipped)
+- Add `undo [SNAPSHOT]`: restores the parts a snapshot saved (the latest by default), after saving the current state so the undo can be undone
+- Add `snapshot` (save on request, `--scope`, `--message`), `snapshots` (list) and `gc --older-than DAYS`
+- Every `done` result of `checkout`, `delete` and `reset` includes `undo` with the snapshot id; human output ends with `Undo with: gitflash undo ID`
+- Add `hook claude`: a Claude Code `PreToolUse` hook that saves a snapshot before destructive git commands an agent runs itself (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...). Modes: `snapshot` (default), `ask`, `deny`. It never blocks a command because of its own errors
+- Add `hook install [--scope local|project|user] [--mode ...]` to register the hook in Claude Code settings
+- JSON schema: new `undo` field, commands `undo`, `snapshots`, `snapshot`, `gc`, `hook`, error codes `unknown_snapshot`, `wrong_worktree`, `invalid_settings`

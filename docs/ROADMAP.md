@@ -79,20 +79,25 @@ Speed is not a problem worth solving further; a rewrite in another language is n
 
 ## Roadmap
 
-### Phase 2 — Snapshots, undo and the agent hook (0.6.0)
+### Phase 2 — Snapshots, undo and the agent hook (0.6.0) — implemented, not yet released
 
 This is the core of the positioning.
 
-- **Snapshots.** Before any change, gitflash records:
-  - the refs it will touch, as `refs/gitflash/snapshots/<id>/...`
-  - uncommitted work, with `git stash create` (captures the working tree without changing it)
-  - a journal entry in `.git/gitflash/journal.jsonl`
-- **`undo` in every result.** Every `done` result gets an `undo` id. `gitflash undo [ID] [--list] [--json]` restores branches, HEAD and uncommitted work.
-- **`gitflash hook`**, a Claude Code `PreToolUse` hook for shell commands (and a generic form for other agents):
-  - recognises destructive git commands: `reset --hard`, `clean -f`, `checkout -- .`, `restore .`, `branch -D`, `push --force`, `stash drop`/`clear`, `rebase`
-  - takes a snapshot before the command runs
-  - optionally blocks the command and suggests the gitflash equivalent
-- **`gitflash gc --older-than 30d`** removes old snapshots.
+- **Snapshots.** Before every change gitflash makes, it saves a snapshot as one commit under `refs/gitflash/snapshots/<id>`. The commit message holds the metadata as JSON, and its parents keep every saved object alive:
+  - branch tips and HEAD
+  - staged state and the working tree including untracked files, built in a temporary index so the real index and files are never touched (`git stash create` was the first idea, but it skips untracked files)
+  - stash entries
+  - untracked files over 50 MB and ignored files are not saved
+  - identical states are not saved twice
+- **`undo`.** Every `done` result carries an `undo` snapshot id. `gitflash undo [ID]` restores only the parts in the snapshot's scope that differ, saves the current state first (so an undo can be undone), and refuses to restore files of another worktree.
+- **`gitflash hook claude`**, a Claude Code `PreToolUse` hook for Bash commands:
+  - recognises destructive git commands, following `cd` and `git -C`: `reset`, `checkout -- .`/`-f`, `restore`, `clean -f`, `switch --discard-changes`, `stash drop`/`clear`/`pop`, `branch -d/-D/-f/-m`, `update-ref -d`, `rebase`, `merge`/`cherry-pick`/`revert`/`am --abort`, `worktree remove --force`
+  - saves one snapshot per directory before the command runs and tells the agent how to undo it
+  - modes: `snapshot` (default), `ask`, `deny`; its own errors never block a command
+  - cost per Bash call: about 0.1 s when the command does not mention git, 0.3 s for other git commands, 1.5–2 s when a snapshot is saved
+- **`gitflash hook install`** registers the hook in `.claude/settings.local.json`, `.claude/settings.json` or `~/.claude/settings.json`.
+- **`gitflash snapshot`, `snapshots` and `gc --older-than DAYS`** save, list and delete snapshots.
+- **Not covered yet:** `push --force` (the remote cannot be restored locally), hooks for agents other than Claude Code, and a size budget for all snapshots together.
 
 ### Phase 3 — Cleanup for parallel agent work (0.7.0)
 
