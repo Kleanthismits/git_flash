@@ -4,168 +4,816 @@
   "title": "gitflash --json output, schema version 1",
   "description": "Every gitflash command run with --json prints exactly one object in this envelope. `ok` is true for the statuses done, planned, noop and cancelled. Fields may be added in later releases of version 1; existing fields keep their meaning.",
   "type": "object",
-  "required": ["schema", "command", "ok", "status", "dry_run"],
+  "required": [
+    "schema",
+    "command",
+    "ok",
+    "status",
+    "dry_run"
+  ],
   "properties": {
-    "schema": { "const": 1 },
-    "command": { "enum": ["branches", "checkout", "delete", "reset"] },
-    "ok": { "type": "boolean" },
+    "schema": {
+      "const": 1
+    },
+    "command": {
+      "enum": [
+        "branches",
+        "checkout",
+        "delete",
+        "reset",
+        "undo",
+        "snapshots",
+        "snapshot",
+        "gc",
+        "hook"
+      ]
+    },
+    "ok": {
+      "type": "boolean"
+    },
     "status": {
       "description": "done: the change was made. planned: --dry-run, nothing changed. noop: nothing to do. cancelled: the user declined. failed: git refused part of the change. confirmation_required: re-run with --yes after reviewing `plan`. error: invalid input or environment.",
-      "enum": ["done", "planned", "noop", "cancelled", "failed", "confirmation_required", "error"]
+      "enum": [
+        "done",
+        "planned",
+        "noop",
+        "cancelled",
+        "failed",
+        "confirmation_required",
+        "error"
+      ]
     },
-    "dry_run": { "type": "boolean" },
-    "plan": { "type": "object", "description": "The change that will be, would be or was made." },
-    "result": { "type": "object", "description": "What happened, including what is needed to revert it." },
-    "error": { "$ref": "#/$defs/error" }
+    "dry_run": {
+      "type": "boolean"
+    },
+    "plan": {
+      "type": "object",
+      "description": "The change that will be, would be or was made."
+    },
+    "result": {
+      "type": "object",
+      "description": "What happened, including what is needed to revert it."
+    },
+    "error": {
+      "$ref": "#/$defs/error"
+    },
+    "undo": {
+      "type": "object",
+      "description": "The snapshot saved before the change. Run `command` to revert it.",
+      "required": [
+        "snapshot",
+        "command"
+      ],
+      "properties": {
+        "snapshot": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        }
+      }
+    }
   },
   "allOf": [
     {
-      "if": { "properties": { "status": { "enum": ["done", "planned", "noop", "cancelled"] } } },
-      "then": { "properties": { "ok": { "const": true } }, "not": { "required": ["error"] } },
-      "else": { "properties": { "ok": { "const": false } }, "required": ["error"] }
-    },
-    {
-      "if": { "properties": { "status": { "const": "confirmation_required" } } },
-      "then": { "required": ["plan"] }
-    },
-    {
-      "if": { "properties": { "command": { "const": "branches" } } },
-      "then": { "properties": { "result": { "$ref": "#/$defs/branches_result" } } }
-    },
-    {
-      "if": { "properties": { "command": { "const": "checkout" } } },
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "done",
+              "planned",
+              "noop",
+              "cancelled"
+            ]
+          }
+        }
+      },
       "then": {
         "properties": {
-          "plan": { "$ref": "#/$defs/checkout_plan" },
-          "result": { "$ref": "#/$defs/checkout_result" }
+          "ok": {
+            "const": true
+          }
+        },
+        "not": {
+          "required": [
+            "error"
+          ]
+        }
+      },
+      "else": {
+        "properties": {
+          "ok": {
+            "const": false
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "confirmation_required"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "plan"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "branches"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/branches_result"
+          }
         }
       }
     },
     {
-      "if": { "properties": { "command": { "const": "delete" } } },
+      "if": {
+        "properties": {
+          "command": {
+            "const": "checkout"
+          }
+        }
+      },
       "then": {
         "properties": {
-          "plan": { "$ref": "#/$defs/delete_plan" },
-          "result": { "$ref": "#/$defs/delete_result" }
+          "plan": {
+            "$ref": "#/$defs/checkout_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/checkout_result"
+          }
         }
       }
     },
     {
-      "if": { "properties": { "command": { "const": "reset" } } },
+      "if": {
+        "properties": {
+          "command": {
+            "const": "delete"
+          }
+        }
+      },
       "then": {
         "properties": {
-          "plan": { "$ref": "#/$defs/reset_plan" },
-          "result": { "$ref": "#/$defs/reset_result" }
+          "plan": {
+            "$ref": "#/$defs/delete_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/delete_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "reset"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/reset_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/reset_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "undo"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/undo_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/undo_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "snapshots"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/snapshots_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "snapshot"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/snapshot_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "gc"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/gc_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/gc_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "hook"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/hook_install"
+          },
+          "result": {
+            "$ref": "#/$defs/hook_install"
+          }
         }
       }
     }
   ],
   "$defs": {
-    "sha": { "type": "string", "pattern": "^[0-9a-f]{4,64}$" },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{4,64}$"
+    },
     "error": {
       "type": "object",
-      "required": ["code", "message", "exit_code"],
+      "required": [
+        "code",
+        "message",
+        "exit_code"
+      ],
       "properties": {
         "code": {
           "description": "Stable identifier to branch on; the message is for humans.",
           "enum": [
-            "not_a_repository", "input_required", "invalid_usage", "invalid_options",
-            "unknown_branch", "unknown_commit", "protected_branch",
-            "confirmation_required", "git_failed", "failed"
+            "not_a_repository",
+            "input_required",
+            "invalid_usage",
+            "invalid_options",
+            "unknown_branch",
+            "unknown_commit",
+            "protected_branch",
+            "confirmation_required",
+            "git_failed",
+            "failed",
+            "unknown_snapshot",
+            "wrong_worktree",
+            "invalid_settings"
           ]
         },
-        "message": { "type": "string" },
-        "exit_code": { "enum": [1, 2] }
+        "message": {
+          "type": "string"
+        },
+        "exit_code": {
+          "enum": [
+            1,
+            2
+          ]
+        }
       }
     },
     "branch": {
       "type": "object",
       "required": [
-        "name", "sha", "current", "default", "upstream", "upstream_gone", "ahead", "behind",
-        "merged", "last_commit_at", "last_commit_author", "last_commit_subject"
+        "name",
+        "sha",
+        "current",
+        "default",
+        "upstream",
+        "upstream_gone",
+        "ahead",
+        "behind",
+        "merged",
+        "last_commit_at",
+        "last_commit_author",
+        "last_commit_subject"
       ],
       "properties": {
-        "name": { "type": "string" },
-        "sha": { "$ref": "#/$defs/sha" },
-        "current": { "type": "boolean" },
-        "default": { "type": "boolean", "description": "The branch origin/HEAD points to, else main or master." },
-        "upstream": { "type": ["string", "null"] },
-        "upstream_gone": { "type": "boolean", "description": "The upstream branch was deleted on the remote." },
-        "ahead": { "type": "integer", "minimum": 0 },
-        "behind": { "type": "integer", "minimum": 0 },
-        "merged": { "type": ["boolean", "null"], "description": "Merged into the default branch; null when there is no default branch." },
-        "last_commit_at": { "type": "string", "format": "date-time" },
-        "last_commit_author": { "type": "string" },
-        "last_commit_subject": { "type": "string" }
+        "name": {
+          "type": "string"
+        },
+        "sha": {
+          "$ref": "#/$defs/sha"
+        },
+        "current": {
+          "type": "boolean"
+        },
+        "default": {
+          "type": "boolean",
+          "description": "The branch origin/HEAD points to, else main or master."
+        },
+        "upstream": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "upstream_gone": {
+          "type": "boolean",
+          "description": "The upstream branch was deleted on the remote."
+        },
+        "ahead": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "behind": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "merged": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Merged into the default branch; null when there is no default branch."
+        },
+        "last_commit_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_commit_author": {
+          "type": "string"
+        },
+        "last_commit_subject": {
+          "type": "string"
+        }
       }
     },
     "branches_result": {
       "type": "object",
-      "required": ["default_branch", "branches"],
+      "required": [
+        "default_branch",
+        "branches"
+      ],
       "properties": {
-        "default_branch": { "type": ["string", "null"] },
-        "branches": { "type": "array", "items": { "$ref": "#/$defs/branch" } }
+        "default_branch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/branch"
+          }
+        }
       }
     },
     "checkout_plan": {
       "type": "object",
-      "required": ["branch"],
-      "properties": { "branch": { "type": "string" } }
+      "required": [
+        "branch"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string"
+        }
+      }
     },
     "checkout_result": {
       "type": "object",
-      "required": ["branch", "previous_branch"],
+      "required": [
+        "branch",
+        "previous_branch"
+      ],
       "properties": {
-        "branch": { "type": ["string", "null"] },
-        "previous_branch": { "type": ["string", "null"], "description": "Check this out to go back; null on a detached HEAD." }
+        "branch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "previous_branch": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Check this out to go back; null on a detached HEAD."
+        }
       }
     },
     "delete_plan": {
       "type": "object",
-      "required": ["branches", "force"],
+      "required": [
+        "branches",
+        "force"
+      ],
       "properties": {
-        "branches": { "type": "array", "items": { "type": "string" } },
-        "force": { "type": "boolean" }
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "force": {
+          "type": "boolean"
+        }
       }
     },
     "delete_result": {
       "type": "object",
-      "required": ["deleted", "failed"],
+      "required": [
+        "deleted",
+        "failed"
+      ],
       "properties": {
         "deleted": {
           "type": "array",
           "description": "Recreate a branch with: git branch NAME SHA",
           "items": {
             "type": "object",
-            "required": ["branch", "sha"],
-            "properties": { "branch": { "type": "string" }, "sha": { "$ref": "#/$defs/sha" } }
+            "required": [
+              "branch",
+              "sha"
+            ],
+            "properties": {
+              "branch": {
+                "type": "string"
+              },
+              "sha": {
+                "$ref": "#/$defs/sha"
+              }
+            }
           }
         },
         "failed": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["branch", "error"],
-            "properties": { "branch": { "type": "string" }, "error": { "type": "string" } }
+            "required": [
+              "branch",
+              "error"
+            ],
+            "properties": {
+              "branch": {
+                "type": "string"
+              },
+              "error": {
+                "type": "string"
+              }
+            }
           }
         }
       }
     },
     "reset_plan": {
       "type": "object",
-      "required": ["commit", "mode"],
+      "required": [
+        "commit",
+        "mode"
+      ],
       "properties": {
-        "commit": { "$ref": "#/$defs/sha" },
-        "mode": { "enum": ["soft", "mixed", "hard"] }
+        "commit": {
+          "$ref": "#/$defs/sha"
+        },
+        "mode": {
+          "enum": [
+            "soft",
+            "mixed",
+            "hard"
+          ]
+        }
       }
     },
     "reset_result": {
       "type": "object",
-      "required": ["commit", "mode", "previous_commit"],
+      "required": [
+        "commit",
+        "mode",
+        "previous_commit"
+      ],
       "properties": {
-        "commit": { "$ref": "#/$defs/sha" },
-        "mode": { "enum": ["soft", "mixed", "hard"] },
-        "previous_commit": { "$ref": "#/$defs/sha", "description": "Reset to this commit to go back. Uncommitted changes lost by a hard reset cannot be restored this way." }
+        "commit": {
+          "$ref": "#/$defs/sha"
+        },
+        "mode": {
+          "enum": [
+            "soft",
+            "mixed",
+            "hard"
+          ]
+        },
+        "previous_commit": {
+          "$ref": "#/$defs/sha",
+          "description": "Reset to this commit to go back. Uncommitted changes lost by a hard reset cannot be restored this way."
+        }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "id",
+        "created_at",
+        "reason",
+        "scope",
+        "worktree_path",
+        "head",
+        "branches",
+        "stashes",
+        "index",
+        "worktree",
+        "skipped_files"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "branches",
+              "head",
+              "worktree",
+              "stashes"
+            ]
+          }
+        },
+        "worktree_path": {
+          "type": "string"
+        },
+        "head": {
+          "type": "object",
+          "required": [
+            "branch",
+            "sha"
+          ],
+          "properties": {
+            "branch": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sha": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9a-f]{4,64}$"
+            }
+          }
+        },
+        "branches": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/sha"
+          }
+        },
+        "stashes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        },
+        "index": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{4,64}$"
+        },
+        "worktree": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{4,64}$"
+        },
+        "skipped_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Untracked files not saved because they are larger than 50 MB."
+        }
+      }
+    },
+    "undo_plan": {
+      "type": "object",
+      "required": [
+        "snapshot",
+        "branches",
+        "head",
+        "worktree",
+        "stashes"
+      ],
+      "properties": {
+        "snapshot": {
+          "type": "string"
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "branch",
+              "from",
+              "to"
+            ],
+            "properties": {
+              "branch": {
+                "type": "string"
+              },
+              "from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[0-9a-f]{4,64}$"
+              },
+              "to": {
+                "$ref": "#/$defs/sha"
+              }
+            }
+          }
+        },
+        "head": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "from",
+            "to"
+          ],
+          "properties": {
+            "from": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "to": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "worktree": {
+          "type": "boolean",
+          "description": "Tracked, staged and untracked files are restored."
+        },
+        "stashes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        }
+      }
+    },
+    "undo_result": {
+      "type": "object",
+      "required": [
+        "snapshot"
+      ],
+      "properties": {
+        "snapshot": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "snapshots_result": {
+      "type": "object",
+      "required": [
+        "snapshots"
+      ],
+      "properties": {
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/snapshot"
+          }
+        }
+      }
+    },
+    "snapshot_result": {
+      "type": "object",
+      "required": [
+        "snapshot"
+      ],
+      "properties": {
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      }
+    },
+    "gc_plan": {
+      "type": "object",
+      "required": [
+        "older_than_days",
+        "snapshots"
+      ],
+      "properties": {
+        "older_than_days": {
+          "type": "number"
+        },
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "gc_result": {
+      "type": "object",
+      "required": [
+        "deleted"
+      ],
+      "properties": {
+        "deleted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "hook_install": {
+      "type": "object",
+      "required": [
+        "file",
+        "command"
+      ],
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        }
       }
     }
   }

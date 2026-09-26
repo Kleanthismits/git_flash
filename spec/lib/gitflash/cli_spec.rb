@@ -147,12 +147,14 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
   describe 'checkout' do
     it 'checks out the given branch' do
-      expect(run_cli('checkout', 'feature', '--json').json).to eq(
+      json = run_cli('checkout', 'feature', '--json').json
+      expect(json).to include(
         'schema' => 1, 'command' => 'checkout', 'ok' => true, 'status' => 'done',
         'dry_run' => false,
         'plan' => { 'branch' => 'feature' },
         'result' => { 'branch' => 'feature', 'previous_branch' => 'main' }
       )
+      expect(json['undo']).to match('snapshot' => String, 'command' => /\Agitflash undo \S+\z/)
       expect(git('branch', '--show-current')).to eq("feature\n")
     end
 
@@ -192,7 +194,7 @@ RSpec.describe Gitflash::Cli, :git_repo do
         allow(prompt).to receive(:select)
           .with('Select a branch to checkout', branches, default: 'main').and_return('feature')
 
-        expect(run_cli('checkout').stdout).to eq("Switched to branch 'feature'\n")
+        expect(run_cli('checkout').stdout).to match(with_undo("Switched to branch 'feature'\n"))
       end
 
       it 'does not pass a default on a detached HEAD' do
@@ -240,7 +242,8 @@ RSpec.describe Gitflash::Cli, :git_repo do
     it 'deletes unmerged branches with --force' do
       sha = short_sha('feature')
       run = run_cli('delete', 'feature', '--force', '--yes')
-      expect(run).to have_attributes(status: 0, stdout: "Deleted branch feature (was #{sha})\n")
+      expect(run).to have_attributes(status: 0,
+                                     stdout: with_undo("Deleted branch feature (was #{sha})\n"))
     end
 
     it 'shows the plan with --dry-run' do
@@ -275,7 +278,8 @@ RSpec.describe Gitflash::Cli, :git_repo do
           .with('Select branches to delete', %w[feature merged-one]).and_return(%w[merged-one])
         allow(prompt).to receive(:proceed_with_warning) { |_message, &block| block.call }
 
-        expect(run_cli('delete').stdout).to eq("Deleted branch merged-one (was #{sha})\n")
+        stdout = run_cli('delete').stdout
+        expect(stdout).to match(with_undo("Deleted branch merged-one (was #{sha})\n"))
       end
 
       it 'prints Exited when the user declines' do
@@ -326,7 +330,7 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
     it 'performs a hard reset with --yes' do
       run = run_cli('reset', 'HEAD~1', '--hard', '--yes')
-      expect(run.stdout).to eq("Reset to #{first[0, 7]} (hard)\n")
+      expect(run.stdout).to match(with_undo("Reset to #{first[0, 7]} (hard)\n"))
       expect(git('status', '--porcelain')).to eq('')
     end
 
@@ -354,7 +358,7 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
       it 'resets to the commit picked from the menu' do
         allow(prompt).to receive(:select) { |_message, choices| choices.values.last }
-        expect(run_cli('reset').stdout).to eq("Reset to #{first[0, 7]} (mixed)\n")
+        expect(run_cli('reset').stdout).to match(with_undo("Reset to #{first[0, 7]} (mixed)\n"))
       end
 
       it 'prints Exited when a hard reset is declined' do
