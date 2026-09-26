@@ -37,6 +37,10 @@ module Gitflash
       branches.find(&:current?)&.name
     end
 
+    def toplevel
+      @bash.exec('git', 'rev-parse', '--show-toplevel').strip
+    end
+
     # The branch that origin/HEAD points to, else main or master when present locally
     def default_branch
       return @default_branch if defined?(@default_branch)

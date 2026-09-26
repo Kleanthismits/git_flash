@@ -1,0 +1,93 @@
+# frozen_string_literal: true
+
+module Gitflash
+  module Hook
+    # Which git subcommands can lose work git cannot restore, and what to save before them.
+    # Each rule takes the subcommand's arguments and the directory, and returns nil (safe) or
+    # { scope:, branches:, dir: } where branches may contain :current for the checked-out one.
+    module Rules
+      FULL = %w[branches head worktree].freeze
+
+      module_function
+
+      def for(subcommand, args, dir)
+        rule = RULES[subcommand]
+        rule&.call(args, dir)
+      end
+
+      def any?(args, flags)
+        args.intersect?(flags)
+      end
+
+      def checkout(args, _dir)
+        discards = any?(args, %w[-- . -f --force -p --patch --ours --theirs])
+        discards ? { scope: %w[worktree] } : nil
+      end
+
+      def clean(args, _dir)
+        flags = args.select { |arg| arg.start_with?('-') }
+        short = flags.reject { |flag| flag.start_with?('--') }.join
+        force = flags.include?('--force') || short.include?('f')
+        dry_run = any?(flags, %w[--dry-run --interactive]) || short.match?(/[ni]/)
+        force && !dry_run ? { scope: %w[worktree] } : nil
+      end
+
+      def switch(args, _dir)
+        any?(args, %w[-f --force --discard-changes]) ? { scope: %w[head worktree] } : nil
+      end
+
+      def stash(args, _dir)
+        case args.first
+        when 'drop', 'clear' then { scope: %w[stashes] }
+        when 'pop' then { scope: %w[worktree stashes] }
+        end
+      end
+
+      def branch(args, _dir)
+        return nil unless any?(args, %w[-d -D --delete -f --force -m -M --move -C --copy])
+
+        { scope: %w[branches], branches: args.reject { |arg| arg.start_with?('-') } }
+      end
+
+      def update_ref(args, _dir)
+        return nil unless args.include?('-d')
+
+        heads = args.select { |arg| arg.start_with?('refs/heads/') }
+        { scope: %w[branches], branches: heads.map { |ref| ref.delete_prefix('refs/heads/') } }
+      end
+
+      def rebase(args, _dir)
+        args.include?('--continue') ? nil : { scope: FULL, branches: [:current] }
+      end
+
+      def abort(args, _dir)
+        any?(args, %w[--abort --quit]) ? { scope: %w[worktree] } : nil
+      end
+
+      # `git worktree remove --force PATH` deletes that worktree's uncommitted files
+      def worktree(args, dir)
+        return nil unless args.first == 'remove' && any?(args, %w[-f --force])
+
+        path = args[1..].reject { |arg| arg.start_with?('-') }.first
+        path && { scope: %w[worktree], dir: File.expand_path(path, dir) }
+      end
+
+      RULES = {
+        'reset' => ->(_args, _dir) { { scope: FULL, branches: [:current] } },
+        'checkout' => method(:checkout),
+        'restore' => ->(_args, _dir) { { scope: %w[worktree] } },
+        'clean' => method(:clean),
+        'switch' => method(:switch),
+        'stash' => method(:stash),
+        'branch' => method(:branch),
+        'update-ref' => method(:update_ref),
+        'rebase' => method(:rebase),
+        'merge' => method(:abort),
+        'cherry-pick' => method(:abort),
+        'revert' => method(:abort),
+        'am' => method(:abort),
+        'worktree' => method(:worktree)
+      }.freeze
+    end
+  end
+end

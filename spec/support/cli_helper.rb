@@ -19,6 +19,11 @@ module CliHelper
     end
   end
 
+  # Matches human output that ends with the undo hint
+  def with_undo(text)
+    /\A#{Regexp.escape(text)}Undo with: gitflash undo \S+\n\z/
+  end
+
   def run_cli(*args)
     stdout = StringIO.new
     stderr = StringIO.new

@@ -1,6 +1,16 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Fast path for the agent hook, which runs before every shell command: when the command does
+# not mention git there is nothing to do, so exit before loading the rest of gitflash.
+if ARGV.first(2) == %w[hook claude]
+  input = $stdin.read
+  exit 0 unless input.include?('git')
+
+  require 'stringio'
+  $stdin = StringIO.new(input)
+end
+
 require 'gitflash'
 require 'gitflash/cli'
 

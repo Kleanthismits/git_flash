@@ -6,8 +6,15 @@ RSpec.describe Gitflash::Git::BashCommand do
     let(:failure) { instance_double(Process::Status, success?: false) }
 
     it 'runs the command without a shell and returns stdout' do
-      allow(Open3).to receive(:capture3).with('git', 'branch').and_return(["main\n", '', success])
+      allow(Open3).to receive(:capture3)
+        .with({}, 'git', 'branch').and_return(["main\n", '', success])
       expect(described_class.exec('git', 'branch')).to eq("main\n")
+    end
+
+    it 'passes extra environment variables' do
+      env = { 'GITFLASH_TEST' => 'on' }
+      output = described_class.exec('sh', '-c', 'echo $GITFLASH_TEST', env: env)
+      expect(output).to eq("on\n")
     end
 
     it 'raises CommandError with stderr when the command fails' do

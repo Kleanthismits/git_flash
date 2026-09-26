@@ -7,7 +7,7 @@ module Gitflash
   # Menus and confirmations are only shown in a terminal and never in JSON mode.
   #
   # JSON output always uses the same envelope (see schema/v1.json):
-  #   { schema, command, ok, status, dry_run, plan?, result?, error? }
+  #   { schema, command, ok, status, dry_run, plan?, result?, undo?, error? }
   class Ui
     JSON_SCHEMA_VERSION = 1
     OK_STATUSES = %w[done planned noop cancelled].freeze
@@ -33,12 +33,13 @@ module Gitflash
 
     # Reports the outcome of a command and returns its exit status.
     # `status` is one of done, planned, noop, cancelled or failed.
-    def report(status:, text:, plan: nil, result: nil, error: nil)
+    # `fields` may hold plan, result, error and undo (the snapshot that reverts the change).
+    def report(status:, text:, **fields)
       if json?
-        document = envelope(status: status, plan: plan, result: result, error: error)
-        $stdout.puts JSON.generate(document)
+        $stdout.puts JSON.generate(envelope(status: status, **fields))
       else
         $stdout.puts text
+        $stdout.puts "Undo with: gitflash undo #{fields[:undo].id}" if fields[:undo]
       end
       OK_STATUSES.include?(status) ? 0 : 1
     end
@@ -73,7 +74,7 @@ module Gitflash
 
     private
 
-    def envelope(status:, plan: nil, result: nil, error: nil)
+    def envelope(status:, plan: nil, result: nil, error: nil, undo: nil)
       {
         schema: JSON_SCHEMA_VERSION,
         command: @command,
@@ -82,6 +83,7 @@ module Gitflash
         dry_run: dry_run?,
         plan: plan,
         result: result,
+        undo: undo && { snapshot: undo.id, command: "gitflash undo #{undo.id}" },
         error: error
       }.compact
     end
