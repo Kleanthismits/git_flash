@@ -98,6 +98,19 @@ RSpec.describe Gitflash::Snapshots, :git_repo do
     end
   end
 
+  describe 'ordering' do
+    it 'lists snapshots taken within the same second in the order they were taken' do
+      times = [0.001r, 0.002r, 0.003r].map { |second| Time.utc(2026, 9, 27, 8, 0, second) }
+      store = described_class.new(clock: -> { times.shift })
+      ids = %w[one two three].map do |content|
+        File.write('a', "#{content}\n")
+        store.create(reason: content).id
+      end
+
+      expect(store.list.map(&:id)).to eq(ids.reverse)
+    end
+  end
+
   describe '#list, #find and #delete' do
     it 'lists newest first, finds by id and deletes' do
       old = snapshots.create(reason: 'old')
