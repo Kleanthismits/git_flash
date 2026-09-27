@@ -43,6 +43,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash snapshots` | List snapshots, newest first |
 | `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`) |
 | `gitflash hook install` | Protect plain git commands run by Claude Code (see below) |
+| `gitflash hook status` | Show whether the hook protects Claude Code sessions in the current directory |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
 
@@ -68,7 +69,17 @@ Agents often run git directly. Claude Code's own checkpoints do not cover change
 gitflash hook install
 ```
 
-Before Claude Code runs a command that can discard work git cannot restore (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...), the hook saves a snapshot and tells the agent how to undo it. Other commands pass through; the hook adds about 0.1 s to commands that do not mention git. `--mode ask` also asks you to approve such commands, `--mode deny` blocks them. `--scope project` shares the hook with your team through `.claude/settings.json`, `--scope user` enables it for every project.
+Before Claude Code runs a command that can discard work git cannot restore (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...), the hook saves a snapshot and tells the agent how to undo it. Other commands pass through; the hook adds about 0.1 s to commands that do not mention git. `--mode ask` also asks you to approve such commands, `--mode deny` blocks them.
+
+Where the hook goes, following Claude Code's own rules:
+
+| Scope | File | Applies to |
+| --- | --- | --- |
+| `local` (default) | `.claude/settings.local.json` at the repository root (the main checkout's root inside a worktree) | Sessions anywhere in the repository and its worktrees |
+| `project` | `.claude/settings.json` at the repository top level, to share with your team | Sessions started in that directory |
+| `user` | `~/.claude/settings.json` | Every session |
+
+Claude Code reloads settings files, so running sessions pick the hook up without a restart. Run `gitflash hook status` in the directory where you start Claude Code to check which files apply and whether the `gitflash` executable is found.
 
 ### Scripts
 

@@ -63,5 +63,6 @@
 - Add `snapshot` (save on request, `--scope`, `--message`), `snapshots` (list) and `gc --older-than DAYS`
 - Every `done` result of `checkout`, `delete` and `reset` includes `undo` with the snapshot id; human output ends with `Undo with: gitflash undo ID`
 - Add `hook claude`: a Claude Code `PreToolUse` hook that saves a snapshot before destructive git commands an agent runs itself (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...). Modes: `snapshot` (default), `ask`, `deny`. It never blocks a command because of its own errors
-- Add `hook install [--scope local|project|user] [--mode ...]` to register the hook in Claude Code settings
+- Add `hook install [--scope local|project|user] [--mode ...]` to register the hook in Claude Code settings; it reports which sessions the file applies to, and the local scope uses the main checkout's root inside a worktree, as Claude Code does
+- Add `hook status` to show whether the hook protects Claude Code sessions in the current directory
 - JSON schema: new `undo` field, commands `undo`, `snapshots`, `snapshot`, `gc`, `hook`, error codes `unknown_snapshot`, `wrong_worktree`, `invalid_settings`

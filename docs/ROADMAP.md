@@ -95,7 +95,7 @@ This is the core of the positioning.
   - saves one snapshot per directory before the command runs and tells the agent how to undo it
   - modes: `snapshot` (default), `ask`, `deny`; its own errors never block a command
   - cost per Bash call: about 0.1 s when the command does not mention git, 0.3 s for other git commands, 1.5–2 s when a snapshot is saved
-- **`gitflash hook install`** registers the hook in `.claude/settings.local.json`, `.claude/settings.json` or `~/.claude/settings.json`.
+- **`gitflash hook install`** registers the hook in `.claude/settings.local.json` (repository root, main checkout inside a worktree), `.claude/settings.json` or `~/.claude/settings.json`, and says which sessions it applies to. **`gitflash hook status`** shows whether sessions in the current directory are protected.
 - **`gitflash snapshot`, `snapshots` and `gc --older-than DAYS`** save, list and delete snapshots.
 - **Not covered yet:** `push --force` (the remote cannot be restored locally), hooks for agents other than Claude Code, and a size budget for all snapshots together.
 

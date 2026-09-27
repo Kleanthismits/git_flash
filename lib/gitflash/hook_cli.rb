@@ -39,16 +39,31 @@ module Gitflash
       Adds `gitflash hook claude` as a PreToolUse hook for Bash commands. Keeps the rest of the
       settings file unchanged and does nothing when the hook is already installed.
 
-      --scope local    .claude/settings.local.json in this repository (default, not committed)
-      --scope project  .claude/settings.json in this repository (shared with the team)
-      --scope user     ~/.claude/settings.json (every project)
+      --scope local    .claude/settings.local.json at the repository root (default, not
+                       committed); applies to sessions anywhere in the repository and its worktrees
+      --scope project  .claude/settings.json at the repository top level (shared with the team);
+                       applies to sessions started there
+      --scope user     ~/.claude/settings.json; applies to every session
+
+      Claude Code reloads settings files, so running sessions pick the hook up without a restart.
+      Check the result with `gitflash hook status`.
 
       Accepts the global --json and --dry-run options: gitflash --json hook install
     TEXT
     option :scope, type: :string, default: 'local', enum: Commands::HookInstall::SCOPES
     option :mode, type: :string, default: 'snapshot', enum: Hook::Claude::MODES
     def install
-      run_command('hook', Commands::HookInstall, repo_required: options[:scope] != 'user')
+      run_command('hook install', Commands::HookInstall, repo_required: options[:scope] != 'user')
+    end
+
+    desc 'status', 'Show whether the gitflash hook protects Claude Code sessions here'
+    long_desc <<~TEXT
+      Lists the Claude Code settings files that apply to the current directory, whether each
+      holds the gitflash hook and which sessions it applies to, and whether the gitflash
+      executable the hook runs is on PATH. Works outside a git repository (user scope only).
+    TEXT
+    def status
+      run_command('hook status', Commands::HookStatus, repo_required: false)
     end
   end
 end
