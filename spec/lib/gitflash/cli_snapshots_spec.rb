@@ -135,13 +135,16 @@ RSpec.describe Gitflash::Cli, :git_repo do
   end
 
   describe 'hook install' do
-    let(:settings) { File.join(Dir.pwd, '.claude', 'settings.local.json') }
+    let(:root) { File.realpath(Dir.pwd) }
+    let(:settings) { File.join(root, '.claude', 'settings.local.json') }
 
     it 'adds the hook to the local settings and keeps other settings' do
       FileUtils.mkdir_p('.claude')
       File.write(settings, JSON.generate('permissions' => { 'allow' => ['Bash(ls)'] }))
 
-      expect(run_cli('hook', 'install', '--json').json).to include('status' => 'done')
+      json = run_cli('hook', 'install', '--json').json
+      expect(json).to include('command' => 'hook install', 'status' => 'done')
+      expect(json['result']).to include('scope' => 'local', 'file' => settings)
       written = JSON.parse(File.read(settings))
       expect(written['permissions']).to eq('allow' => ['Bash(ls)'])
       expect(written.dig('hooks', 'PreToolUse', 0)).to eq(
@@ -149,6 +152,20 @@ RSpec.describe Gitflash::Cli, :git_repo do
         'hooks' => [{ 'type' => 'command', 'command' => 'gitflash hook claude', 'timeout' => 30 }]
       )
       expect(run_cli('hook', 'install', '--json').json).to include('status' => 'noop')
+    end
+
+    it 'says which sessions it applies to' do
+      stdout = run_cli('hook', 'install').stdout
+      expect(stdout).to include("Installed the gitflash hook in #{settings}")
+      expect(stdout).to include("applies to Claude Code sessions in #{root}")
+    end
+
+    it 'writes the local settings at the main checkout from a linked worktree' do
+      Dir.mktmpdir do |dir|
+        git('worktree', 'add', '-q', "#{dir}/wt", 'feature')
+        Dir.chdir("#{dir}/wt") { run_cli('hook', 'install') }
+      end
+      expect(File).to exist(settings)
     end
 
     it 'updates the mode of an installed hook' do
@@ -172,6 +189,55 @@ RSpec.describe Gitflash::Cli, :git_repo do
       File.write(settings, '{ nope')
       error = run_cli('hook', 'install', '--json').json['error']
       expect(error).to include('code' => 'invalid_settings')
+    end
+  end
+
+  describe 'hook status' do
+    let(:home) { Dir.mktmpdir }
+    let(:bin) { Dir.mktmpdir }
+
+    before do
+      allow(Dir).to receive(:home).and_return(home)
+      File.write(File.join(bin, 'gitflash'), '')
+      File.chmod(0o755, File.join(bin, 'gitflash'))
+      stub_const('ENV', ENV.to_h.merge('PATH' => "#{bin}:#{ENV.fetch('PATH')}"))
+    end
+
+    after { FileUtils.rm_rf([home, bin]) }
+
+    def status_files(json)
+      json.dig('result', 'files').to_h { |file| [file['scope'], file['installed']] }
+    end
+
+    it 'is not active before installing' do
+      json = run_cli('hook', 'status', '--json').json
+      expect(json).to include('command' => 'hook status', 'status' => 'done')
+      expect(json.dig('result', 'active')).to be(false)
+      expect(status_files(json)).to eq('local' => false, 'project' => false, 'user' => false)
+      expect(run_cli('hook', 'status').stdout)
+        .to start_with('gitflash hook: not active (run `gitflash hook install`)')
+    end
+
+    it 'is active after installing and names the executable' do
+      run_cli('hook', 'install')
+      json = run_cli('hook', 'status', '--json').json
+      expect(json['result'])
+        .to include('active' => true, 'executable' => File.join(bin, 'gitflash'))
+      expect(status_files(json)).to include('local' => true)
+    end
+
+    it 'is not active when the gitflash executable is missing' do
+      run_cli('hook', 'install')
+      stub_const('ENV', ENV.to_h.merge('PATH' => '/nonexistent'))
+      expect(run_cli('hook', 'status').stdout).to include('the gitflash executable is not on PATH')
+    end
+
+    it 'checks only the user settings outside a repository' do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          expect(status_files(run_cli('hook', 'status', '--json').json)).to eq('user' => false)
+        end
+      end
     end
   end
 end

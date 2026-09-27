@@ -25,7 +25,8 @@
         "snapshots",
         "snapshot",
         "gc",
-        "hook"
+        "hook install",
+        "hook status"
       ]
     },
     "ok": {
@@ -272,7 +273,7 @@
       "if": {
         "properties": {
           "command": {
-            "const": "hook"
+            "const": "hook install"
           }
         }
       },
@@ -283,6 +284,22 @@
           },
           "result": {
             "$ref": "#/$defs/hook_install"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "hook status"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/hook_status"
           }
         }
       }
@@ -804,15 +821,85 @@
     "hook_install": {
       "type": "object",
       "required": [
+        "scope",
         "file",
-        "command"
+        "command",
+        "applies_to"
       ],
       "properties": {
+        "scope": {
+          "enum": [
+            "local",
+            "project",
+            "user"
+          ]
+        },
         "file": {
           "type": "string"
         },
         "command": {
           "type": "string"
+        },
+        "applies_to": {
+          "type": "string",
+          "description": "Which Claude Code sessions read this file. Running sessions reload it."
+        }
+      }
+    },
+    "hook_status": {
+      "type": "object",
+      "required": [
+        "active",
+        "executable",
+        "files"
+      ],
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "The hook is in at least one settings file that applies here and the gitflash executable is on PATH."
+        },
+        "executable": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "scope",
+              "file",
+              "installed",
+              "command",
+              "applies_to"
+            ],
+            "properties": {
+              "scope": {
+                "enum": [
+                  "local",
+                  "project",
+                  "user"
+                ]
+              },
+              "file": {
+                "type": "string"
+              },
+              "installed": {
+                "type": "boolean"
+              },
+              "command": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "applies_to": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     }
