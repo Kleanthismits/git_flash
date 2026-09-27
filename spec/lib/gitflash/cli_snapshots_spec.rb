@@ -122,8 +122,8 @@ RSpec.describe Gitflash::Cli, :git_repo do
       bin = File.expand_path('../../../bin/gitflash', __dir__)
       lib = File.expand_path('../../../lib', __dir__)
       input = JSON.generate(tool_name: 'Bash', tool_input: { command: 'ls -la' })
-      stdout, status = Open3.capture2(RbConfig.ruby, '-I', lib, bin, 'hook', 'claude',
-                                      stdin_data: input)
+      stdout, _stderr, status = Open3.capture3(RbConfig.ruby, '-I', lib, bin, 'hook', 'claude',
+                                               stdin_data: input)
       expect([stdout, status.exitstatus]).to eq(['', 0])
     end
 
