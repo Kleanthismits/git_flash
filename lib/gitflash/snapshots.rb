@@ -52,9 +52,12 @@ module Gitflash
       @bash.exec('git', *)
     end
 
+    # Ids sort by time down to the microsecond, so several snapshots within one second still
+    # list in the order they were taken; the random suffix keeps them unique.
     def identity
       now = @clock.call.utc
-      { id: "#{now.strftime('%Y%m%dT%H%M%S')}-#{SecureRandom.hex(2)}", created_at: now.iso8601 }
+      id = "#{now.strftime('%Y%m%dT%H%M%S%6N')}-#{SecureRandom.hex(2)}"
+      { id: id, created_at: now.iso8601(6) }
     end
 
     def store(snapshot)
