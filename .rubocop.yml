@@ -82,3 +82,6 @@ RSpec/MultipleExpectations:
 
 RSpec/NestedGroups:
   Max: 4
+
+Naming/MethodParameterName:
+  AllowedNames: [at, by, db, id, in, io, ip, of, on, os, pp, to, ui]
