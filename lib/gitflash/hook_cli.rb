@@ -48,7 +48,7 @@ module Gitflash
       Claude Code reloads settings files, so running sessions pick the hook up without a restart.
       Check the result with `gitflash hook status`.
 
-      Accepts the global --json and --dry-run options: gitflash --json hook install
+      Accepts the global --json and --dry-run options after the subcommand: gitflash hook install --json
     TEXT
     option :scope, type: :string, default: 'local', enum: Commands::HookInstall::SCOPES
     option :mode, type: :string, default: 'snapshot', enum: Hook::Claude::MODES
