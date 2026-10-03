@@ -26,6 +26,15 @@ module Gitflash
         raise Error.new("git #{command} failed:\n#{result.output}", code: 'git_failed')
       end
 
+      def snapshots
+        @snapshots ||= Gitflash::Snapshots.new
+      end
+
+      # Saves the state a change is about to modify, so `gitflash undo` can restore it
+      def take_snapshot(reason, scope:, branches: nil)
+        snapshots.create(reason: reason, scope: scope, branches: branches)
+      end
+
       def planned(plan, text)
         ui.report(status: 'planned', plan: plan, text: text)
       end

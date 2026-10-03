@@ -56,8 +56,10 @@ module Gitflash
         return planned(plan, "Would delete:\n#{bullets(names)}") if ui.dry_run?
         return cancelled(plan) unless ui.confirm?(summary(names), plan: plan)
 
+        snapshot = take_snapshot("gitflash delete #{names.join(' ')}",
+                                 scope: %w[branches], branches: names)
         outcomes = names.map { |name| [name, repo.delete_branch(name, force: force?)] }
-        report_results(plan, outcomes, shas)
+        report_results(plan, outcomes, shas, snapshot)
       end
 
       def summary(names)
@@ -74,14 +76,15 @@ module Gitflash
         nil
       end
 
-      def report_results(plan, outcomes, shas)
+      def report_results(plan, outcomes, shas, snapshot)
         deleted, failed = outcomes.partition { |_name, result| result.success? }
         result = {
           deleted: deleted.map { |name, _result| { branch: name, sha: shas[name] } },
           failed: failed.map { |name, result| { branch: name, error: result.output } }
         }
         ui.report(status: failed.empty? ? 'done' : 'failed', plan: plan, result: result,
-                  error: failure(failed, outcomes), text: results_text(result))
+                  error: failure(failed, outcomes), text: results_text(result),
+                  undo: (snapshot if deleted.any?))
       end
 
       def failure(failed, outcomes)

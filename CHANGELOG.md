@@ -53,3 +53,14 @@
 - Results include what is needed to revert: deleted branch SHAs, the previous branch after `checkout`, the previous commit after `reset`
 - Add `schema` command that prints the JSON Schema
 - Internal: new `Repo` service layer with `Branch` and `Commit` records; integration specs run against real temporary git repositories
+
+## [0.6.0] - Unreleased
+
+- Snapshots: gitflash saves branches, HEAD, tracked, staged and untracked files and stash entries before every change it makes, as git objects under `refs/gitflash/snapshots/` (the working tree is never touched; untracked files over 50 MB are skipped)
+- Add `undo [SNAPSHOT]`: restores the parts a snapshot saved (the latest by default), after saving the current state so the undo can be undone
+- Add `snapshot` (save on request, `--scope`, `--message`), `snapshots` (list) and `gc --older-than DAYS`
+- Every `done` result of `checkout`, `delete` and `reset` includes `undo` with the snapshot id; human output ends with `Undo with: gitflash undo ID`
+- Add `hook claude`: a Claude Code `PreToolUse` hook that saves a snapshot before destructive git commands an agent runs itself (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...). Modes: `snapshot` (default), `ask`, `deny`. It never blocks a command because of its own errors
+- Add `hook install [--scope local|project|user] [--mode ...]` to register the hook in Claude Code settings; it reports which sessions the file applies to, and the local scope uses the main checkout's root inside a worktree, as Claude Code does
+- Add `hook status` to show whether the hook protects Claude Code sessions in the current directory
+- JSON schema: new `undo` field, commands `undo`, `snapshots`, `snapshot`, `gc`, `hook`, error codes `unknown_snapshot`, `wrong_worktree`, `invalid_settings`

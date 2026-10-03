@@ -48,11 +48,17 @@ module Gitflash
 
       def execute(plan, text)
         previous = repo.resolve_commit('HEAD')
+        snapshot = snapshot_before(plan)
         result = repo.reset(plan[:commit], mode: plan[:mode])
         git_error!('reset', result) unless result.success?
 
         ui.report(status: 'done', plan: plan, result: plan.merge(previous_commit: previous),
-                  text: text.capitalize)
+                  undo: snapshot, text: text.capitalize)
+      end
+
+      def snapshot_before(plan)
+        take_snapshot("gitflash reset --#{plan[:mode]} #{plan[:commit][0, 7]}",
+                      scope: %w[branches head worktree], branches: [repo.current_branch].compact)
       end
 
       def confirmed?(plan)
