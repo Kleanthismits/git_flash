@@ -28,6 +28,13 @@ jobs:
     - name: Run RuboCop
       run: bundle exec rubocop
 
+    - name: Check the system map
+      if: matrix.ruby-version == '3.3'
+      run: |
+        sh docs/map/_meta/sync-twins.sh
+        git diff --exit-code -- AGENTS.md docs/map
+        ruby docs/map/_meta/check.rb
+
     - name: Run RSpec
       run: bundle exec rspec
 

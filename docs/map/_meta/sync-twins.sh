@@ -1,5 +1,8 @@
 #!/bin/sh
-# Rebuild AGENTS.md and routing.md from CLAUDE.md. Never hand-edit the twins.
-cd "$(dirname "$0")/.." || exit 1
+# Rebuild the twins from their sources. Never hand-edit a twin.
+#   docs/map/AGENTS.md, docs/map/routing.md  <- docs/map/CLAUDE.md
+#   AGENTS.md                                <- CLAUDE.md (repository root)
+cd "$(dirname "$0")/../../.." || exit 1
+cp docs/map/CLAUDE.md docs/map/AGENTS.md
+cp docs/map/CLAUDE.md docs/map/routing.md
 cp CLAUDE.md AGENTS.md
-cp CLAUDE.md routing.md
