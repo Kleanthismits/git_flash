@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.5.0] - 2026-10-03
 
 - Add `branches` command with last commit, upstream (ahead, behind, gone) and merge status, filters `--merged`, `--gone`, `--stale DAYS`
 - Commands accept arguments: `checkout BRANCH`, `delete BRANCH...`, `reset COMMIT`

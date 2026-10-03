@@ -35,7 +35,7 @@ Undo on its own is not unique. What no tool covers is **undo for plain git, with
 
 ## Where gitflash stands
 
-### Phase 1 — Non-interactive core (implemented, not yet released)
+### Phase 1 — Non-interactive core (0.5.0, released)
 
 - `Repo` service layer returning `Branch` and `Commit` records; the CLI and future integrations share it.
 - `gitflash branches` reports last commit, ahead/behind, upstream gone and merge status against the default branch (`origin/HEAD`, else `main` or `master`). Filters: `--merged`, `--gone`, `--stale DAYS`.
@@ -43,7 +43,7 @@ Undo on its own is not unique. What no tool covers is **undo for plain git, with
 - Without a terminal, gitflash never waits for input: it exits with code 2 and explains what to pass, or returns the plan and asks for `--yes`.
 - `delete` keeps unmerged branches unless `--force` is given and protects the default branch. `reset --soft` was added.
 
-### The JSON contract, version 1 (implemented, not yet released)
+### The JSON contract, version 1 (0.5.0, released)
 
 Every `--json` run prints one object in the same envelope, defined in [`schema/v1.json`](../schema/v1.json) and printed by `gitflash schema`:
 
