@@ -1,5 +1,3 @@
-## [0.5.0] - 2026-10-03
-
 ## [0.1.0.alpha] - 2023-06-17
 
 - Initial release
@@ -42,7 +40,7 @@
 - Add `version` command (`--version`, `-v`)
 - CI: pin third-party action to a commit SHA, restrict token permissions, test Ruby 3.3–3.4
 
-## [0.5.0] - Unreleased
+## [0.5.0] - 2026-10-03
 
 - Add `branches` command with last commit, upstream (ahead, behind, gone) and merge status, filters `--merged`, `--gone`, `--stale DAYS`
 - Commands accept arguments: `checkout BRANCH`, `delete BRANCH...`, `reset COMMIT`
