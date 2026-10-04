@@ -15,6 +15,10 @@ RSpec.describe Gitflash::TerminalText do
       expect(described_class.safe("\u009b\u202Eevil")).to eq('\\x9B\\u202Eevil')
     end
 
+    it 'escapes invisible directional marks' do
+      expect(described_class.safe("a\u061Cb\u200Ec\u200Fd")).to eq('a\\u061Cb\\u200Ec\\u200Fd')
+    end
+
     it 'keeps newlines, tabs and normal text' do
       expect(described_class.safe("one\n\ttwo ünï")).to eq("one\n\ttwo ünï")
     end

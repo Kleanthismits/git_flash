@@ -43,7 +43,7 @@ module Gitflash
     def default_branch
       return @default_branch if defined?(@default_branch)
 
-      @default_branch = default_ref&.delete_prefix(REMOTE_HEAD)&.delete_prefix(HEADS)
+      @default_branch = branch_name(default_ref)
     end
 
     # Commits of the current branch, newest first. Empty for a branch without commits.
@@ -79,6 +79,13 @@ module Gitflash
     end
 
     private
+
+    # Removes only the prefix the ref starts with, so a branch named `refs/heads/x` keeps its name
+    def branch_name(ref)
+      return nil unless ref
+
+      ref.delete_prefix(ref.start_with?(REMOTE_HEAD) ? REMOTE_HEAD : HEADS)
+    end
 
     def refuse_option_like!(name)
       return unless name.start_with?('-')

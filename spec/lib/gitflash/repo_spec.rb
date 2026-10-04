@@ -109,6 +109,15 @@ RSpec.describe Gitflash::Repo, :git_repo do
       expect(repo.branches.map(&:name)).to contain_exactly('main', 'develop')
     end
 
+    it 'keeps the name of a default branch that itself starts with refs/heads/' do
+      git('branch', 'refs/heads/develop')
+      git('update-ref', 'refs/remotes/origin/refs/heads/develop', 'refs/heads/refs/heads/develop')
+      git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/refs/heads/develop')
+
+      expect(repo.default_branch).to eq('refs/heads/develop')
+      expect(repo.branches.find(&:default?).name).to eq('refs/heads/develop')
+    end
+
     it 'ignores an origin/HEAD that points outside refs/remotes/origin/' do
       git('update-ref', 'refs/remotes/elsewhere', 'HEAD')
       git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/elsewhere')
