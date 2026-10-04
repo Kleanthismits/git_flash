@@ -12,7 +12,7 @@ module Gitflash
     end
 
     def label
-      "#{sha} - #{subject}"
+      "#{sha} - #{TerminalText.safe(subject)}"
     end
 
     def to_h

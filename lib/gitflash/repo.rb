@@ -6,12 +6,14 @@ module Gitflash
   class Repo
     SEPARATOR = "\x1f"
     BRANCH_FORMAT = %w[
-      refname:short objectname:short HEAD upstream:short upstream:track,nobracket
+      refname objectname:short HEAD upstream:short upstream:track,nobracket
       committerdate:iso-strict authorname subject
     ].map { |field| "%(#{field})" }.join('%1f')
     COMMIT_FORMAT = %w[%h %s %an %cI].join('%x1f')
     COMMITS_LIMIT = 100
     FALLBACK_DEFAULT_BRANCHES = %w[main master].freeze
+    HEADS = 'refs/heads/'
+    REMOTE_HEAD = 'refs/remotes/origin/'
 
     def initialize(bash: Git::BashCommand)
       @bash = bash
@@ -41,7 +43,7 @@ module Gitflash
     def default_branch
       return @default_branch if defined?(@default_branch)
 
-      @default_branch = default_ref&.delete_prefix('origin/')
+      @default_branch = branch_name(default_ref)
     end
 
     # Commits of the current branch, newest first. Empty for a branch without commits.
@@ -54,17 +56,22 @@ module Gitflash
 
     # Full sha of a commit reference, or nil when it does not name a commit
     def resolve_commit(ref)
+      return nil if ref.start_with?('-')
+
       stdout, _stderr, success = @bash.capture('git', 'rev-parse', '--verify', '--quiet',
                                                "#{ref}^{commit}")
       success ? stdout.strip : nil
     end
 
+    # Uses `git switch`, which never discards changes or treats the name as a file path.
+    # A name that starts with a dash is refused: a ref named like an option must not become one.
     def checkout(branch)
-      run('git', 'checkout', branch, '--')
+      refuse_option_like!(branch)
+      run('git', 'switch', '--', branch)
     end
 
     def delete_branch(branch, force: false)
-      run('git', 'branch', force ? '-D' : '-d', branch)
+      run('git', 'branch', force ? '-D' : '-d', '--', branch)
     end
 
     def reset(commit, mode:)
@@ -73,13 +80,27 @@ module Gitflash
 
     private
 
+    # Removes only the prefix the ref starts with, so a branch named `refs/heads/x` keeps its name
+    def branch_name(ref)
+      return nil unless ref
+
+      ref.delete_prefix(ref.start_with?(REMOTE_HEAD) ? REMOTE_HEAD : HEADS)
+    end
+
+    def refuse_option_like!(name)
+      return unless name.start_with?('-')
+
+      raise UsageError.new("Invalid branch name '#{name}'", code: 'invalid_usage')
+    end
+
     def branch_lines
       @branch_lines ||= @bash.exec('git', 'for-each-ref', "--format=#{BRANCH_FORMAT}",
-                                   'refs/heads/')
+                                   HEADS)
                              .each_line(chomp: true).reject(&:empty?)
     end
 
-    # Ref used to check merge status: origin/HEAD's target, else a local main/master
+    # Full ref used to check merge status: origin/HEAD's target, else a local main/master.
+    # Full names are used throughout because short names change when a tag has the same name.
     def default_ref
       return @default_ref if defined?(@default_ref)
 
@@ -87,24 +108,23 @@ module Gitflash
     end
 
     def remote_default_ref
-      ref = @bash.exec('git', 'symbolic-ref', '--quiet', '--short',
-                       'refs/remotes/origin/HEAD').strip
-      ref.empty? ? nil : ref
+      ref = @bash.exec('git', 'symbolic-ref', '--quiet', "#{REMOTE_HEAD}HEAD").strip
+      ref.start_with?(REMOTE_HEAD) ? ref : nil
     rescue Git::CommandError
       nil
     end
 
     def local_default_branch
-      names = branch_lines.map { |line| line.split(SEPARATOR, 2).first }
-      FALLBACK_DEFAULT_BRANCHES.find { |name| names.include?(name) }
+      names = branch_lines.map { |line| line.split(SEPARATOR, 2).first.delete_prefix(HEADS) }
+      name = FALLBACK_DEFAULT_BRANCHES.find { |candidate| names.include?(candidate) }
+      name && "#{HEADS}#{name}"
     end
 
     def merged_branch_names
       return nil unless default_ref
 
-      @bash.exec('git', 'for-each-ref', "--merged=#{default_ref}", '--format=%(refname:short)',
-                 'refs/heads/')
-           .each_line(chomp: true).to_set
+      @bash.exec('git', 'for-each-ref', "--merged=#{default_ref}", '--format=%(refname)', HEADS)
+           .each_line(chomp: true).to_set { |ref| ref.delete_prefix(HEADS) }
     end
 
     def run(*)

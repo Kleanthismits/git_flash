@@ -11,7 +11,7 @@ module Gitflash
     # Parses one line produced with Repo::BRANCH_FORMAT.
     # `merged_names` is nil when merge status is unknown.
     def self.parse(line, default_branch: nil, merged_names: nil)
-      name, sha, head, upstream, track, date, author, subject = line.split(Repo::SEPARATOR, 8)
+      name, sha, head, upstream, track, date, author, subject = fields(line)
 
       new(
         name: name,
@@ -28,6 +28,15 @@ module Gitflash
         last_commit_subject: subject.to_s
       )
     end
+
+    # The record's fields; the full ref name is shortened by removing refs/heads/ only, because
+    # `refname:short` gives another name when a tag has the same name.
+    def self.fields(line)
+      fields = line.split(Repo::SEPARATOR, 8)
+      fields[0] = fields[0].delete_prefix(Repo::HEADS)
+      fields
+    end
+    private_class_method :fields
 
     alias_method :current?, :current
     alias_method :default?, :default
