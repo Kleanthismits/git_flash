@@ -59,6 +59,24 @@ RSpec.describe Gitflash::Restore, :git_repo do
     expect(File.read('local')).to eq("keep\n")
   end
 
+  it 'restores branches and HEAD by their real names when tags have the same names' do
+    git('tag', 'main')
+    git('tag', 'feature')
+    snapshot = snapshots.create(reason: 'test', scope: %w[branches head])
+    expect(snapshot).to have_attributes(head: include(branch: 'main'),
+                                        branches: include('main', 'feature'))
+    git('checkout', '-q', '-b', 'other')
+    git('branch', '-q', '-D', 'feature')
+
+    result = restore(snapshot)
+    expect(result.plan[:head]).to eq(from: 'other', to: 'main')
+    expect(result.plan[:branches].map { |change| change[:branch] }).to eq(%w[feature])
+    expect(result.apply).to be_nil
+    expect(git('branch', '--show-current')).to eq("main\n")
+    refs = git('for-each-ref', '--format=%(refname)', 'refs/heads/').split
+    expect(refs).to contain_exactly('refs/heads/feature', 'refs/heads/main', 'refs/heads/other')
+  end
+
   it 'restores dropped stash entries' do
     File.write('a', "stashed\n")
     git('stash', '-q')

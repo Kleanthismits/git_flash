@@ -4,8 +4,8 @@ cluster: snapshots
 universe: live
 status: verified
 entity: lib/gitflash/state_capture.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-04
+verified_at: 36940dc plus the tag-safe ref fix
 ---
 
 # State capture
@@ -14,13 +14,14 @@ Reads repository state and writes the git objects a snapshot needs. Code: `State
 
 ## Why this shape
 
-Work tree is captured through a temporary copy of the index, so the real index is untouched (`state_capture.rb:89-102`). Content commits use a fixed date, so equal content gives an equal sha and unchanged state is detectable (`state_capture.rb:16-19`).
+Work tree is captured through a temporary copy of the index, so the real index is untouched (`state_capture.rb:93-106`). Content commits use a fixed date, so equal content gives an equal sha and unchanged state is detectable (`state_capture.rb:16-19`).
 
 ## Shape
 
 - `call(scope, branch_names)` returns the state hash (`state_capture.rb:26-37`).
 - Dirty tree: `index` and `worktree` commits, parented on HEAD (`state_capture.rb:35`, `74-83`). Unresolved merge: `index` nil (`state_capture.rb:76`).
 - Untracked, non-ignored files included; files over 50 MB are skipped and listed in `skipped_files` (`state_capture.rb:10`, `104-113`).
+- Branch names come from full refs with `refs/heads/` removed (`state_capture.rb:64-72`, `Branch.parse_tips`); short names change when a tag has the same name.
 - Author/committer `gitflash@localhost` (`state_capture.rb:12-15`).
 
 ## Connected to

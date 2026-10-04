@@ -4,8 +4,8 @@ cluster: hooks
 universe: live
 status: verified
 entity: lib/gitflash/hook/claude.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-04
+verified_at: 36940dc plus the tag-safe ref fix
 ---
 
 # Claude hook
@@ -21,7 +21,8 @@ The agent keeps using plain git. The hook snapshots first and tells the agent ho
 - Input: hook JSON on stdin. Only `tool_name == 'Bash'` is looked at (`lib/gitflash/hook/claude.rb:35-40`).
 - Modes (`claude.rb:16`): `snapshot` (default; save, allow), `ask` (save, ask user), `deny` (block, point to gitflash command) (`claude.rb:24-31`, `71-92`).
 - One snapshot per directory, merged across commands there (`claude.rb:43-50`); reason `agent hook: before ...` (`claude.rb:59`).
-- Output is Claude Code's hook protocol (`hookSpecificOutput`, `additionalContext`, `permissionDecision`), not gitflash's envelope (`claude.rb:71-92`).
+- The `:current` branch is read from the full ref with `refs/heads/` removed (`claude.rb:65-68`), so a tag named like the branch cannot change the name saved.
+- Output is Claude Code's hook protocol (`hookSpecificOutput`, `additionalContext`, `permissionDecision`), not gitflash's envelope (`claude.rb:76-97`).
 - `HookCli#claude` rescues `StandardError`, warns, exits 0 (`lib/gitflash/hook_cli.rb:30-35`). It does not use [[command-runner]] or [[ui-output]].
 
 ## Connected to

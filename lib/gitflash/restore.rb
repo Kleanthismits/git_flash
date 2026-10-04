@@ -56,7 +56,7 @@ module Gitflash
         detach = ['update-ref', '--no-deref', 'HEAD', sha]
         [branch ? ['symbolic-ref', 'HEAD', "refs/heads/#{branch}"] : detach]
       else
-        [branch ? ['checkout', branch, '--'] : ['checkout', '--detach', sha]]
+        [branch ? ['switch', '--', branch] : ['checkout', '--detach', sha]]
       end
     end
 
@@ -91,8 +91,7 @@ module Gitflash
     end
 
     def head_change
-      current = { branch: capture('symbolic-ref', '--quiet', '--short', 'HEAD'),
-                  sha: capture('rev-parse', '--verify', '--quiet', 'HEAD^{commit}') }
+      current = current_head
       target = @snapshot.head
       same = if target[:branch]
                current[:branch] == target[:branch]
@@ -100,6 +99,11 @@ module Gitflash
                current[:branch].nil? && current[:sha] == target[:sha]
              end
       same ? nil : { from: current[:branch] || current[:sha], to: target[:branch] || target[:sha] }
+    end
+
+    def current_head
+      { branch: capture('symbolic-ref', '--quiet', 'HEAD')&.delete_prefix(Repo::HEADS),
+        sha: capture('rev-parse', '--verify', '--quiet', 'HEAD^{commit}') }
     end
 
     def worktree_differs?
@@ -113,8 +117,7 @@ module Gitflash
     end
 
     def current_tips
-      lines = capture('for-each-ref', '--format=%(refname:short) %(objectname)', 'refs/heads/')
-      lines.to_s.each_line(chomp: true).to_h { |line| line.split(' ', 2) }
+      Branch.parse_tips(capture('for-each-ref', "--format=#{Branch::TIPS_FORMAT}", Repo::HEADS))
     end
 
     def tree_of(ref)

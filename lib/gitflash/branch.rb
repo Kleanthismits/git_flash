@@ -29,6 +29,12 @@ module Gitflash
       )
     end
 
+    # { branch name => sha } from `git for-each-ref --format=TIPS_FORMAT refs/heads/`
+    def self.parse_tips(output)
+      output.to_s.each_line(chomp: true).to_h { |line| line.split(' ', 2) }
+            .transform_keys { |ref| ref.delete_prefix(Repo::HEADS) }
+    end
+
     # The record's fields; the full ref name is shortened by removing refs/heads/ only, because
     # `refname:short` gives another name when a tag has the same name.
     def self.fields(line)
@@ -50,4 +56,5 @@ module Gitflash
       super.merge(last_commit_at: last_commit_at.iso8601)
     end
   end
+  Branch::TIPS_FORMAT = '%(refname) %(objectname)'
 end

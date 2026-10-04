@@ -25,6 +25,13 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
     expect(output[:hookSpecificOutput]).not_to have_key(:permissionDecision)
   end
 
+  it 'names the current branch correctly when a tag has the same name' do
+    git('tag', 'main')
+
+    described_class.new.call(input('git reset --hard'))
+    expect(Gitflash::Snapshots.new.list.first.branches.keys).to eq(%w[main])
+  end
+
   it 'asks for approval in ask mode' do
     output = described_class.new(mode: 'ask').call(input('git clean -f'))
     expect(output[:hookSpecificOutput]).to include(permissionDecision: 'ask')

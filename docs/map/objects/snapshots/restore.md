@@ -4,8 +4,8 @@ cluster: snapshots
 universe: live
 status: verified
 entity: lib/gitflash/restore.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-04
+verified_at: 36940dc plus the tag-safe ref fix
 ---
 
 # Restore
@@ -23,6 +23,7 @@ Restores only the parts in the snapshot's scope, and only where the repo differs
 - Branch step: `update-ref` with the old value as guard (`restore.rb:42-46`).
 - With worktree scope HEAD moves via `symbolic-ref` / `update-ref`, else a normal `checkout` keeps local changes (`restore.rb:48-61`).
 - Files: `read-tree --reset -u`, then the staged state (`restore.rb:63-70`). Stashes: `stash store` (`restore.rb:72-74`).
+- Branch tips and HEAD are read from full refs with `refs/heads/` removed (`Branch.parse_tips`, `restore.rb:93-96`, `115-117`); HEAD is switched with `git switch --` (`restore.rb:59`). Short names change when a tag has the same name.
 - `apply` stops at the first failing step and returns its `Result`; there is no rollback (`restore.rb:27-34`).
 
 ## Connected to

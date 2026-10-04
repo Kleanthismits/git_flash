@@ -62,9 +62,14 @@ module Gitflash
         end
       end
 
+      # Full ref shortened by removing refs/heads/ only; `--short` changes when a tag has the name
+      def current_branch
+        git('symbolic-ref', '--quiet', 'HEAD')&.delete_prefix(Repo::HEADS)
+      end
+
       def branches(target)
         target.branches.filter_map do |name|
-          name == :current ? git('symbolic-ref', '--quiet', '--short', 'HEAD') : name
+          name == :current ? current_branch : name
         end
       end
 

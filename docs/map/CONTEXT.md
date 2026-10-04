@@ -20,6 +20,10 @@ Code and card disagree: code wins, fix card.
 
 First map was verified on `main` at `a3b9a23`, then re-mapped on `phase2_snapshots_undo` at `dde88fd` (2026-10-03). When `main` receives phase 2, re-check line citations; claims should hold, line numbers will move.
 
+## Rule
+
+Every change under `lib/` or `schema/` updates the map in the same commit, then `ruby docs/map/_meta/check.rb` runs. CI runs the same check.
+
 ## Slices done
 
 - [x] 1 Catalog

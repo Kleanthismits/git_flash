@@ -27,7 +27,7 @@ module Gitflash
       head_sha = rev('HEAD')
       state = {
         scope: Snapshots::SCOPES & scope, worktree_path: git('rev-parse', '--show-toplevel'),
-        head: { branch: try('symbolic-ref', '--quiet', '--short', 'HEAD'), sha: head_sha },
+        head: { branch: current_branch, sha: head_sha },
         branches: scope.include?('branches') ? branch_tips(branch_names) : {},
         stashes: scope.include?('stashes') ? try('stash', 'list', '--format=%H').to_s.split : [],
         index: nil, worktree: nil, skipped_files: []
@@ -61,9 +61,13 @@ module Gitflash
       try('rev-parse', '--verify', '--quiet', "#{ref}^{commit}")
     end
 
+    def current_branch
+      ref = try('symbolic-ref', '--quiet', 'HEAD')
+      ref&.delete_prefix(Repo::HEADS)
+    end
+
     def branch_tips(names)
-      tips = git('for-each-ref', '--format=%(refname:short) %(objectname)', 'refs/heads/')
-             .each_line(chomp: true).to_h { |line| line.split(' ', 2) }
+      tips = Branch.parse_tips(git('for-each-ref', "--format=#{Branch::TIPS_FORMAT}", Repo::HEADS))
       names.nil? ? tips : tips.slice(*names)
     end
 
