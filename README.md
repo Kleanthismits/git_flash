@@ -1,6 +1,6 @@
 # GitFlash
 
-[![Gem Version](https://badge.fury.io/rb/gitflash.svg)](https://badge.fury.io/rb/gitflash)
+[![GitHub version](https://badge.fury.io/gh/Kleanthismits%2Fgit_flash.svg)](https://badge.fury.io/gh/Kleanthismits%2Fgit_flash)
 
 ⚠️ **This project is still under development**: Use at your own risk!
 
