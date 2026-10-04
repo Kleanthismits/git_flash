@@ -91,6 +91,30 @@ RSpec.describe Gitflash::Repo, :git_repo do
 
       expect(repo.default_branch).to eq('develop')
     end
+
+    it 'follows origin/HEAD even when a tag is named like the remote branch' do
+      git('branch', 'develop')
+      git('update-ref', 'refs/remotes/origin/develop', 'develop')
+      git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/develop')
+      git('tag', 'origin/develop')
+
+      expect(repo.default_branch).to eq('develop')
+      expect(repo.branches.find { |branch| branch.name == 'develop' }).to be_default
+    end
+
+    it 'keeps branch names when a tag has the same name' do
+      git('branch', 'develop')
+      git('tag', 'develop')
+
+      expect(repo.branches.map(&:name)).to contain_exactly('main', 'develop')
+    end
+
+    it 'ignores an origin/HEAD that points outside refs/remotes/origin/' do
+      git('update-ref', 'refs/remotes/elsewhere', 'HEAD')
+      git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/elsewhere')
+
+      expect(repo.default_branch).to eq('main')
+    end
   end
 
   describe '#current_branch' do
@@ -135,6 +159,34 @@ RSpec.describe Gitflash::Repo, :git_repo do
       git('branch', 'a')
       expect(repo.checkout('a')).to be_success
       expect(repo.current_branch).to eq('a')
+    end
+
+    it 'never lets a branch named like an option become one' do
+      git('update-ref', 'refs/heads/--force', 'HEAD~1')
+      File.write('a', 'changed')
+
+      expect { repo.checkout('--force') }
+        .to raise_error(Gitflash::UsageError, /Invalid branch name/)
+      expect(File.read('a')).to eq('changed')
+    end
+
+    it 'keeps uncommitted changes when switching' do
+      git('branch', 'other')
+      File.write('a', 'changed')
+
+      expect(repo.checkout('other')).to be_success
+      expect(File.read('a')).to eq('changed')
+    end
+
+    it 'deletes a branch named like an option only as a branch name' do
+      git('update-ref', 'refs/heads/--force', 'HEAD')
+
+      expect(repo.delete_branch('--force')).to be_success
+      expect(branch_names).to eq(%w[main])
+    end
+
+    it 'does not resolve an option-like commit reference' do
+      expect(repo.resolve_commit('--help')).to be_nil
     end
 
     it 'keeps an unmerged branch unless forced' do

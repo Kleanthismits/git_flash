@@ -38,7 +38,7 @@ module Gitflash
         document = envelope(status: status, plan: plan, result: result, error: error)
         $stdout.puts JSON.generate(document)
       else
-        $stdout.puts text
+        $stdout.puts TerminalText.safe(text)
       end
       OK_STATUSES.include?(status) ? 0 : 1
     end
@@ -48,7 +48,7 @@ module Gitflash
         details = { code: error.code, message: error.message, exit_code: error.exit_code }
         $stdout.puts JSON.generate(envelope(status: error.status, plan: error.plan, error: details))
       else
-        warn error.message
+        warn TerminalText.safe(error.message)
       end
     end
 

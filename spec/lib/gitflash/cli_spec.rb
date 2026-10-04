@@ -68,7 +68,49 @@ RSpec.describe Gitflash::Cli, :git_repo do
     end
   end
 
+  describe 'checkout with a branch named like an option' do
+    it 'refuses it and keeps the uncommitted changes' do
+      git('update-ref', 'refs/heads/--force', 'HEAD')
+      File.write('a', 'changed')
+
+      run = run_cli('checkout', '--json', '--', '--force')
+      expect(run.status).to eq(2)
+      expect(run.json.dig('error', 'code')).to eq('invalid_usage')
+      expect(File.read('a')).to eq('changed')
+    end
+  end
+
+  describe 'delete with a tag named like the default branch' do
+    it 'still refuses to delete the default branch' do
+      git('branch', 'develop')
+      git('update-ref', 'refs/remotes/origin/develop', 'develop')
+      git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/develop')
+      git('tag', 'origin/develop')
+
+      run = run_cli('delete', 'develop', '--yes', '--json')
+      expect(run.status).to eq(2)
+      expect(run.json.dig('error', 'code')).to eq('protected_branch')
+      expect(branch_names).to include('develop')
+    end
+  end
+
   describe 'branches' do
+    it 'shows terminal control characters of a commit subject as text' do
+      commit_file('c', message: "evil \e]52;c;ZXZpbA==\a \e[2J")
+
+      stdout = run_cli('branches').stdout
+      expect(stdout).not_to include("\e", "\a")
+      expect(stdout).to include('evil \\x1B]52;c;ZXZpbA==\\x07 \\x1B[2J')
+    end
+
+    it 'keeps the original subject in JSON' do
+      commit_file('c', message: "evil \e[2J")
+
+      branches = run_cli('branches', '--json').json.dig('result', 'branches')
+      main = branches.find { |branch| branch['name'] == 'main' }
+      expect(main).to include('last_commit_subject' => "evil \e[2J")
+    end
+
     it 'prints a table' do
       stdout = run_cli('branches').stdout
       rows = stdout.lines.map { |line| line[0, 13].rstrip }

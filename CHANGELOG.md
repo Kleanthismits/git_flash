@@ -53,3 +53,12 @@
 - Results include what is needed to revert: deleted branch SHAs, the previous branch after `checkout`, the previous commit after `reset`
 - Add `schema` command that prints the JSON Schema
 - Internal: new `Repo` service layer with `Branch` and `Commit` records; integration specs run against real temporary git repositories
+
+## [0.5.1] - 2026-10-04
+
+Security fixes for names and text that come from the repository:
+
+- `checkout` uses `git switch --` and refuses a branch name that starts with a dash. A local ref named like `--force` (for example from a cloned repository) used to become a `git checkout --force` option and discard uncommitted changes
+- Branch and default-branch detection use full ref names. A tag named like `origin/<default>` could change the short name of `origin/HEAD`, so the default branch lost its deletion protection and its merge status; `origin/HEAD` must now point inside `refs/remotes/origin/`
+- `delete` passes `--` before the branch name; `resolve_commit` refuses references that start with a dash
+- Text output shows terminal control characters of repository-controlled text (commit subjects, git errors) as escapes such as `\x1B`, so a crafted commit subject cannot move the cursor, rewrite output or set the clipboard (OSC 52). JSON output keeps the original text
