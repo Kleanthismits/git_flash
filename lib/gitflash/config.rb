@@ -28,7 +28,7 @@ module Gitflash
       data = YAML.safe_load_file(path) || {}
       validate!(data, path)
       data
-    rescue Psych::Exception => e
+    rescue Psych::Exception, SystemCallError, IOError => e
       raise invalid(path, "cannot be read (#{e.message.lines.first.strip})")
     end
     private_class_method :read

@@ -49,6 +49,14 @@ RSpec.describe Gitflash::Config do
     expect(config.stale_days).to eq(5)
   end
 
+  it 'reports a file that cannot be opened as invalid_config', unless: Process.uid.zero? do
+    write_repo("stale_days: 5\n")
+    File.chmod(0o000, File.join(root, '.gitflash.yml'))
+    expect { config }.to raise_error(Gitflash::UsageError, /cannot be read/) { |e|
+      expect(e.code).to eq('invalid_config')
+    }
+  end
+
   it 'builds the default worktree path next to the main checkout' do
     expect(config.worktree_path(root: root, branch: 'feat/a'))
       .to eq(File.expand_path('../proj.worktrees/feat/a', root))

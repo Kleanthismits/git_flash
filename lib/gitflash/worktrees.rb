@@ -18,13 +18,15 @@ module Gitflash
     private
 
     def records
-      @bash.exec('git', 'worktree', 'list', '--porcelain').split(/\n{2,}/)
-           .reject { |block| block.strip.empty? }.map { |block| parse(block) }
+      output = @bash.exec('git', 'worktree', 'list', '--porcelain', '-z')
+      # `-z` ends every attribute with NUL and every record with an extra NUL, so paths with
+      # newlines and lock reasons come back as written
+      output.split("\0\0").reject(&:empty?).map { |block| parse(block) }
     end
 
     def parse(block)
-      block.each_line(chomp: true).to_h do |line|
-        key, value = line.split(' ', 2)
+      block.split("\0").reject(&:empty?).to_h do |attribute|
+        key, value = attribute.split(' ', 2)
         [key, value || true]
       end
     end

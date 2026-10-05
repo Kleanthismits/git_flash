@@ -32,6 +32,14 @@ RSpec.describe Gitflash::Worktrees, :git_repo do
     expect(by_branch['gone']).to have_attributes(missing?: true, dirty?: nil)
   end
 
+  it 'keeps a path with a newline and a lock reason with odd characters intact' do
+    path = File.join(outside, "line\nbreak")
+    git('worktree', 'add', '-q', '-b', 'odd', path)
+    git('worktree', 'lock', '--reason', "two\nlines ünï", path)
+    odd = worktrees.list.find { |worktree| worktree.branch == 'odd' }
+    expect(odd).to have_attributes(path: real(path), locked?: true, lock_reason: "two\nlines ünï")
+  end
+
   it 'reports a branch with unmerged commits as not merged' do
     git('worktree', 'add', '-q', '-b', 'work', File.join(outside, 'work'))
     Dir.chdir(File.join(outside, 'work')) { commit_file('b.txt') }

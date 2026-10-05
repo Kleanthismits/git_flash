@@ -13,6 +13,12 @@ RSpec.describe Gitflash::Cli, :git_repo do
       end
     end
 
+    it 'labels an unknown dirty state in the table but keeps null in JSON' do
+      allow_any_instance_of(Gitflash::Worktrees).to receive(:dirty).and_return(nil)
+      expect(run_cli('wt', 'list').stdout).to include('dirty state unknown')
+      expect(run_cli('wt', 'list', '--json').json['result']['worktrees'].first['dirty']).to be_nil
+    end
+
     it 'prints a table' do
       git('branch', 'other')
       expect(run_cli('wt', 'list').stdout).to match(/main\s+main/)
