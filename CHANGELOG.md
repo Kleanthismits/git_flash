@@ -63,7 +63,7 @@ Security fixes for names and text that come from the repository:
 - `delete` passes `--` before the branch name; `resolve_commit` refuses references that start with a dash
 - Text output shows terminal control characters of repository-controlled text (commit subjects, git errors) as escapes such as `\x1B`, so a crafted commit subject cannot move the cursor, rewrite output or set the clipboard (OSC 52). JSON output keeps the original text
 
-## [0.6.0] - Unreleased
+## [0.6.0] - 2026-10-05
 
 - Snapshots: gitflash saves branches, HEAD, tracked, staged and untracked files and stash entries before every change it makes, as git objects under `refs/gitflash/snapshots/` (the working tree is never touched; untracked files over 50 MB are skipped)
 - Add `undo [SNAPSHOT]`: restores the parts a snapshot saved (the latest by default), after saving the current state so the undo can be undone
