@@ -36,7 +36,8 @@
         "worktree move",
         "clean",
         "worktree clean",
-        "pick"
+        "pick",
+        "mark"
       ]
     },
     "ok": {
@@ -507,6 +508,25 @@
             "else": {
               "$ref": "#/$defs/pick_result"
             }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "mark"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/mark_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/mark_result"
           }
         }
       }
@@ -1854,6 +1874,67 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/sha"
+          }
+        }
+      }
+    },
+    "mark_plan": {
+      "type": "object",
+      "required": [
+        "branches",
+        "owner"
+      ],
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ],
+          "description": "The owner to set; null clears the mark."
+        }
+      }
+    },
+    "mark_result": {
+      "type": "object",
+      "required": [
+        "branches"
+      ],
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "branch",
+              "owner",
+              "previous"
+            ],
+            "properties": {
+              "branch": {
+                "type": "string"
+              },
+              "owner": {
+                "enum": [
+                  "agent",
+                  "human",
+                  null
+                ]
+              },
+              "previous": {
+                "enum": [
+                  "agent",
+                  "human",
+                  null
+                ]
+              }
+            }
           }
         }
       }

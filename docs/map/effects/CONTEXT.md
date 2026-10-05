@@ -18,7 +18,7 @@ Verified at dde88fd on 2026-10-03.
 | retention / gc | [[snapshot-commands]], [[snapshot-store]] |
 | how branch names are read from git | [[branch]] (`parse_tips`, `fields`), [[repo]], [[state-capture]], [[restore]], [[hook-claude]]: all use full refs, never `refname:short` / `--short` |
 | a git call or format string | [[repo]], [[bash-command]], [[branch]] or [[commit]] |
-| who created a branch (agent or human) | [[ownership]], [[branch]], [[worktrees]], [[json-schema]] |
+| who created a branch (agent or human) | [[ownership]], [[mark]], [[branch]], [[worktrees]], [[json-schema]] |
 | branch fields | [[branch]], [[json-schema]], [[repo]] |
 | pick, its list, conflicts or control flags | [[pick]], [[cherry-pick]], [[json-schema]], [[exit-codes]], [[change-flow]] |
 | what clean selects or never touches | [[cleanup]], [[clean]], [[worktree-commands]], [[config]], [[ownership]] |

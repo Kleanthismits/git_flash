@@ -25,6 +25,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `branches`: list, filter merged/gone/stale. verified. `lib/gitflash/commands/branches.rb`
 - `checkout`: switch branch, HEAD snapshot. verified. `lib/gitflash/commands/checkout.rb`
 - `pick`: cherry-pick from another branch, list, control flags. verified. `lib/gitflash/commands/{pick,pick_control,pick_outcome}.rb`
+- `mark`: set or clear agent/human owner of branches. verified. `lib/gitflash/commands/mark.rb`
 - `clean`: delete merged/gone/stale/agent branches, subclass of delete. verified. `lib/gitflash/commands/{clean,clean_criteria}.rb`
 - `delete`: remove branches, confirm, snapshot. verified. `lib/gitflash/commands/delete.rb`
 - `reset`: reset to commit, snapshot every mode. verified. `lib/gitflash/commands/reset.rb`

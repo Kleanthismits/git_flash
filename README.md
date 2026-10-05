@@ -38,6 +38,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash checkout [BRANCH]` | Check out a branch, or pick one from a list |
 | `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current, default, `main` and `master` branches are protected. Unmerged branches are kept unless you pass `--force` |
 | `gitflash reset [COMMIT]` | Reset to a commit, or pick one of the latest 100. Mixed by default; `--soft` keeps changes staged, `--hard` discards them after confirmation |
+| `gitflash mark [BRANCH...]` | Mark branches as agent (default) or human work, or `--clear` the mark. Without a branch it marks the current one. Use it for branches made with plain git so `clean --agent` can find them |
 | `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. Protected: current, default, `main`, `master`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
 | `gitflash worktree` (`wt`) `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock`, `move` | Worktrees for parallel agent work, with absolute paths in `--json` (see below) |
 | `gitflash pick SOURCE [SHA...]` | Cherry-pick commits from another branch: `--list` shows what is missing here, `--continue`, `--skip` and `--abort` handle conflicts |
@@ -52,7 +53,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 
 ### Parallel agent work
 
-`gitflash wt add feature` creates a worktree (default `../<repo>.worktrees/feature`) and marks a new branch as agent work. `gitflash wt list --json` gives every worktree's absolute path, branch, dirty state, ahead/behind, merge status, lock state and owner, so an agent never has to switch directories.
+`gitflash wt add feature` creates a worktree (default `../<repo>.worktrees/feature`) and marks a new branch as agent work. For a branch made with plain git, run `gitflash mark` on it (no argument marks the current branch). `gitflash wt list --json` gives every worktree's absolute path, branch, dirty state, ahead/behind, merge status, lock state and owner, so an agent never has to switch directories.
 
 `gitflash wt remove` and `gitflash wt clean` save a snapshot first, and `gitflash undo` adds the worktree back with its branch and uncommitted files. Ignored files (`.env`, `node_modules`) are not saved: the plan lists them before they are deleted. A worktree with an untracked file over 50 MB is not removed.
 

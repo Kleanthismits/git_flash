@@ -130,3 +130,18 @@ pick:
 
     For agents: `gitflash pick SOURCE --list --json` and
     `gitflash pick SOURCE SHA... --yes --json`.
+
+mark:
+  short: 'Mark branches as agent or human work'
+  long: |
+    Records who created a branch, so `gitflash clean --agent` only touches branches an agent
+    created. The mark is the git config key `branch.<name>.gitflash-owner` and disappears with
+    the branch.
+
+    Without BRANCH the current branch is marked. The owner is `agent` unless --owner human is
+    given; --clear removes the mark. A branch without a mark counts as human work.
+
+    `gitflash wt add` marks the branches it creates. Use `gitflash mark` for branches made with
+    plain git, for example at the start of an agent session: `gitflash mark`.
+
+    Needs no confirmation. Pass --dry-run to see what would change, --json for the result.

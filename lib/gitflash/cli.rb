@@ -43,6 +43,14 @@ module Gitflash
       run_command('delete', Commands::Delete, *branches)
     end
 
+    desc 'mark [BRANCH...]', descriptions.mark.short
+    long_desc descriptions.mark.long
+    option :owner, type: :string, enum: Ownership::OWNERS, desc: 'agent (default) or human'
+    option :clear, type: :boolean, default: false, desc: 'Remove the mark'
+    def mark(*branches)
+      run_command('mark', Commands::Mark, *branches)
+    end
+
     desc 'clean', descriptions.clean.short
     long_desc descriptions.clean.long
     option :merged, type: :boolean, desc: 'Branches merged into the default branch'
