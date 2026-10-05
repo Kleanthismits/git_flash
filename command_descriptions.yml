@@ -88,3 +88,19 @@ clean:
     --force is given. Every chosen branch lists why it was chosen.
 
     Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.
+
+worktree_remove:
+  long: |
+    Removes the given worktrees, given as a path or the branch checked out in them. Without
+    arguments, shows a menu in a terminal. The main checkout and the current worktree are
+    never removed; locked worktrees and worktrees with uncommitted changes are refused
+    unless --force is given.
+
+    Each removal saves a snapshot first, including uncommitted and untracked files. Ignored
+    files (build output, dependencies, .env) are not saved: the plan and the confirmation list
+    them, since removal deletes them for good. A worktree with an untracked file over 50 MB
+    is not removed, because the snapshot cannot hold it. `gitflash undo ID` brings the
+    directory, its branch and the saved files back.
+
+    Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.
+    Accepts the global options after the subcommand: gitflash wt remove feature --yes --json

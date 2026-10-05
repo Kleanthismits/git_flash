@@ -50,12 +50,16 @@ module Gitflash
 
       def remove(chosen)
         plan = build_plan(chosen)
-        return planned(plan, "Would remove:\n#{bullets(chosen)}") if ui.dry_run?
-        return cancelled(plan) unless ui.confirm?(summary(chosen), plan: plan)
+        return planned(plan, "Would remove:\n#{preview(chosen, plan)}") if dry_run?
+        return cancelled(plan) unless ui.confirm?(summary(chosen, plan), plan: plan)
 
         outcomes = chosen.map { |worktree| remove_one(worktree) }
         report_results(plan, outcomes)
       end
+
+      def dry_run? = ui.dry_run?
+
+      def preview(chosen, plan) = "#{bullets(chosen)}#{ignored_warning(plan)}"
 
       # The plan reported and returned in JSON; `wt clean` adds why each worktree was chosen
       def build_plan(chosen)
@@ -63,8 +67,9 @@ module Gitflash
       end
 
       def plan_row(worktree)
+        ignored = worktree.missing? ? [] : Worktrees.new(repo: repo).ignored(worktree.path)
         { path: worktree.path, branch: worktree.branch, dirty: worktree.dirty?,
-          locked: worktree.locked? }
+          locked: worktree.locked?, ignored_count: ignored.size, ignored: ignored.first(5) }
       end
 
       def remove_one(worktree)
@@ -96,8 +101,9 @@ module Gitflash
                               dir: worktree.path)
       end
 
-      def summary(chosen)
-        "You are about to remove the following worktrees:\n\n#{bullets(chosen)}"
+      def summary(chosen, plan)
+        "You are about to remove the following worktrees:\n\n#{bullets(chosen)}" \
+          "#{ignored_warning(plan)}"
       end
 
       def bullets(chosen)

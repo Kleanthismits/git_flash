@@ -10,6 +10,20 @@ module Gitflash
 
       private
 
+      # Ignored files are never saved by snapshots, so `undo` cannot bring them back
+      def ignored_warning(plan)
+        rows = plan[:worktrees].select { |row| row[:ignored_count].positive? }
+        return '' if rows.empty?
+
+        lines = rows.map { |row| ignored_line(row) }
+        "\n\nIgnored files are not saved by snapshots and will be lost for good:\n" \
+          "#{lines.join("\n")}"
+      end
+
+      def ignored_line(row)
+        "* #{row[:path]}: #{row[:ignored_count]} (#{row[:ignored].join(', ')})"
+      end
+
       def report_results(plan, outcomes)
         removed, failed = outcomes.partition { |outcome| outcome.result.success? }
         result = { removed: removed.map { |outcome| removed_row(outcome) },

@@ -5,6 +5,7 @@ require 'thor'
 module Gitflash
   # `gitflash worktree ...` (alias `wt`): worktrees for parallel agent work
   class WorktreeCli < Thor
+    extend Configuration::Descriptions
     include CommandRunner
 
     namespace 'worktree'
@@ -104,20 +105,7 @@ module Gitflash
     end
 
     desc 'remove [WORKTREE...]', 'Remove worktrees (paths or branch names), saving a snapshot first'
-    long_desc <<~TEXT
-      Removes the given worktrees, given as a path or the branch checked out in them. Without
-      arguments, shows a menu in a terminal. The main checkout and the current worktree are
-      never removed; locked worktrees and worktrees with uncommitted changes are refused
-      unless --force is given.
-
-      Each removal saves a snapshot first, including uncommitted and untracked files. Ignored
-      files (build output, dependencies) are not saved. A worktree with an untracked file over
-      50 MB is not removed, because the snapshot cannot hold it. `gitflash undo ID` brings the
-      directory, its branch and the saved files back.
-
-      Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.
-      Accepts the global options after the subcommand: gitflash wt remove feature --yes --json
-    TEXT
+    long_desc descriptions.worktree_remove.long
     option :force, type: :boolean, default: false,
                    desc: 'Remove locked worktrees and worktrees with uncommitted changes'
     def remove(*worktrees)

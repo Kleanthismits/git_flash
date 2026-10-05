@@ -1312,6 +1312,18 @@
               },
               "locked": {
                 "type": "boolean"
+              },
+              "ignored_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Ignored files and directories that snapshots do not save and removal deletes for good."
+              },
+              "ignored": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The first few of them."
               }
             }
           }
@@ -1595,6 +1607,16 @@
                 "type": "boolean"
               },
               "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "ignored_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "ignored": {
                 "type": "array",
                 "items": {
                   "type": "string"

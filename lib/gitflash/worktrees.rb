@@ -44,13 +44,19 @@ module Gitflash
       run('worktree', 'add', *force, '-b', branch, '--', path, create_at)
     end
 
+    # Ignored files and directories (a directory counts once) of a worktree, which snapshots
+    # do not save. Empty when the directory is missing.
+    def ignored(path)
+      stdout, _stderr, success = @bash.capture('git', '-C', path, 'ls-files', '-z', '--others',
+                                               '--ignored', '--exclude-standard', '--directory')
+      success ? stdout.split("\0") : []
+    end
+
     def lock(path, reason: nil)
       run('worktree', 'lock', *(reason ? ['--reason', reason] : []), '--', path)
     end
 
-    def unlock(path)
-      run('worktree', 'unlock', '--', path)
-    end
+    def unlock(path) = run('worktree', 'unlock', '--', path)
 
     # A locked worktree needs `force`
     def move(path, destination, force: false)
@@ -80,15 +86,12 @@ module Gitflash
       File.expand_path(path)
     end
 
-    def local_branch?(branch)
-      _stdout, _stderr, success = @bash.capture('git', 'show-ref', '--verify', '--quiet',
-                                                "#{Repo::HEADS}#{branch}")
-      success
-    end
+    def local_branch?(branch) = ref?("#{Repo::HEADS}#{branch}")
 
-    def remote_branch?(branch)
-      _stdout, _stderr, success = @bash.capture('git', 'show-ref', '--verify', '--quiet',
-                                                "#{Repo::REMOTE_HEAD}#{branch}")
+    def remote_branch?(branch) = ref?("#{Repo::REMOTE_HEAD}#{branch}")
+
+    def ref?(full_name)
+      _stdout, _stderr, success = @bash.capture('git', 'show-ref', '--verify', '--quiet', full_name)
       success
     end
 

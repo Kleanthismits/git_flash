@@ -195,6 +195,30 @@ RSpec.describe Gitflash::Cli, :git_repo do
                                                       "gitflash wt remove #{wt_path('feat')}")
     end
 
+    it 'warns about ignored files, which snapshots do not save, in the plan and the prompt' do
+      File.write('.gitignore', ".env\nnode_modules/\n")
+      git('add', '.gitignore')
+      git('commit', '-q', '-m', 'ignore')
+      git('-C', wt_path('feat'), 'merge', '-q', 'main')
+      File.write(File.join(wt_path('feat'), '.env'), 'SECRET=1')
+      FileUtils.mkdir_p(File.join(wt_path('feat'), 'node_modules', 'pkg'))
+      File.write(File.join(wt_path('feat'), 'node_modules', 'pkg', 'index.js'), 'x')
+
+      run = remove('feat')
+      row = run.json['plan']['worktrees'].first
+      expect(row).to include('ignored_count' => 2, 'ignored' => ['.env', 'node_modules/'])
+      expect(run.json['error']['message']).to include('Ignored files are not saved by snapshots',
+                                                      '.env')
+      expect(run_cli('wt', 'remove', 'feat',
+                     '--dry-run').stdout).to include('will be lost for good')
+      expect(remove('feat', '--yes').status).to eq(0)
+    end
+
+    it 'reports no ignored files for a plain worktree' do
+      row = remove('feat').json['plan']['worktrees'].first
+      expect(row).to include('ignored_count' => 0, 'ignored' => [])
+    end
+
     it 'refuses to remove a worktree holding an untracked file too large for a snapshot' do
       File.open(File.join(wt_path('feat'), 'big.bin'), 'wb') do |file|
         file.truncate(51 * 1024 * 1024)
