@@ -5,6 +5,7 @@ require 'thor'
 module Gitflash
   class Cli < Thor
     extend Configuration::Descriptions
+    include CommandRunner
 
     SCHEMA_PATH = File.expand_path('../../schema/v1.json', __dir__)
 
@@ -25,13 +26,13 @@ module Gitflash
     option :gone, type: :boolean, desc: 'Branches whose upstream branch was deleted'
     option :stale, type: :numeric, banner: 'DAYS', desc: 'Branches without commits for DAYS days'
     def branches
-      run_command(Commands::Branches)
+      run_command('branches', Commands::Branches)
     end
 
     desc 'checkout [BRANCH]', descriptions.checkout.short
     long_desc descriptions.checkout.long
     def checkout(branch = nil)
-      run_command(Commands::Checkout, *[branch].compact)
+      run_command('checkout', Commands::Checkout, *[branch].compact)
     end
 
     desc 'delete [BRANCH...]', descriptions.delete.short
@@ -39,7 +40,7 @@ module Gitflash
     option :force, type: :boolean, default: false,
                    desc: 'Delete branches even if they have unmerged changes'
     def delete(*branches)
-      run_command(Commands::Delete, *branches)
+      run_command('delete', Commands::Delete, *branches)
     end
 
     desc 'reset [COMMIT]', descriptions.reset.short
@@ -47,8 +48,38 @@ module Gitflash
     option :hard, type: :boolean, default: false, desc: 'Discard all current changes'
     option :soft, type: :boolean, default: false, desc: 'Keep changes staged'
     def reset(commit = nil)
-      run_command(Commands::Reset, *[commit].compact)
+      run_command('reset', Commands::Reset, *[commit].compact)
     end
+
+    desc 'undo [SNAPSHOT]', descriptions.undo.short
+    long_desc descriptions.undo.long
+    def undo(snapshot = nil)
+      run_command('undo', Commands::Undo, *[snapshot].compact)
+    end
+
+    desc 'snapshots', 'List snapshots, newest first'
+    def snapshots
+      run_command('snapshots', Commands::SnapshotList)
+    end
+
+    desc 'snapshot', descriptions.snapshot.short
+    long_desc descriptions.snapshot.long
+    option :message, type: :string, desc: 'Why the snapshot was taken'
+    option :scope, type: :array, banner: 'PARTS',
+                   desc: 'Parts to save: branches head worktree stashes (default: all)'
+    def snapshot
+      run_command('snapshot', Commands::SnapshotCreate)
+    end
+
+    desc 'gc', 'Delete old snapshots'
+    option :older_than, type: :numeric, banner: 'DAYS',
+                        desc: 'Delete snapshots older than DAYS days (default 30)'
+    def gc
+      run_command('gc', Commands::Gc)
+    end
+
+    desc 'hook SUBCOMMAND', 'Agent hooks: claude (run the hook), install (register it)'
+    subcommand 'hook', HookCli
 
     desc 'schema', 'Print the JSON Schema of the --json output'
     def schema
@@ -60,23 +91,6 @@ module Gitflash
 
     def version
       puts VERSION
-    end
-
-    private
-
-    def run_command(command_class, *)
-      ui = build_ui(command_class.name.split('::').last.downcase)
-      repo = Repo.new
-      repo.ensure_work_tree!
-      status = command_class.new(repo: repo, ui: ui, options: options).call(*)
-      exit(status) unless status.zero?
-    rescue Error => e
-      ui.error(e)
-      exit(e.exit_code)
-    end
-
-    def build_ui(command)
-      Ui.new(command: command, json: options[:json], yes: options[:yes], dry_run: options[:dry_run])
     end
   end
 end

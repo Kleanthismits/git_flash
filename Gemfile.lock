@@ -110,7 +110,6 @@ DEPENDENCIES
   rubocop-rspec (~> 3.5)
   simplecov
   simplecov-lcov
-  tzinfo-data
 
 BUNDLED WITH
-   2.5.9
+   2.7.2

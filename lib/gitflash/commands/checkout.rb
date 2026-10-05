@@ -32,11 +32,12 @@ module Gitflash
         plan = { branch: name }
         return planned(plan, "Would check out '#{name}'") if ui.dry_run?
 
+        snapshot = take_snapshot("gitflash checkout #{name}", scope: %w[head])
         result = repo.checkout(name)
         git_error!('checkout', result) unless result.success?
 
         ui.report(status: 'done', plan: plan, result: { branch: name, previous_branch: current },
-                  text: "Switched to branch '#{name}'")
+                  undo: snapshot, text: "Switched to branch '#{name}'")
       end
 
       def noop(branch, text)

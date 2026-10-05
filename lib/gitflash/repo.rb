@@ -39,6 +39,16 @@ module Gitflash
       branches.find(&:current?)&.name
     end
 
+    def toplevel
+      @bash.exec('git', 'rev-parse', '--show-toplevel').strip
+    end
+
+    # Root of the main checkout; differs from toplevel inside a linked worktree
+    def main_root
+      common = @bash.exec('git', 'rev-parse', '--path-format=absolute', '--git-common-dir').strip
+      File.basename(common) == '.git' ? File.dirname(common) : toplevel
+    end
+
     # The branch that origin/HEAD points to, else main or master when present locally
     def default_branch
       return @default_branch if defined?(@default_branch)
