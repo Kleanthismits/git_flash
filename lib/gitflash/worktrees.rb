@@ -44,6 +44,23 @@ module Gitflash
       run('worktree', 'add', *force, '-b', branch, '--', path, create_at)
     end
 
+    def lock(path, reason: nil)
+      run('worktree', 'lock', *(reason ? ['--reason', reason] : []), '--', path)
+    end
+
+    def unlock(path)
+      run('worktree', 'unlock', '--', path)
+    end
+
+    # A locked worktree needs `force`
+    def move(path, destination, force: false)
+      run('worktree', 'move', *(force ? %w[--force --force] : []), '--', path, destination)
+    end
+
+    def prune
+      run('worktree', 'prune')
+    end
+
     # Removes a worktree directory. A locked one needs `force`, a dirty one too.
     def remove(path, force: false)
       run('worktree', 'remove', *(force ? %w[--force --force] : []), '--', path)

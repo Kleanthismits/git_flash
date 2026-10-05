@@ -48,6 +48,37 @@ module Gitflash
       run_command('worktree add', Commands::WorktreeAdd, *[branch].compact)
     end
 
+    desc 'lock WORKTREE', 'Lock a worktree so prune, remove and clean leave it alone'
+    long_desc 'Locks the worktree given as a path or branch. Add --reason to say why.'
+    option :reason, type: :string, desc: 'Why the worktree is locked'
+    def lock(worktree = nil)
+      run_command('worktree lock', Commands::WorktreeLock, *[worktree].compact)
+    end
+
+    desc 'unlock WORKTREE', 'Unlock a worktree'
+    def unlock(worktree = nil)
+      run_command('worktree unlock', Commands::WorktreeUnlock, *[worktree].compact)
+    end
+
+    desc 'move WORKTREE PATH', 'Move a worktree to another directory'
+    long_desc <<~TEXT
+      Moves the worktree (a path or branch) to PATH. The main checkout and the current worktree
+      cannot be moved; a locked worktree needs --force.
+    TEXT
+    option :force, type: :boolean, default: false, desc: 'Also move a locked worktree'
+    def move(worktree = nil, destination = nil)
+      run_command('worktree move', Commands::WorktreeMove, *[worktree, destination].compact)
+    end
+
+    desc 'prune', 'Forget worktrees whose directory is gone'
+    long_desc <<~TEXT
+      Removes git's record of worktrees whose directory no longer exists. Locked worktrees stay.
+      Branches are not touched. Asks for confirmation; pass --yes to skip it, or --dry-run.
+    TEXT
+    def prune
+      run_command('worktree prune', Commands::WorktreePrune)
+    end
+
     desc 'remove [WORKTREE...]', 'Remove worktrees (paths or branch names), saving a snapshot first'
     long_desc <<~TEXT
       Removes the given worktrees, given as a path or the branch checked out in them. Without

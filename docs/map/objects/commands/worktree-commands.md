@@ -10,7 +10,7 @@ verified_at: 5fc049d
 
 # Worktree commands
 
-`gitflash worktree` (alias `wt`): `list`, `add`, `remove`. Code: `WorktreeCli`, `Commands::WorktreeList`, `WorktreeAdd`, `WorktreeRemove`.
+`gitflash worktree` (alias `wt`): `list`, `add`, `remove`, `lock`, `unlock`, `move`, `prune`. Code: `WorktreeCli`, `Commands::WorktreeList`, `WorktreeAdd`, `WorktreeRemove`, `WorktreeLock` (+ `WorktreeUnlock`), `WorktreeMove`, `WorktreePrune`; shared lookup in `WorktreeCommand`.
 
 ## Why this shape
 
@@ -21,6 +21,8 @@ Agents use the absolute paths from `wt list --json` and never switch directory. 
 - `wt list`: read only, report `result: { worktrees: [...] }`, JSON command name `worktree list` (`lib/gitflash/commands/worktree_list.rb`).
 - `wt add BRANCH`: source is `existing` (local), `remote` (tracks `origin/BRANCH`) or `new` (from HEAD or `--from`). Path from `--path`, else [[config]] `worktree_dir`. A branch created here gets the owner mark (`--owner`, default `agent`; [[ownership]]). Additive: no confirm, no snapshot. Refuses a branch already checked out elsewhere and a non-empty directory.
 - `wt remove [WORKTREE...]`: path or branch; menu in a terminal. Refusals (`protected_worktree`): main checkout, current worktree, locked or dirty without `--force`; rule lives in `Worktree#removal_blocker`. Confirms, snapshots each worktree (own HEAD and files), removes. Undo: [[worktree-revival]].
+- `wt lock|unlock WORKTREE`: no confirm; second call is a `noop`; main checkout refused. `wt move WORKTREE PATH`: refuses main, current, locked without `--force`; no confirm (move back to reverse). `wt prune`: lists missing, unlocked worktrees, confirms, runs `git worktree prune`; no snapshot (only git's record of a missing directory goes; branches stay).
+- Lookup by path or branch is `WorktreeCommand#find!` (`unknown_worktree`); main-checkout refusal is `refuse_main!` (`protected_worktree`).
 - Global flags go after the subcommand, as with `hook`: `gitflash wt list --json`.
 
 ## Connected to
@@ -41,4 +43,4 @@ Agents use the absolute paths from `wt list --json` and never switch directory. 
 
 ## See
 
-- Source: `lib/gitflash/worktree_cli.rb`, `lib/gitflash/commands/worktree_{list,add,remove}.rb`
+- Source: `lib/gitflash/worktree_cli.rb`, `lib/gitflash/commands/worktree_{command,list,add,remove,lock,unlock,move,prune}.rb`

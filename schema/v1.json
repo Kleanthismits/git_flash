@@ -29,7 +29,11 @@
         "hook status",
         "worktree list",
         "worktree add",
-        "worktree remove"
+        "worktree remove",
+        "worktree prune",
+        "worktree lock",
+        "worktree unlock",
+        "worktree move"
       ]
     },
     "ok": {
@@ -357,6 +361,82 @@
           },
           "result": {
             "$ref": "#/$defs/worktree_remove_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree prune"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_prune_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_prune_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree lock"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_lock_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_lock_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree unlock"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_unlock_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_unlock_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree move"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_move_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_move_result"
           }
         }
       }
@@ -1262,6 +1342,129 @@
               }
             }
           }
+        }
+      }
+    },
+    "worktree_prune_plan": {
+      "type": "object",
+      "required": [
+        "worktrees"
+      ],
+      "properties": {
+        "worktrees": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "worktree_prune_result": {
+      "type": "object",
+      "required": [
+        "pruned"
+      ],
+      "properties": {
+        "pruned": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "worktree_lock_plan": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "worktree_unlock_plan": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      }
+    },
+    "worktree_lock_result": {
+      "type": "object",
+      "required": [
+        "path",
+        "locked"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "worktree_unlock_result": {
+      "type": "object",
+      "required": [
+        "path",
+        "locked"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "worktree_move_plan": {
+      "type": "object",
+      "required": [
+        "from",
+        "to",
+        "force"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
+    "worktree_move_result": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
         }
       }
     }

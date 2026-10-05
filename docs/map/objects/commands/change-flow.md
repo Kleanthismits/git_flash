@@ -29,6 +29,7 @@ Agents get the plan back (`confirmation_required` with `plan`), re-run with `--y
 | reset | `--hard` only (`reset.rb`) | branches, head, worktree | before git, all modes (`reset.rb`, `59-61`) |
 | undo | always | scope of target | after confirm (`undo.rb`) |
 | worktree remove | always | branches, head, worktree of the removed worktree (`dir:`); missing directory: branches only | per worktree, after confirm (`worktree_remove.rb`) |
+| worktree prune | always | none (git's record of a missing directory only) | `worktree_prune.rb` |
 | gc | always | none | deletes snapshots (`gc.rb:21-28`) |
 
 - `worktree add` is additive: no confirm, no snapshot, no `undo`. `worktree remove` reports envelope `undo` only when exactly one worktree was removed; each removed row carries its own `snapshot` and `undo` command.

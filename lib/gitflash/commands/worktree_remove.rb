@@ -7,7 +7,7 @@ module Gitflash
     # unless --force is given (the main checkout and the current one never can be removed).
     # Each removal saves a snapshot of the worktree first; `gitflash undo ID` brings the
     # directory, its branch and its uncommitted files back.
-    class WorktreeRemove < Base
+    class WorktreeRemove < WorktreeCommand
       def call(*targets)
         worktrees = Worktrees.new(repo: repo).list
         targets = pick(worktrees) if targets.empty?
@@ -38,18 +38,12 @@ module Gitflash
       end
 
       def resolve(targets, worktrees)
-        chosen = targets.uniq.map { |target| find(target, worktrees) }.uniq(&:path)
+        chosen = targets.uniq.map { |target| find!(target, worktrees) }.uniq(&:path)
         refused = chosen.filter_map do |worktree|
           worktree.removal_blocker(force: force?, current: current?(worktree))
         end
         usage_error!('protected_worktree', refused.join('; ')) if refused.any?
         chosen
-      end
-
-      def find(target, worktrees)
-        path = File.expand_path(target)
-        worktrees.find { |worktree| worktree.path == path || worktree.branch == target } ||
-          usage_error!('unknown_worktree', "Unknown worktree: #{target}")
       end
 
       def remove(chosen)

@@ -183,4 +183,63 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(File.directory?(wt_path('feat'))).to be(true)
     end
   end
+
+  describe 'worktree lock, unlock, move and prune' do
+    before { run_cli('wt', 'add', 'feat', '--path', wt_path('feat')) }
+
+    it 'locks and unlocks, and says so when nothing changes' do
+      run = run_cli('wt', 'lock', 'feat', '--reason', 'agent running', '--json')
+      expect(result_of(run)).to include('path' => wt_path('feat'), 'locked' => true,
+                                        'reason' => 'agent running')
+      listed = run_cli('wt', 'list', '--json').json['result']['worktrees']
+      expect(listed.find { |w| w['branch'] == 'feat' }).to include('locked' => true,
+                                                                   'lock_reason' => 'agent running')
+      expect(run_cli('wt', 'lock', 'feat', '--json').json['status']).to eq('noop')
+
+      expect(result_of(run_cli('wt', 'unlock', 'feat', '--json'))).to include('locked' => false)
+      expect(run_cli('wt', 'unlock', 'feat', '--json').json['status']).to eq('noop')
+    end
+
+    it 'refuses to lock the main checkout or an unknown worktree' do
+      expect(run_cli('wt', 'lock', Dir.pwd, '--json').json['error'])
+        .to include('code' => 'protected_worktree')
+      expect(run_cli('wt', 'unlock', 'nope', '--json').json['error'])
+        .to include('code' => 'unknown_worktree')
+      expect(run_cli('wt', 'lock', '--json').json['error']).to include('code' => 'invalid_usage')
+    end
+
+    it 'moves a worktree and refuses locked, main and current ones' do
+      git('worktree', 'lock', wt_path('feat'))
+      expect(run_cli('wt', 'move', 'feat', wt_path('moved'), '--json').json['error']['message'])
+        .to include('locked')
+      moved = run_cli('wt', 'move', 'feat', wt_path('moved'), '--force', '--json')
+      expect(result_of(moved)).to eq('from' => wt_path('feat'), 'to' => wt_path('moved'))
+      expect(File.directory?(wt_path('moved'))).to be(true)
+
+      expect(run_cli('wt', 'move', Dir.pwd, wt_path('m'), '--json').json['error']['code'])
+        .to eq('protected_worktree')
+      Dir.chdir(wt_path('moved')) do
+        expect(run_cli('wt', 'move', 'feat', wt_path('again'), '--json').json['error']['message'])
+          .to include('current worktree')
+      end
+      expect(run_cli('wt', 'move', 'feat', '--json').json['error']['code']).to eq('invalid_usage')
+    end
+
+    it 'prunes only missing, unlocked worktrees, after confirmation' do
+      run_cli('wt', 'add', 'kept', '--path', wt_path('kept'))
+      run_cli('wt', 'lock', 'kept')
+      FileUtils.rm_rf([wt_path('feat'), wt_path('kept')])
+      run_cli('wt', 'add', 'gone', '--path', wt_path('gone'))
+      FileUtils.rm_rf(wt_path('gone'))
+
+      expect(run_cli('wt', 'prune', '--json')).to have_attributes(status: 2)
+      expect(run_cli('wt', 'prune', '--dry-run', '--json').json['plan']['worktrees'])
+        .to contain_exactly(wt_path('feat'), wt_path('gone'))
+      run = run_cli('wt', 'prune', '--yes', '--json')
+      expect(result_of(run)['pruned']).to contain_exactly(wt_path('feat'), wt_path('gone'))
+      expect(git('worktree', 'list', '--porcelain')).to include(wt_path('kept'))
+      expect(branch_names).to include('feat', 'gone')
+      expect(run_cli('wt', 'prune', '--yes', '--json').json['status']).to eq('noop')
+    end
+  end
 end
