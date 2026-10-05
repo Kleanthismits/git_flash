@@ -14,7 +14,7 @@ Set or clear the agent / human owner of branches. Code: `Commands::Mark`.
 
 ## Why this shape
 
-`wt add` only marks branches it creates. Branches made with plain git stay unmarked, so `clean --agent` cannot find them. `gitflash mark` lets an agent (or its instructions) mark them at the start of a session. It works for every agent, unlike a hook.
+`wt add` only marks branches it creates. Branches made with plain git stay unmarked, so `clean --agent` cannot find them. `gitflash mark` lets an agent (or its instructions) mark them at the start of a session. It works for every agent, unlike the Claude-only hook ([[hook-marking]]).
 
 ## Shape
 
@@ -31,7 +31,7 @@ Set or clear the agent / human owner of branches. Code: `Commands::Mark`.
 ## If you change this
 
 - **Hits:** [[json-schema]] `mark_plan` / `mark_result`; `spec/lib/gitflash/cli_mark_spec.rb`.
-- **Does not hit:** [[snapshot-store]], [[hook-claude]] (a `PostToolUse` hook that marks automatically is a separate, not yet built step).
+- **Does not hit:** [[snapshot-store]], [[hook-claude]] (its PostToolUse path marks automatically: [[hook-marking]]).
 
 ## Surfaces
 

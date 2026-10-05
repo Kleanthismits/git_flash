@@ -51,4 +51,31 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
       expect(described_class.new.call(input('git reset --hard', cwd: dir))).to be_nil
     end
   end
+
+  describe 'PostToolUse' do
+    def post(command, tool: 'Bash')
+      JSON.generate(hook_event_name: 'PostToolUse', tool_name: tool, cwd: Dir.pwd,
+                    tool_input: { command: command }, tool_response: { exit_code: 0 })
+    end
+
+    it 'marks the branch the command created and tells the agent' do
+      git('checkout', '-q', '-b', 'feat')
+      output = described_class.new.call(post('git checkout -b feat'))
+      expect(output[:hookSpecificOutput]).to include(hookEventName: 'PostToolUse')
+      expect(context(output)).to include('marked feat as agent work', 'gitflash mark BRANCH')
+      expect(Gitflash::Ownership.new.all).to eq('feat' => 'agent')
+    end
+
+    it 'does nothing for other commands and tools, and never snapshots' do
+      expect(described_class.new.call(post('git reset --hard'))).to be_nil
+      expect(described_class.new.call(post('git checkout -b nope', tool: 'Edit'))).to be_nil
+      expect(described_class.new.call(post('git checkout -b ghost'))).to be_nil
+      expect(Gitflash::Snapshots.new.list).to be_empty
+    end
+
+    it 'leaves PreToolUse input without an event name working as before' do
+      output = described_class.new.call(input('git reset --hard'))
+      expect(context(output)).to include('gitflash undo')
+    end
+  end
 end

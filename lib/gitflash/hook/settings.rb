@@ -49,9 +49,9 @@ module Gitflash
         raise Error.new("#{path} is not valid JSON: #{e.message}", code: 'invalid_settings')
       end
 
-      # The gitflash hook entry in parsed settings, or nil
-      def entry(settings)
-        groups = Array(settings.dig('hooks', 'PreToolUse'))
+      # The gitflash hook entry for an event (PreToolUse by default) in parsed settings, or nil
+      def entry(settings, event = 'PreToolUse')
+        groups = Array(settings.dig('hooks', event))
         groups.flat_map { |group| Array(group['hooks']) }
               .find { |hook| hook['command'].to_s.match?(PATTERN) }
       end

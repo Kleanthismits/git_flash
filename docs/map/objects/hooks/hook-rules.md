@@ -14,16 +14,18 @@ Decides which shell commands are dangerous and what to save first. Code: `Hook::
 
 ## Why this shape
 
-Only git commands that lose work git cannot restore matter: uncommitted or untracked files, deleted branches, dropped stashes. Commit, merge, pull are ignored because the reflog covers them (`lib/gitflash/hook/command_parser.rb:7-11`). Parser is simple on purpose: an extra snapshot is harmless, a missed one is not (`command_parser.rb:12-14`).
+Only git commands that lose work git cannot restore matter: uncommitted or untracked files, deleted branches, dropped stashes. Commit, merge, pull are ignored because the reflog covers them (`lib/gitflash/hook/command_parser.rb`). Parser is simple on purpose: an extra snapshot is harmless, a missed one is not (`command_parser.rb`).
 
 ## Shape
 
-- `RULES` map: reset, checkout, restore, clean, switch, stash, branch, update-ref, rebase, merge/cherry-pick/revert/am (abort only), worktree (`lib/gitflash/hook/rules.rb:75-90`). Each returns `{ scope, branches, dir }` or nil.
-- Short options may be bundled: `short_flags` joins their letters, so `git checkout -fq main`, `git switch -fq main` and `git clean -fdq` are seen (`rules.rb:24-33`).
-- `checkout` also counts an argument that names an existing file as a discard (`git checkout src/app.rb`), because telling a path from a branch needs git; this can add an extra snapshot, which is harmless (`rules.rb:22-34`).
-- Examples: `reset` always saves branches+head+worktree for the current branch (`rules.rb:76`); `clean` only when forced and not dry-run (`rules.rb:27-33`); `branch` only for delete/move/force flags (`rules.rb:46-50`).
-- Parser: splits on unquoted `; & |` and newlines (`command_parser.rb:43-58`), strips `sudo`, `env`, `VAR=x` (`command_parser.rb:19`, `60-69`), follows `cd` and `git -C` (`command_parser.rb:32-35`, `91-98`).
+- `RULES` map: reset, checkout, restore, clean, switch, stash, branch, update-ref, rebase, merge/cherry-pick/revert/am (abort only), worktree (`lib/gitflash/hook/rules.rb`). Each returns `{ scope, branches, dir }` or nil.
+- Short options may be bundled: `short_flags` joins their letters, so `git checkout -fq main`, `git switch -fq main` and `git clean -fdq` are seen (`rules.rb`).
+- `checkout` also counts an argument that names an existing file as a discard (`git checkout src/app.rb`), because telling a path from a branch needs git; this can add an extra snapshot, which is harmless (`rules.rb`).
+- Examples: `reset` always saves branches+head+worktree for the current branch (`rules.rb`); `clean` only when forced and not dry-run (`rules.rb`); `branch` only for delete/move/force flags (`rules.rb`).
+- Parser: splits on unquoted `; & |` and newlines (`command_parser.rb`), strips `sudo`, `env`, `VAR=x` (`command_parser.rb`, `60-69`), follows `cd` and `git -C` (`command_parser.rb`, `91-98`).
 - **Known miss, checked 2026-10-03:** `bash -c "git reset --hard"`, `echo $(git reset --hard)`, `sh -c "cd x && git clean -fd"` and `xargs git branch -D` return no target; `(git reset --hard)` and `git stash drop` do. Also true for `deny` mode.
+
+- Creation rules are separate: `Hook::Creations` says which commands create a branch (see [[hook-marking]]); `CommandParser#creations` reuses the same `cd` and `-C` walk through `git_commands`.
 
 ## Connected to
 
