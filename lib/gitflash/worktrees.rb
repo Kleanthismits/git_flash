@@ -46,7 +46,7 @@ module Gitflash
     end
 
     def branch_status(info)
-      { ahead: info&.ahead, behind: info&.behind, merged: info&.merged }
+      { ahead: info&.ahead, behind: info&.behind, merged: info&.merged, owner: info&.owner }
     end
 
     def lock_reason(value)

@@ -18,6 +18,7 @@ Verified at dde88fd on 2026-10-03.
 | retention / gc | [[snapshot-commands]], [[snapshot-store]] |
 | how branch names are read from git | [[branch]] (`parse_tips`, `fields`), [[repo]], [[state-capture]], [[restore]], [[hook-claude]]: all use full refs, never `refname:short` / `--short` |
 | a git call or format string | [[repo]], [[bash-command]], [[branch]] or [[commit]] |
+| who created a branch (agent or human) | [[ownership]], [[branch]], [[worktrees]], [[json-schema]] |
 | branch fields | [[branch]], [[json-schema]], [[repo]] |
 | protected branches | [[delete]], [[config]] (`protected` patterns) |
 | a settings key or file | [[config]], [[exit-codes]] |

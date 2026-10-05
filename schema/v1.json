@@ -429,6 +429,14 @@
         },
         "last_commit_subject": {
           "type": "string"
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ],
+          "description": "Who created the branch; null when unmarked (treated as human)."
         }
       }
     },
@@ -1001,6 +1009,14 @@
             "null"
           ],
           "description": "Branch merged into the default branch; null without a branch."
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ],
+          "description": "Who created the branch; null when unmarked (treated as human)."
         }
       }
     },

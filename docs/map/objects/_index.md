@@ -14,6 +14,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `commit`: commit record. verified. `lib/gitflash/commit.rb`
 - `config`: settings files `.gitflash.yml`, `~/.config/gitflash.yml`. verified. `lib/gitflash/{config,config_keys}.rb`
 - `worktrees`: worktree records from git. verified. `lib/gitflash/{worktrees,worktree}.rb`
+- `ownership`: agent/human mark per branch in git config. verified. `lib/gitflash/ownership.rb`
 - `bash-command`: git process runner. verified. `lib/gitflash/git/bash_command.rb`
 - `command-runner`: runs one command, maps errors to exit. verified. `lib/gitflash/command_runner.rb`
 

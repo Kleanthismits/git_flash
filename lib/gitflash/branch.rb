@@ -6,10 +6,15 @@ module Gitflash
   # A local branch as reported by `git for-each-ref`
   Branch = Data.define(
     :name, :sha, :current, :default, :upstream, :upstream_gone, :ahead, :behind,
-    :merged, :last_commit_at, :last_commit_author, :last_commit_subject
+    :merged, :last_commit_at, :last_commit_author, :last_commit_subject, :owner
   ) do
+    # Records are built without an owner; Ownership#annotate adds it
+    def initialize(owner: nil, **fields)
+      super
+    end
+
     # Parses one line produced with Repo::BRANCH_FORMAT.
-    # `merged_names` is nil when merge status is unknown.
+    # `merged_names` is nil when merge status is unknown. `owner` is set by the caller.
     def self.parse(line, default_branch: nil, merged_names: nil)
       name, sha, head, upstream, track, date, author, subject = fields(line)
 

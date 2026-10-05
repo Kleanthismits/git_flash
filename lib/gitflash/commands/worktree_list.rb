@@ -28,9 +28,10 @@ module Gitflash
       end
 
       def state_labels(worktree)
-        [['main', worktree.main?], ['dirty', worktree.dirty?],
-         ['dirty state unknown', unknown_dirty?(worktree)], ['locked', worktree.locked?],
-         ['missing', worktree.missing?], ['merged', worktree.merged && !worktree.main?]]
+        [['main', worktree.main?], ['agent', worktree.owner == 'agent'],
+         ['dirty', worktree.dirty?], ['dirty state unknown', unknown_dirty?(worktree)],
+         ['locked', worktree.locked?], ['missing', worktree.missing?],
+         ['merged', worktree.merged && !worktree.main?]]
       end
 
       # git status failed in a directory that exists; JSON keeps `dirty: null`

@@ -4,10 +4,10 @@ module Gitflash
   # A checkout of the repository as reported by `git worktree list --porcelain`.
   # `branch` is nil for a detached HEAD. `missing` means the directory is gone (git calls it
   # prunable). `dirty` is nil when it cannot be known (missing directory or bare repository).
-  # ahead, behind and merged are those of the branch, nil without a branch.
+  # ahead, behind, merged and owner are those of the branch, nil without a branch.
   Worktree = Data.define(
     :path, :head, :branch, :main, :bare, :locked, :lock_reason, :missing,
-    :dirty, :ahead, :behind, :merged
+    :dirty, :ahead, :behind, :merged, :owner
   ) do
     alias_method :main?, :main
     alias_method :locked?, :locked

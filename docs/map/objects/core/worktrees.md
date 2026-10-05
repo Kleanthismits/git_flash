@@ -18,9 +18,9 @@ All parsing of `git worktree list --porcelain` and the per-worktree probes live 
 
 ## Shape
 
-- `list`: main checkout first. Fields: path, head, branch (nil when detached), main, bare, locked, lock_reason, missing, dirty, ahead, behind, merged (`lib/gitflash/worktree.rb:5-11`).
+- `list`: main checkout first. Fields: path, head, branch (nil when detached), main, bare, locked, lock_reason, missing, dirty, ahead, behind, merged, owner (`lib/gitflash/worktree.rb:5-11`).
 - `missing` = git says prunable or directory absent. `dirty` is nil when missing or bare, else `git -C path status --porcelain` (`lib/gitflash/worktrees.rb`).
-- ahead, behind, merged come from [[repo]] `branches(merged_status: true)`; nil without a branch.
+- ahead, behind, merged, owner come from [[repo]] `branches(merged_status: true)`; nil without a branch.
 
 ## Connected to
 

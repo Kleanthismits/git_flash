@@ -18,7 +18,7 @@ Immutable `Data` parsed once from `for-each-ref`, so commands filter and report 
 
 ## Shape
 
-- 12 fields (`lib/gitflash/branch.rb:7-10`), mirrored by `$defs/branch` in [[json-schema]] (`schema/v1.json:350`).
+- 13 fields; `owner` is nil until [[ownership]]`#annotate` sets it, so `parse` never reads config (`lib/gitflash/branch.rb:7-17`), mirrored by `$defs/branch` in [[json-schema]] (`schema/v1.json:350`).
 - `merged` nil when status unknown (`branch.rb:12-13`, `25`).
 - `stale?(days)` (`branch.rb:51-53`); `to_h` formats time ISO 8601 (`branch.rb:55-57`).
 - `Branch.parse_tips` and `Branch::TIPS_FORMAT` read `{ name => sha }` from full refs; shared by [[state-capture]] and [[restore]] (`branch.rb:32-37`, last line of file).
@@ -27,6 +27,7 @@ Immutable `Data` parsed once from `for-each-ref`, so commands filter and report 
 ## Connected to
 
 - **owned-by:** [[repo]]
+- **joins:** [[ownership]]
 - **joins:** [[json-schema]], `branches` and `delete` commands
 - **looks-like-but-is-not:** [[snapshot]] `branches` is a plain `{ name => sha }` map, not `Branch` records.
 
