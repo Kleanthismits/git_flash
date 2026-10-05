@@ -79,6 +79,30 @@ module Gitflash
       run_command('worktree prune', Commands::WorktreePrune)
     end
 
+    desc 'clean', 'Remove worktrees whose branch is merged, gone, stale or agent-created'
+    long_desc <<~TEXT
+      Removes worktrees whose branch matches the criteria of `gitflash clean`: merged into the
+      default branch or upstream gone by default, plus --stale [DAYS] and --agent. The main
+      checkout, the current worktree and worktrees on protected branches are never removed;
+      locked worktrees and worktrees with uncommitted changes are skipped (and listed with the
+      reason) unless --force is given.
+
+      Each removal saves a snapshot first, as `wt remove` does. Branches are kept: run
+      `gitflash clean` afterwards to delete them. Missing directories are handled by `wt prune`.
+
+      Asks for confirmation; pass --yes to skip it, or --dry-run.
+    TEXT
+    option :merged, type: :boolean, desc: 'Branches merged into the default branch'
+    option :gone, type: :boolean, desc: 'Branches whose upstream branch was deleted'
+    option :stale, type: :string, banner: 'DAYS', lazy_default: '',
+                   desc: 'Branches without commits for DAYS days (default: stale_days setting)'
+    option :agent, type: :boolean, desc: 'Branches created by an agent'
+    option :force, type: :boolean, default: false,
+                   desc: 'Also remove locked worktrees and worktrees with uncommitted changes'
+    def clean
+      run_command('worktree clean', Commands::WorktreeClean)
+    end
+
     desc 'remove [WORKTREE...]', 'Remove worktrees (paths or branch names), saving a snapshot first'
     long_desc <<~TEXT
       Removes the given worktrees, given as a path or the branch checked out in them. Without

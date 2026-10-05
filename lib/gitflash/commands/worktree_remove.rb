@@ -47,12 +47,17 @@ module Gitflash
       end
 
       def remove(chosen)
-        plan = { worktrees: chosen.map { |worktree| plan_row(worktree) }, force: force? }
+        plan = build_plan(chosen)
         return planned(plan, "Would remove:\n#{bullets(chosen)}") if ui.dry_run?
         return cancelled(plan) unless ui.confirm?(summary(chosen), plan: plan)
 
         outcomes = chosen.map { |worktree| remove_one(worktree) }
         report_results(plan, outcomes)
+      end
+
+      # The plan reported and returned in JSON; `wt clean` adds why each worktree was chosen
+      def build_plan(chosen)
+        { worktrees: chosen.map { |worktree| plan_row(worktree) }, force: force? }
       end
 
       def plan_row(worktree)

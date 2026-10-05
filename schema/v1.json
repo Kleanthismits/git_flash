@@ -33,7 +33,9 @@
         "worktree prune",
         "worktree lock",
         "worktree unlock",
-        "worktree move"
+        "worktree move",
+        "clean",
+        "worktree clean"
       ]
     },
     "ok": {
@@ -437,6 +439,44 @@
           },
           "result": {
             "$ref": "#/$defs/worktree_move_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "clean"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/clean_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/delete_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree clean"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_clean_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_remove_result"
           }
         }
       }
@@ -1465,6 +1505,132 @@
         },
         "to": {
           "type": "string"
+        }
+      }
+    },
+    "clean_plan": {
+      "type": "object",
+      "required": [
+        "branches",
+        "force",
+        "reasons",
+        "skipped"
+      ],
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "type": "object",
+          "description": "Why each branch was chosen, by branch name.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "description": "Matching branches that were kept.",
+          "items": {
+            "type": "object",
+            "required": [
+              "branch",
+              "reason"
+            ],
+            "properties": {
+              "branch": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "worktree_clean_plan": {
+      "type": "object",
+      "required": [
+        "worktrees",
+        "force",
+        "skipped"
+      ],
+      "properties": {
+        "worktrees": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "branch",
+              "dirty",
+              "locked"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "dirty": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "locked": {
+                "type": "boolean"
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "skipped": {
+          "type": "array",
+          "description": "Matching worktrees that were kept, with the reason.",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "branch",
+              "reason"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     }

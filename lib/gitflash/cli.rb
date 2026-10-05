@@ -43,6 +43,19 @@ module Gitflash
       run_command('delete', Commands::Delete, *branches)
     end
 
+    desc 'clean', descriptions.clean.short
+    long_desc descriptions.clean.long
+    option :merged, type: :boolean, desc: 'Branches merged into the default branch'
+    option :gone, type: :boolean, desc: 'Branches whose upstream branch was deleted'
+    option :stale, type: :string, banner: 'DAYS', lazy_default: '',
+                   desc: 'Branches without commits for DAYS days (default: stale_days setting)'
+    option :agent, type: :boolean, desc: 'Branches created by an agent'
+    option :force, type: :boolean, default: false,
+                   desc: 'Also delete selected branches that have unmerged changes'
+    def clean
+      run_command('clean', Commands::Clean)
+    end
+
     desc 'reset [COMMIT]', descriptions.reset.short
     long_desc descriptions.reset.long
     option :hard, type: :boolean, default: false, desc: 'Discard all current changes'

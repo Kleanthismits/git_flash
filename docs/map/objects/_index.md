@@ -15,6 +15,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `config`: settings files `.gitflash.yml`, `~/.config/gitflash.yml`. verified. `lib/gitflash/{config,config_keys}.rb`
 - `worktrees`: worktree records from git. verified. `lib/gitflash/{worktrees,worktree}.rb`
 - `ownership`: agent/human mark per branch in git config. verified. `lib/gitflash/ownership.rb`
+- `cleanup`: pure selection rules and branch protection. verified. `lib/gitflash/{cleanup,protection}.rb`
 - `bash-command`: git process runner. verified. `lib/gitflash/git/bash_command.rb`
 - `command-runner`: runs one command, maps errors to exit. verified. `lib/gitflash/command_runner.rb`
 
@@ -22,6 +23,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `cli`: Thor entry, global flags, hook subcommand. verified. `lib/gitflash/cli.rb`
 - `branches`: list, filter merged/gone/stale. verified. `lib/gitflash/commands/branches.rb`
 - `checkout`: switch branch, HEAD snapshot. verified. `lib/gitflash/commands/checkout.rb`
+- `clean`: delete merged/gone/stale/agent branches, subclass of delete. verified. `lib/gitflash/commands/{clean,clean_criteria}.rb`
 - `delete`: remove branches, confirm, snapshot. verified. `lib/gitflash/commands/delete.rb`
 - `reset`: reset to commit, snapshot every mode. verified. `lib/gitflash/commands/reset.rb`
 - `undo`: restore a snapshot, undo-able. verified. `lib/gitflash/commands/undo.rb`

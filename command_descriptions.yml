@@ -69,3 +69,22 @@ snapshot:
     Untracked files larger than 50 MB are skipped and listed.
 
     Use --scope to save only some parts, for example --scope worktree.
+
+clean:
+  short: 'Delete merged, gone, stale or agent-created branches'
+  long: |
+    Deletes branches that are no longer needed, with a snapshot first so `gitflash undo`
+    brings them back.
+
+    Without options it selects branches merged into the default branch and branches whose
+    upstream was deleted. Add criteria to select more (a branch is chosen when it matches any):
+      --merged       merged into the default branch
+      --gone         upstream branch was deleted on the remote
+      --stale [DAYS] no commits for DAYS days (default: `stale_days` setting, 30)
+      --agent        created by an agent (marked by `gitflash wt add`)
+
+    Never selected: the current and default branch, main, master, `protected` branches from
+    .gitflash.yml, and branches checked out in any worktree. Unmerged branches are kept unless
+    --force is given. Every chosen branch lists why it was chosen.
+
+    Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.

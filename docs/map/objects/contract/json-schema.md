@@ -19,7 +19,7 @@ One envelope for all commands, so agents parse one shape. Roadmap standard 4: co
 ## Shape
 
 - Envelope required: `schema`, `command`, `ok`, `status`, `dry_run` (`schema/v1.json:7-13`). Optional: `plan`, `result`, `error`, `undo`.
-- `command` enum (`schema/v1.json:18`): branches, checkout, delete, reset, undo, snapshots, snapshot, gc, `hook install`, `hook status`, `worktree list`, `worktree add`, `worktree remove`, `worktree lock`, `worktree unlock`, `worktree move`, `worktree prune`. `hook claude`, `schema`, `version` are not in it: they print outside the envelope.
+- `command` enum (`schema/v1.json:18`): branches, checkout, delete, reset, undo, snapshots, snapshot, gc, `hook install`, `hook status`, `worktree list`, `worktree add`, `worktree remove`, `worktree lock`, `worktree unlock`, `worktree move`, `worktree prune`, `worktree clean`, and `clean`. `hook claude`, `schema`, `version` are not in it: they print outside the envelope.
 - `status` enum (`schema/v1.json:35-44`): done, planned, noop, cancelled, failed, confirmation_required, error.
 - `ok` true only for done/planned/noop/cancelled, else `error` required (`schema/v1.json:82-110`).
 - `confirmation_required` requires `plan` (`schema/v1.json:118-124`).
