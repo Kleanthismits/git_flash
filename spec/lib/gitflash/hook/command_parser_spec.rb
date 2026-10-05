@@ -47,6 +47,13 @@ RSpec.describe Gitflash::Hook::CommandParser do
     expect(targets('git commit -m "fix; git reset --hard" && git status')).to eq([])
   end
 
+  it 'sees force and patch options bundled with other short options' do
+    expect(targets('git checkout -fq main')).to eq([['/repo', %w[worktree], []]])
+    expect(targets('git switch -fq main')).to eq([['/repo', %w[head worktree], []]])
+    expect(targets('git checkout -pq main')).to eq([['/repo', %w[worktree], []]])
+    expect(targets('git checkout -q main')).to eq([])
+  end
+
   it 'treats `git checkout PATH` as a discard when PATH exists' do
     Dir.mktmpdir do |dir|
       File.write(File.join(dir, 'app.rb'), 'x')

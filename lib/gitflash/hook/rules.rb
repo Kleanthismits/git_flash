@@ -22,9 +22,14 @@ module Gitflash
       # `git checkout PATH` overwrites uncommitted changes in PATH without any flag, and telling a
       # path from a branch needs git; an argument that names an existing file counts as a path.
       def checkout(args, dir)
-        discards = any?(args, %w[-- . -f --force -p --patch --ours --theirs]) ||
-                   path_arg?(args, dir)
+        discards = any?(args, %w[-- . --force --patch --ours --theirs]) ||
+                   short_flags(args).match?(/[fp]/) || path_arg?(args, dir)
         discards ? { scope: %w[worktree] } : nil
+      end
+
+      # The letters of all short options, so bundled ones such as `-fq` are seen
+      def short_flags(args)
+        args.select { |arg| arg.start_with?('-') && !arg.start_with?('--') }.join
       end
 
       def path_arg?(args, dir)
@@ -35,14 +40,15 @@ module Gitflash
 
       def clean(args, _dir)
         flags = args.select { |arg| arg.start_with?('-') }
-        short = flags.reject { |flag| flag.start_with?('--') }.join
+        short = short_flags(args)
         force = flags.include?('--force') || short.include?('f')
         dry_run = any?(flags, %w[--dry-run --interactive]) || short.match?(/[ni]/)
         force && !dry_run ? { scope: %w[worktree] } : nil
       end
 
       def switch(args, _dir)
-        any?(args, %w[-f --force --discard-changes]) ? { scope: %w[head worktree] } : nil
+        discards = any?(args, %w[--force --discard-changes]) || short_flags(args).include?('f')
+        discards ? { scope: %w[head worktree] } : nil
       end
 
       def stash(args, _dir)
