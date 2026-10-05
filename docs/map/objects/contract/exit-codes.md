@@ -22,7 +22,7 @@ Agents branch on exit status and `error.code`, not message text. 2 means "fix th
 - 1: `Error` default (`lib/gitflash/error.rb:15-17`), `failed` report (`ui.rb:44`), `Git::CommandError` (`lib/gitflash/git/command_error.rb:5`).
 - 2: `UsageError` (`lib/gitflash/usage_error.rb:10-12`), `ConfirmationRequired` (`lib/gitflash/confirmation_required.rb:11-13`).
 - Each error carries `code`, optional `plan`, `status` (`error.rb:8-22`).
-- Codes are in the schema enum (`schema/v1.json:315-342`). Snapshot-era additions: `unknown_snapshot` (`lib/gitflash/commands/undo.rb:25`), `wrong_worktree` (`undo.rb:33`), `invalid_settings` (`lib/gitflash/hook/settings.rb:49`).
+- Codes are in the schema enum (`schema/v1.json:315-342`). Snapshot-era additions: `unknown_snapshot` (`lib/gitflash/commands/undo.rb:25`), `wrong_worktree` (`undo.rb:33`), `invalid_settings` (`lib/gitflash/hook/settings.rb:49`), `invalid_config` (`lib/gitflash/config.rb`).
 - `gitflash hook claude` is the exception: it rescues everything and exits 0 (`lib/gitflash/hook_cli.rb:33-35`).
 - `CommandRunner` rescues only `Error` (`lib/gitflash/command_runner.rb:14-17`).
 

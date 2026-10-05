@@ -333,7 +333,8 @@
             "failed",
             "unknown_snapshot",
             "wrong_worktree",
-            "invalid_settings"
+            "invalid_settings",
+            "invalid_config"
           ]
         },
         "message": {

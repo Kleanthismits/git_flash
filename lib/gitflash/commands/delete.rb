@@ -35,7 +35,8 @@ module Gitflash
       end
 
       def protected?(branch)
-        branch.current? || branch.default? || PROTECTED_NAMES.include?(branch.name)
+        branch.current? || branch.default? || PROTECTED_NAMES.include?(branch.name) ||
+          config.protected?(branch.name)
       end
 
       def validate!(names, branches)
@@ -48,7 +49,7 @@ module Gitflash
 
         usage_error!('protected_branch',
                      "Refusing to delete protected branches: #{refused.join(', ')} " \
-                     '(current, default, main and master are protected)')
+                     '(current, default, main, master and `protected` in .gitflash.yml)')
       end
 
       def delete(names, shas)

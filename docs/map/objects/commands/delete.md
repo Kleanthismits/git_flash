@@ -18,7 +18,7 @@ Destructive, so protected names, plan, confirm, a branch snapshot, and a result 
 
 ## Shape
 
-- Protected: current, default, `main`, `master` (`delete.rb:9`, `37-39`). Refusal code `protected_branch` (`delete.rb:49`).
+- Protected: current, default, `main`, `master`, plus `protected` patterns from [[config]] (`delete.rb:9`, `37-39`). Refusal code `protected_branch` (`delete.rb:49`).
 - `-d` unless `--force` then `-D` (`lib/gitflash/repo.rb:76-78`).
 - Flow: validate, plan, dry-run, `ui.confirm?`, snapshot, delete each, report (`delete.rb:54-62`).
 - Snapshot scope `branches` for the named branches (`delete.rb:59-60`). `undo:` set only when something was deleted (`delete.rb:87`).

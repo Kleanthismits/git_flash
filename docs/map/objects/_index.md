@@ -12,6 +12,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `repo`: branches, commits, HEAD through git. verified. `lib/gitflash/repo.rb`
 - `branch`: branch record. verified. `lib/gitflash/branch.rb`
 - `commit`: commit record. verified. `lib/gitflash/commit.rb`
+- `config`: settings files `.gitflash.yml`, `~/.config/gitflash.yml`. verified. `lib/gitflash/{config,config_keys}.rb`
 - `bash-command`: git process runner. verified. `lib/gitflash/git/bash_command.rb`
 - `command-runner`: runs one command, maps errors to exit. verified. `lib/gitflash/command_runner.rb`
 

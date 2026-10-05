@@ -26,6 +26,10 @@ module Gitflash
         raise Error.new("git #{command} failed:\n#{result.output}", code: 'git_failed')
       end
 
+      def config
+        @config ||= Gitflash::Config.load(root: repo.main_root)
+      end
+
       def snapshots
         @snapshots ||= Gitflash::Snapshots.new
       end

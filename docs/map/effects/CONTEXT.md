@@ -19,7 +19,8 @@ Verified at dde88fd on 2026-10-03.
 | how branch names are read from git | [[branch]] (`parse_tips`, `fields`), [[repo]], [[state-capture]], [[restore]], [[hook-claude]]: all use full refs, never `refname:short` / `--short` |
 | a git call or format string | [[repo]], [[bash-command]], [[branch]] or [[commit]] |
 | branch fields | [[branch]], [[json-schema]], [[repo]] |
-| protected branches | [[delete]] |
+| protected branches | [[delete]], [[config]] (`protected` patterns) |
+| a settings key or file | [[config]], [[exit-codes]] |
 | which agent commands get snapshotted | [[hook-rules]], [[hook-claude]] |
 | hook output or modes | [[hook-claude]], [[hook-install]] (command string and `PATTERN`) |
 | where the hook is installed | [[hook-install]], [[repo]] (`toplevel`, `main_root`) |
