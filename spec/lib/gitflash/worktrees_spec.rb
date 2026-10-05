@@ -40,6 +40,18 @@ RSpec.describe Gitflash::Worktrees, :git_repo do
     expect(odd).to have_attributes(path: real(path), locked?: true, lock_reason: "two\nlines ünï")
   end
 
+  it 'reuses a registered but missing directory given under a symlinked spelling' do
+    real = File.join(File.realpath(outside), 'real')
+    FileUtils.mkdir_p(real)
+    File.symlink(real, File.join(outside, 'link'))
+    git('worktree', 'add', '-q', '-b', 'gone', File.join(real, 'gone'))
+    FileUtils.rm_rf(File.join(real, 'gone'))
+
+    result = worktrees.attach(File.join(outside, 'link', 'gone'), branch: 'gone')
+    expect(result.success?).to be(true), result.output
+    expect(File.directory?(File.join(real, 'gone'))).to be(true)
+  end
+
   it 'reports a branch with unmerged commits as not merged' do
     git('worktree', 'add', '-q', '-b', 'work', File.join(outside, 'work'))
     Dir.chdir(File.join(outside, 'work')) { commit_file('b.txt') }

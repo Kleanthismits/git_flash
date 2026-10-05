@@ -2,8 +2,9 @@
 
 module Gitflash
   # Brings back a worktree that was removed after a snapshot of it: adds the worktree again on
-  # its branch (or detached HEAD) and restores its files. Branch tips come back first, so a
-  # branch deleted since is recreated.
+  # its branch (or detached HEAD) and restores its files. Branch tips are restored before the
+  # worktree is added, so a branch deleted or moved since is checked out at its saved tip and its
+  # files always match it.
   class WorktreeRevival
     def initialize(snapshot, repo:)
       @snapshot = snapshot
@@ -29,6 +30,9 @@ module Gitflash
 
     # Returns nil on success or the failed step's Result
     def apply
+      failure = Restore.new(@snapshot).apply(only: :branches)
+      return failure if failure
+
       result = attach
       return result unless result.success?
 

@@ -27,9 +27,11 @@ module Gitflash
       plan[:branches].empty? && plan[:head].nil? && !plan[:worktree] && plan[:stashes].empty?
     end
 
-    # Applies the plan; returns nil on success or the failed step's Result
-    def apply
-      steps.lazy.map { |args| run(*args) }.find { |result| !result.success? }
+    # Applies the plan (`only: :branches` just the branch tips); returns nil on success or the
+    # failed step's Result
+    def apply(only: nil)
+      (only == :branches ? branch_steps : steps).lazy.map { |args| run(*args) }
+                                                .find { |result| !result.success? }
     end
 
     private

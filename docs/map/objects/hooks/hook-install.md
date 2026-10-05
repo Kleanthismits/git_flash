@@ -28,7 +28,7 @@ Follows Claude Code's own settings rules so a running session picks the hook up 
 
 - **owns:** [[hook-claude]] command string
 - **joins:** [[repo]], [[command-runner]] (`repo_required:`), [[json-schema]] `hook_install`, `hook_status`
-- **looks-like-but-is-not:** a gitflash config file. gitflash has none; all state is in Claude's settings and `refs/gitflash/`.
+- **looks-like-but-is-not:** gitflash's own settings file `.gitflash.yml` ([[config]]). Install only reads and writes Claude Code settings; hook state is there and in `refs/gitflash/`.
 
 ## If you change this
 

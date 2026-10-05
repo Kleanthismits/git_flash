@@ -110,8 +110,10 @@ module Gitflash
       never removed; locked worktrees and worktrees with uncommitted changes are refused
       unless --force is given.
 
-      Each removal saves a snapshot first, including uncommitted and untracked files.
-      `gitflash undo ID` brings the directory, its branch and those files back.
+      Each removal saves a snapshot first, including uncommitted and untracked files. Ignored
+      files (build output, dependencies) are not saved. A worktree with an untracked file over
+      50 MB is not removed, because the snapshot cannot hold it. `gitflash undo ID` brings the
+      directory, its branch and the saved files back.
 
       Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.
       Accepts the global options after the subcommand: gitflash wt remove feature --yes --json

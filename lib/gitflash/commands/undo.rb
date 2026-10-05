@@ -71,8 +71,17 @@ module Gitflash
 
       def raise_failure(failure, before, plan)
         message = "gitflash undo failed:\n#{failure.output}\n" \
-                  "The state before this undo is saved as snapshot #{before.id}."
+                  "The state before this undo is saved as snapshot #{before.id}." \
+                  "#{revival_hint(plan)}"
         raise Error.new(message, code: 'git_failed', plan: plan)
+      end
+
+      # That snapshot cannot take the added worktree away again
+      def revival_hint(plan)
+        return '' unless plan[:recreate_worktree]
+
+        "\nThe worktree #{plan[:recreate_worktree]} was added again and may be partly restored; " \
+          "remove it with: gitflash wt remove #{plan[:recreate_worktree]} --force"
       end
 
       def no_snapshots

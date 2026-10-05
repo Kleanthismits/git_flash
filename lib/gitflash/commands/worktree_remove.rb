@@ -8,6 +8,8 @@ module Gitflash
     # Each removal saves a snapshot of the worktree first; `gitflash undo ID` brings the
     # directory, its branch and its uncommitted files back.
     class WorktreeRemove < WorktreeCommand
+      include RemovalReport
+
       def call(*targets)
         worktrees = Worktrees.new(repo: repo).list
         targets = pick(worktrees) if targets.empty?
@@ -65,12 +67,23 @@ module Gitflash
           locked: worktree.locked? }
       end
 
-      Removal = Data.define(:worktree, :result, :snapshot)
-
       def remove_one(worktree)
         snapshot = snapshot_for(worktree)
+        unsaved = snapshot.skipped_files
+        return refuse_unsaved(worktree, unsaved) if unsaved.any?
+
         result = Worktrees.new(repo: repo).remove(worktree.path, force: force?)
         Removal.new(worktree: worktree, result: result, snapshot: (snapshot if result.success?))
+      end
+
+      # Files a snapshot cannot hold (untracked and over 50 MB) would be lost for good
+      def refuse_unsaved(worktree, files)
+        shown = files.first(3).join(', ')
+        shown += ", and #{files.size - 3} more" if files.size > 3
+        message = "#{files.size} untracked file(s) over 50 MB cannot be saved by a snapshot " \
+                  "(#{shown}); move or delete them first"
+        Removal.new(worktree: worktree, result: Result.new(success: false, output: message),
+                    snapshot: nil)
       end
 
       # A missing directory has no HEAD or files to save; only the branch tip is
@@ -81,43 +94,6 @@ module Gitflash
 
         take_snapshot(reason, scope: %w[branches head worktree], branches: branches,
                               dir: worktree.path)
-      end
-
-      def report_results(plan, outcomes)
-        removed, failed = outcomes.partition { |outcome| outcome.result.success? }
-        result = { removed: removed.map { |outcome| removed_row(outcome) },
-                   failed: failed.map { |outcome| failed_row(outcome) } }
-        ui.report(status: failed.empty? ? 'done' : 'failed', plan: plan, result: result,
-                  error: failure(failed, outcomes), text: results_text(result),
-                  undo: single_undo(removed))
-      end
-
-      # `undo` in the envelope only when one worktree was removed; each row has its own
-      def single_undo(removed)
-        removed.first.snapshot if removed.size == 1
-      end
-
-      def failed_row(outcome)
-        { path: outcome.worktree.path, error: outcome.result.output }
-      end
-
-      def removed_row(outcome)
-        worktree = outcome.worktree
-        { path: worktree.path, branch: worktree.branch, head: worktree.head,
-          snapshot: outcome.snapshot.id, undo: "gitflash undo #{outcome.snapshot.id}" }
-      end
-
-      def failure(failed, outcomes)
-        return nil if failed.empty?
-
-        { code: 'git_failed', exit_code: 1,
-          message: "#{failed.size} of #{outcomes.size} worktrees were not removed" }
-      end
-
-      def results_text(result)
-        lines = result[:removed].map { |row| "Removed #{row[:path]} (undo: #{row[:undo]})" }
-        lines += result[:failed].map { |row| "Not removed #{row[:path]}: #{row[:error]}" }
-        lines.join("\n")
       end
 
       def summary(chosen)

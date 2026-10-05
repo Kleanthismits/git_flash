@@ -26,6 +26,8 @@ Restores only the parts in the snapshot's scope, and only where the repo differs
 - Branch tips and HEAD are read from full refs with `refs/heads/` removed (`Branch.parse_tips`, `restore.rb`, `115-117`); HEAD is switched with `git switch --` (`restore.rb`). Short names change when a tag has the same name.
 - `apply` stops at the first failing step and returns its `Result`; there is no rollback (`restore.rb`).
 
+- `apply(only: :branches)` runs just the branch steps; [[worktree-revival]] uses it before adding the worktree.
+
 ## Connected to
 
 - **owned-by:** [[undo]]

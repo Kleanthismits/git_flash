@@ -69,7 +69,15 @@ module Gitflash
     private
 
     def registered_missing?(path)
-      list.any? { |worktree| worktree.path == path && worktree.missing? }
+      wanted = normalized_path(path)
+      list.any? { |worktree| worktree.missing? && normalized_path(worktree.path) == wanted }
+    end
+
+    # Same directory under any spelling (symlinked parents); the directory itself may not exist
+    def normalized_path(path)
+      File.join(File.realpath(File.dirname(path)), File.basename(path))
+    rescue Errno::ENOENT
+      File.expand_path(path)
     end
 
     def local_branch?(branch)

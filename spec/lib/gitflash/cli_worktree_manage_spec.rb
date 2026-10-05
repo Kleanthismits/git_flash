@@ -170,6 +170,41 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(git('-C', wt_path('feat'), 'branch', '--show-current').strip).to eq('feat')
     end
 
+    it 'checks out the saved tip, with matching files, when the branch moved after the removal' do
+      id = result_of(remove('feat', '--yes'))['removed'].first['snapshot']
+      saved = git('rev-parse', 'feat').strip
+      commit_file('later.txt')
+      git('branch', '-f', 'feat', 'main')
+
+      expect(run_cli('undo', id, '--yes').status).to eq(0)
+      expect(git('rev-parse', 'feat').strip).to eq(saved)
+      expect(File.exist?(File.join(wt_path('feat'), 'later.txt'))).to be(false)
+      expect(git('-C', wt_path('feat'), 'status', '--porcelain')).to eq('')
+    end
+
+    it 'names the added worktree when an undo fails half way' do
+      id = result_of(remove('feat', '--yes'))['removed'].first['snapshot']
+      failing = Gitflash::Result.new(success: false, output: 'boom')
+      allow_any_instance_of(Gitflash::Restore).to receive(:apply) do |_restore, **opts|
+        opts[:only] ? nil : failing
+      end
+
+      run = run_cli('undo', id, '--yes', '--json')
+      expect(run.status).to eq(1)
+      expect(run.json['error']['message']).to include('boom',
+                                                      "gitflash wt remove #{wt_path('feat')}")
+    end
+
+    it 'refuses to remove a worktree holding an untracked file too large for a snapshot' do
+      File.open(File.join(wt_path('feat'), 'big.bin'), 'wb') do |file|
+        file.truncate(51 * 1024 * 1024)
+      end
+      run = remove('feat', '--yes', '--force')
+      expect(run.status).to eq(1)
+      expect(result_of(run)['failed'].first['error']).to include('over 50 MB', 'big.bin')
+      expect(File.exist?(File.join(wt_path('feat'), 'big.bin'))).to be(true)
+    end
+
     it 'removes a worktree whose directory is already gone' do
       FileUtils.rm_rf(wt_path('feat'))
       run = remove('feat', '--yes')

@@ -19,7 +19,8 @@ Undo of a removed worktree. Code: `WorktreeRevival`; chosen by `Commands::Undo#b
 ## Shape
 
 - `plan`: branch moves from `Restore#plan`, head target, `worktree` true when files were saved, `recreate_worktree` path (`lib/gitflash/worktree_revival.rb`).
-- `apply`: `Worktrees#attach` (branch recreated at its saved sha when deleted since, detached HEAD supported), then `Restore` through `Git::InDirectory` so every git call runs with `git -C path`.
+- `apply`: branch tips first (`Restore#apply(only: :branches)`, so a branch deleted or moved since is back at its saved tip), then `Worktrees#attach` (checks that tip out, so files match HEAD; detached HEAD supported), then `Restore` through `Git::InDirectory` so every git call runs with `git -C path`.
+- A failed revival names the added directory and `gitflash wt remove PATH --force` in the error: the "before" snapshot cannot take the worktree away again (`Commands::Undo#revival_hint`).
 - The "before undo" snapshot has scope `branches` only.
 - Snapshots of a removed worktree are taken through `Git::InDirectory` too: `StateCapture` uses absolute git paths so it works from any directory.
 
