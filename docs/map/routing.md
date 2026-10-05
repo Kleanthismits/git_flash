@@ -18,7 +18,7 @@ gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents 
 
 ## Universes
 
-- **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude/install/status, clean, pick, mark, worktree list/add/remove/lock/unlock/move/prune/clean, `.gitflash.yml`, ownership marks (set by `wt add` and `mark`); `Repo`, `Ui`, snapshot classes, `schema/v1.json`
+- **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude (PreToolUse and PostToolUse)/install/status, clean, pick, mark, worktree list/add/remove/lock/unlock/move/prune/clean, `.gitflash.yml`, ownership marks (set by `wt add` and `mark`); `Repo`, `Ui`, snapshot classes, `schema/v1.json`
 - **ghost:** `docs/ROADMAP.md` phase 4+ (MCP, Skill). Not in `lib/`. Do not implement against.
 - **leftover:** none found
 

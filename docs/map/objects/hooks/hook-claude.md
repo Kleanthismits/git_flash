@@ -10,7 +10,7 @@ verified_at: 36940dc plus the tag-safe ref fix
 
 # Claude hook
 
-Claude Code PreToolUse hook for the Bash tool. Command: `gitflash hook claude`. Code: `HookCli#claude` and `Hook::Claude`. Roadmap standard 2: protection for commands agents run themselves.
+Claude Code hook for the Bash tool, for two events. Command: `gitflash hook claude`. Code: `HookCli#claude` and `Hook::Claude`. Roadmap standard 2: protection for commands agents run themselves.
 
 ## Why this shape
 
@@ -18,23 +18,25 @@ The agent keeps using plain git. The hook snapshots first and tells the agent ho
 
 ## Shape
 
-- Input: hook JSON on stdin. Only `tool_name == 'Bash'` is looked at (`lib/gitflash/hook/claude.rb:35-40`).
-- Modes (`claude.rb:16`): `snapshot` (default; save, allow), `ask` (save, ask user), `deny` (block, point to gitflash command) (`claude.rb:24-31`, `71-92`).
-- One snapshot per directory, merged across commands there (`claude.rb:43-50`); reason `agent hook: before ...` (`claude.rb:59`).
-- The `:current` branch is read from the full ref with `refs/heads/` removed (`claude.rb:65-68`), so a tag named like the branch cannot change the name saved.
-- Output is Claude Code's hook protocol (`hookSpecificOutput`, `additionalContext`, `permissionDecision`), not gitflash's envelope (`claude.rb:76-97`).
-- `HookCli#claude` rescues `StandardError`, warns, exits 0 (`lib/gitflash/hook_cli.rb:30-35`). It does not use [[command-runner]] or [[ui-output]].
+- Event: `hook_event_name == 'PostToolUse'` goes to [[hook-marking]] (marks branches the command created, `additionalContext` tells the agent); anything else, including input without an event name, is the PreToolUse path below. The same command string is registered under both events, so existing installs keep working.
+- Input: hook JSON on stdin. Only `tool_name == 'Bash'` is looked at (`lib/gitflash/hook/claude.rb`).
+- Modes (`claude.rb`): `snapshot` (default; save, allow), `ask` (save, ask user), `deny` (block, point to gitflash command) (`claude.rb`, `71-92`).
+- One snapshot per directory, merged across commands there (`claude.rb`); reason `agent hook: before ...` (`claude.rb`).
+- The `:current` branch is read from the full ref with `refs/heads/` removed (`claude.rb`), so a tag named like the branch cannot change the name saved.
+- Output is Claude Code's hook protocol (`hookSpecificOutput`, `additionalContext`, `permissionDecision`), not gitflash's envelope (`claude.rb`).
+- `HookCli#claude` rescues `StandardError`, warns, exits 0 (`lib/gitflash/hook_cli.rb`). It does not use [[command-runner]] or [[ui-output]].
 
 ## Connected to
 
-- **owns:** [[hook-rules]] (what to save), [[snapshot-store]] (where)
+- **owns:** [[hook-rules]] (what to save), [[snapshot-store]] (where), [[hook-marking]] (what to mark)
 - **owned-by:** [[cli]] (`hook` subcommand)
 - **joins:** [[hook-install]] registers it; [[undo]] is the revert it advertises
 - **looks-like-but-is-not:** `gitflash reset` / `delete`, which snapshot through [[change-flow]]. The hook covers plain `git`.
 
 ## If you change this
 
-- **Hits:** every Claude Code Bash call where the hook is installed; the `gitflash undo ID` advice string; [[hook-install]] (`PATTERN` matches `gitflash hook claude`, `settings.rb:16`).
+- **Hits:** every Claude Code Bash call where the hook is installed; the `gitflash undo ID` advice string; [[hook-install]] (`PATTERN` matches `gitflash hook claude`, `settings.rb`).
+- **Hits (post):** `hook_event_name` handling in `Hook::Claude#call`; a PostToolUse input must never reach the snapshot path.
 - **Does not hit:** [[json-schema]] (`hook claude` is not in the `command` enum), [[exit-codes]].
 - **Outside-in:** Claude Code's hook input/output protocol; `.claude/settings*.json` entries. A protocol change on Claude's side breaks this with no error (exit 0).
 

@@ -71,4 +71,28 @@ RSpec.describe Gitflash::Hook::CommandParser do
   it 'finds commands after pipes and in subshells' do
     expect(targets('(cd x; git stash clear) | cat')).to eq([['/repo/x', %w[stashes], []]])
   end
+
+  describe '#creations' do
+    def creations(command)
+      parser.creations(command).map { |creation| [creation[:dir], creation[:branch]] }
+    end
+
+    it 'finds the branch a command creates and the directory it runs in' do
+      expect(creations('git checkout -b feat')).to eq([['/repo', 'feat']])
+    end
+
+    it 'follows cd and git -C' do
+      expect(creations('cd /other && git switch -c a; git -C /third branch b'))
+        .to eq([['/other', 'a'], ['/third', 'b']])
+    end
+
+    it 'finds every creation in a chain and ignores other commands' do
+      expect(creations('git fetch && git checkout -b a && ls && git branch b main && git status'))
+        .to eq([['/repo', 'a'], ['/repo', 'b']])
+    end
+
+    it 'finds nothing for commands that only use branches' do
+      expect(creations('git checkout main && git branch -D old && echo checkout -b x')).to eq([])
+    end
+  end
 end

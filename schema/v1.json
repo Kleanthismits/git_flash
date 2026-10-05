@@ -1089,6 +1089,10 @@
         "applies_to": {
           "type": "string",
           "description": "Which Claude Code sessions read this file. Running sessions reload it."
+        },
+        "marking_command": {
+          "type": "string",
+          "description": "The PostToolUse command that marks branches an agent creates as agent work."
         }
       }
     },
@@ -1143,9 +1147,17 @@
               },
               "applies_to": {
                 "type": "string"
+              },
+              "marking": {
+                "type": "boolean",
+                "description": "This file has the PostToolUse hook."
               }
             }
           }
+        },
+        "marking": {
+          "type": "boolean",
+          "description": "A settings file that applies here also has the PostToolUse hook that marks agent branches."
         }
       }
     },

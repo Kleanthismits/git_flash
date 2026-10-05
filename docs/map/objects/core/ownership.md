@@ -22,7 +22,7 @@ Cleanup must tell agent branches from human work. git config needs no extra file
 - Unmarked = human. Nothing unmarked is ever selected for automatic cleanup.
 - [[repo]] `branches` sets `Branch#owner` through `annotate`; [[worktrees]] copies it to `Worktree#owner`.
 - Not restored by `undo`: a branch recreated by undo has no mark until set again.
-- Setters: `wt add` marks `agent` for branches it creates, and [[mark]] sets or clears any branch. Marking from the Claude hook is not built: the hook runs before the command, so the branch does not exist yet (a `PostToolUse` hook would be needed).
+- Setters: `wt add` marks `agent` for branches it creates, and [[mark]] sets or clears any branch. The Claude PostToolUse hook marks branches agents create ([[hook-marking]]).
 
 ## Connected to
 

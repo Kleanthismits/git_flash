@@ -25,6 +25,7 @@ Verified at dde88fd on 2026-10-03.
 | protected branches | [[delete]], [[config]] (`protected` patterns) |
 | a settings key or file | [[config]], [[exit-codes]] |
 | which agent commands get snapshotted | [[hook-rules]], [[hook-claude]] |
+| which commands mark a branch, or what the PostToolUse hook does | [[hook-marking]], [[hook-claude]], [[hook-install]], [[ownership]] |
 | hook output or modes | [[hook-claude]], [[hook-install]] (command string and `PATTERN`) |
 | where the hook is installed | [[hook-install]], [[repo]] (`toplevel`, `main_root`) |
 | worktree fields or `wt` commands | [[worktrees]], [[worktree-commands]], [[json-schema]] |
