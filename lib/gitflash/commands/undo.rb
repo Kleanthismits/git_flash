@@ -9,8 +9,7 @@ module Gitflash
         snapshot = find(id)
         return no_snapshots unless snapshot
 
-        check_worktree!(snapshot)
-        restore = Restore.new(snapshot)
+        restore = build_restore(snapshot)
         plan = restore.plan.merge(snapshot: snapshot.id)
         return nothing_to_undo(plan) if restore.empty?
 
@@ -23,6 +22,20 @@ module Gitflash
         return snapshots.list.first if id.nil?
 
         snapshots.find(id) || usage_error!('unknown_snapshot', "Unknown snapshot '#{id}'")
+      end
+
+      # A snapshot of a worktree that is gone is restored by adding the worktree again
+      def build_restore(snapshot)
+        return WorktreeRevival.new(snapshot, repo: repo) if removed_worktree?(snapshot)
+
+        check_worktree!(snapshot)
+        Restore.new(snapshot)
+      end
+
+      # The snapshot was taken in a worktree whose directory no longer exists
+      def removed_worktree?(snapshot)
+        (snapshot.scope?('head') || snapshot.scope?('worktree')) &&
+          snapshot.worktree_path != repo.toplevel && !File.exist?(snapshot.worktree_path)
       end
 
       # Branches are shared between worktrees; HEAD and files belong to one worktree
@@ -43,11 +56,15 @@ module Gitflash
       end
 
       def apply(snapshot, restore, plan)
-        before = snapshots.create(reason: "before undo #{snapshot.id}", scope: snapshot.scope,
+        before = snapshots.create(reason: "before undo #{snapshot.id}", scope: restore.scope,
                                   branches: snapshot.branches.keys)
         failure = restore.apply
         raise_failure(failure, before, plan) if failure
 
+        report_done(snapshot, plan, before)
+      end
+
+      def report_done(snapshot, plan, before)
         ui.report(status: 'done', plan: plan, result: { snapshot: snapshot.id }, undo: before,
                   text: "Restored snapshot #{snapshot.id}:\n#{describe(plan)}")
       end
@@ -74,10 +91,16 @@ module Gitflash
 
       def describe(plan)
         lines = plan[:branches].map { |change| branch_line(change) }
-        lines << head_line(plan[:head]) if plan[:head]
+        lines << "* add worktree #{plan[:recreate_worktree]} again" if plan[:recreate_worktree]
+        lines << head_line(plan[:head]) if plan[:head] && !plan[:recreate_worktree]
+        (lines + file_lines(plan)).join("\n")
+      end
+
+      def file_lines(plan)
+        lines = []
         lines << '* restore tracked, staged and untracked files' if plan[:worktree]
         lines << "* restore #{plan[:stashes].size} stash entries" if plan[:stashes].any?
-        lines.join("\n")
+        lines
       end
 
       def branch_line(change)

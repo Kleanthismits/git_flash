@@ -26,6 +26,7 @@ Verified at dde88fd on 2026-10-03.
 | hook output or modes | [[hook-claude]], [[hook-install]] (command string and `PATTERN`) |
 | where the hook is installed | [[hook-install]], [[repo]] (`toplevel`, `main_root`) |
 | worktree fields or `wt` commands | [[worktrees]], [[worktree-commands]], [[json-schema]] |
+| what `wt remove` saves or how undo brings a worktree back | [[worktree-commands]], [[worktree-revival]], [[restore]], [[undo]], [[state-capture]] |
 | help text | [[command-descriptions]] |
 
 ## Outside the tree: things that point in

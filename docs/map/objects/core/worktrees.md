@@ -10,7 +10,7 @@ verified_at: 5fc049d
 
 # Worktrees
 
-The worktrees of the repository as `Worktree` records. Code: `Worktrees`, `Worktree`. Not `Snapshot#worktree` (saved file tree) and not `wrong_worktree` (undo guard).
+The worktrees of the repository as `Worktree` records, and the git calls that add or remove them. Code: `Worktrees`, `Worktree`. Not `Snapshot#worktree` (saved file tree) and not `wrong_worktree` (undo guard).
 
 ## Why this shape
 
@@ -20,6 +20,9 @@ All parsing of `git worktree list --porcelain` and the per-worktree probes live 
 
 - `list`: main checkout first. Fields: path, head, branch (nil when detached), main, bare, locked, lock_reason, missing, dirty, ahead, behind, merged, owner (`lib/gitflash/worktree.rb:5-11`).
 - `missing` = git says prunable or directory absent. `dirty` is nil when missing or bare, else `git -C path status --porcelain` (`lib/gitflash/worktrees.rb`).
+- Writes: `add` (`source_for` picks existing / remote / new), `remove` (`--force --force` for locked or dirty), `attach` (for undo: reuses a registered but missing directory) return `Result`.
+- `Worktree#removal_blocker(force:, current:)` is the one rule for what may be removed.
+- Lists with `--porcelain -z`, so paths with newlines and lock reasons survive.
 - ahead, behind, merged, owner come from [[repo]] `branches(merged_status: true)`; nil without a branch.
 
 ## Connected to

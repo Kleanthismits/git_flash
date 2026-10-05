@@ -10,7 +10,7 @@ verified_at: dde88fd
 
 # Repo
 
-Reads and changes branches, commits and HEAD through git. Never prompts or prints (`lib/gitflash/repo.rb:5-6`). Snapshots do not go through it: see [[snapshot-store]].
+Reads and changes branches, commits and HEAD through git. Never prompts or prints (`lib/gitflash/repo.rb`). Snapshots do not go through it: see [[snapshot-store]].
 
 ## Why this shape
 
@@ -18,13 +18,13 @@ Service layer shared by CLI and integrations. Parsing git output stays here and 
 
 ## Shape
 
-- Reads: `branches`, `current_branch`, `default_branch`, `commits(limit: 100)`, `resolve_commit` (`repo.rb:29-70`).
-- Paths: `toplevel`, `main_root` (main checkout root, differs inside a linked worktree) (`repo.rb:40-49`). Used by [[undo]] and [[hook-install]].
-- Writes: `checkout`, `delete_branch`, `reset` return `Result` (`repo.rb:72-84`, `run` at `repo.rb:120`).
-- Default branch: origin/HEAD, else local `main` / `master` (`repo.rb:93-110`).
-- Parsing contract with [[branch]] / [[commit]]: `BRANCH_FORMAT`, `COMMIT_FORMAT`, `SEPARATOR` (`repo.rb:7-14`).
-- `ensure_work_tree!` raises `not_a_repository` (`repo.rb:20-26`).
-- Injected `bash:` makes it stubbable (`repo.rb:16-18`).
+- Reads: `branches`, `current_branch`, `default_branch`, `commits(limit: 100)`, `resolve_commit` (`repo.rb`).
+- Paths: `toplevel`, `main_root` (main checkout root, differs inside a linked worktree) (`repo.rb`). Used by [[undo]] and [[hook-install]].
+- Writes: `checkout`, `delete_branch`, `reset` return `Result` (`repo.rb`, `run` at `repo.rb`).
+- Default branch: origin/HEAD, else local `main` / `master` (`repo.rb`).
+- Parsing contract with [[branch]] / [[commit]]: `BRANCH_FORMAT`, `COMMIT_FORMAT`, `SEPARATOR` (`repo.rb`).
+- `ensure_work_tree!` raises `not_a_repository` (`repo.rb`).
+- Injected `bash:` makes it stubbable (`repo.rb`).
 
 ## Connected to
 

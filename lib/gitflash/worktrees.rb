@@ -15,7 +15,63 @@ module Gitflash
       records.each_with_index.map { |record, index| build(record, index.zero?, branches) }
     end
 
+    # How `add` will get the branch: an existing local branch, a new local branch that tracks
+    # origin/<branch>, or a new branch (from HEAD or `start`)
+    def source_for(branch)
+      return :existing if local_branch?(branch)
+
+      remote_branch?(branch) ? :remote : :new
+    end
+
+    # Creates the worktree and returns the git Result. `start` only applies to a new branch.
+    def add(path, branch:, source:, start: nil)
+      args = case source
+             when :existing then [path, branch]
+             when :remote then ['--track', '-b', branch, '--', path, "origin/#{branch}"]
+             else ['-b', branch, '--', path, *start]
+             end
+      args.unshift('--') if source == :existing
+      run('worktree', 'add', *args)
+    end
+
+    # Adds a worktree again for undo: on `branch` (created at `create_at` when it no longer
+    # exists) or detached at `detach_at`. A directory git still lists as missing is reused.
+    def attach(path, branch: nil, create_at: nil, detach_at: nil)
+      force = registered_missing?(path) ? ['--force'] : []
+      return run('worktree', 'add', *force, '--detach', '--', path, detach_at) if detach_at
+      return run('worktree', 'add', *force, '--', path, branch) if local_branch?(branch)
+
+      run('worktree', 'add', *force, '-b', branch, '--', path, create_at)
+    end
+
+    # Removes a worktree directory. A locked one needs `force`, a dirty one too.
+    def remove(path, force: false)
+      run('worktree', 'remove', *(force ? %w[--force --force] : []), '--', path)
+    end
+
     private
+
+    def registered_missing?(path)
+      list.any? { |worktree| worktree.path == path && worktree.missing? }
+    end
+
+    def local_branch?(branch)
+      _stdout, _stderr, success = @bash.capture('git', 'show-ref', '--verify', '--quiet',
+                                                "#{Repo::HEADS}#{branch}")
+      success
+    end
+
+    def remote_branch?(branch)
+      _stdout, _stderr, success = @bash.capture('git', 'show-ref', '--verify', '--quiet',
+                                                "#{Repo::REMOTE_HEAD}#{branch}")
+      success
+    end
+
+    def run(*)
+      stdout, stderr, success = @bash.capture('git', *)
+      Result.new(success: success,
+                 output: [stdout, stderr].map(&:strip).reject(&:empty?).join("\n"))
+    end
 
     def records
       output = @bash.exec('git', 'worktree', 'list', '--porcelain', '-z')

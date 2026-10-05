@@ -22,7 +22,7 @@ Follows Claude Code's own settings rules so a running session picks the hook up 
 - Hook entry is found by regex `gitflash hook claude` (`settings.rb:16`, `52-57`).
 - Install: idempotent (`hook_install.rb:16`), writes pretty JSON, timeout 30 (`hook_install.rb:34-41`, `60-66`), `--mode` sets the command (`hook_install.rb:50-53`). Invalid JSON raises `invalid_settings` (`settings.rb:44-50`).
 - Status: lists files per scope, whether installed, and whether `gitflash` is on `PATH` (`lib/gitflash/commands/hook_status.rb:9-16`, `34-37`). Works outside a repo (user scope only).
-- Uses `Repo#toplevel` and `Repo#main_root` (`lib/gitflash/repo.rb:40-49`).
+- Uses `Repo#toplevel` and `Repo#main_root` (`lib/gitflash/repo.rb`).
 
 ## Connected to
 

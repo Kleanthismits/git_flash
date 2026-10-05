@@ -10,7 +10,7 @@ verified_at: 5fc049d
 
 # Worktree commands
 
-`gitflash worktree` (alias `wt`). So far only `list`. Code: `WorktreeCli`, `Commands::WorktreeList`.
+`gitflash worktree` (alias `wt`): `list`, `add`, `remove`. Code: `WorktreeCli`, `Commands::WorktreeList`, `WorktreeAdd`, `WorktreeRemove`.
 
 ## Why this shape
 
@@ -19,24 +19,26 @@ Agents use the absolute paths from `wt list --json` and never switch directory. 
 ## Shape
 
 - `wt list`: read only, report `result: { worktrees: [...] }`, JSON command name `worktree list` (`lib/gitflash/commands/worktree_list.rb`).
+- `wt add BRANCH`: source is `existing` (local), `remote` (tracks `origin/BRANCH`) or `new` (from HEAD or `--from`). Path from `--path`, else [[config]] `worktree_dir`. A branch created here gets the owner mark (`--owner`, default `agent`; [[ownership]]). Additive: no confirm, no snapshot. Refuses a branch already checked out elsewhere and a non-empty directory.
+- `wt remove [WORKTREE...]`: path or branch; menu in a terminal. Refusals (`protected_worktree`): main checkout, current worktree, locked or dirty without `--force`; rule lives in `Worktree#removal_blocker`. Confirms, snapshots each worktree (own HEAD and files), removes. Undo: [[worktree-revival]].
 - Global flags go after the subcommand, as with `hook`: `gitflash wt list --json`.
 
 ## Connected to
 
-- **joins:** [[worktrees]], [[json-schema]] `worktree_list_result`, [[command-runner]]
+- **joins:** [[worktrees]], [[worktree-revival]], [[ownership]], [[config]], [[change-flow]], [[json-schema]] `worktree_list_result`, [[command-runner]]
 - **looks-like-but-is-not:** `git worktree list`
 
 ## If you change this
 
-- **Hits:** [[json-schema]] (command enum plus block), `spec/lib/gitflash/cli_worktree_spec.rb`.
+- **Hits:** [[json-schema]] (command enum plus block), `spec/lib/gitflash/cli_worktree_spec.rb`, `cli_worktree_manage_spec.rb`.
 - **Does not hit:** [[delete]], [[snapshot-store]].
 
 ## Surfaces
 
 | Surface | Role |
 |---|---|
-| agents, humans | read |
+| agents, humans | read, write |
 
 ## See
 
-- Source: `lib/gitflash/worktree_cli.rb`, `lib/gitflash/commands/worktree_list.rb`
+- Source: `lib/gitflash/worktree_cli.rb`, `lib/gitflash/commands/worktree_{list,add,remove}.rb`

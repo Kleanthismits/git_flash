@@ -27,7 +27,7 @@ Nothing outside git's object store is written, so snapshots survive without a da
 ## Connected to
 
 - **owns:** [[state-capture]] (`snapshots.rb:21`)
-- **owned-by:** `Commands::Base#snapshots` (`lib/gitflash/commands/base.rb:29-31`), [[hook-claude]]
+- **owned-by:** `Commands::Base#snapshots` (`lib/gitflash/commands/base.rb`), [[hook-claude]]
 - **joins:** [[snapshot]], [[bash-command]]
 - **looks-like-but-is-not:** git stash, reflog, `Repo`
 

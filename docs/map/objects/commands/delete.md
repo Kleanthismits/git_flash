@@ -14,16 +14,16 @@ Remove local branches. Code: `Commands::Delete`. Most guarded command.
 
 ## Why this shape
 
-Destructive, so protected names, plan, confirm, a branch snapshot, and a result listing each deleted branch with its SHA (`lib/gitflash/commands/delete.rb:5-7`).
+Destructive, so protected names, plan, confirm, a branch snapshot, and a result listing each deleted branch with its SHA (`lib/gitflash/commands/delete.rb`).
 
 ## Shape
 
-- Protected: current, default, `main`, `master`, plus `protected` patterns from [[config]] (`delete.rb:9`, `37-39`). Refusal code `protected_branch` (`delete.rb:49`).
-- `-d` unless `--force` then `-D` (`lib/gitflash/repo.rb:76-78`).
-- Flow: validate, plan, dry-run, `ui.confirm?`, snapshot, delete each, report (`delete.rb:54-62`).
-- Snapshot scope `branches` for the named branches (`delete.rb:59-60`). `undo:` set only when something was deleted (`delete.rb:87`).
-- Partial failure gives status `failed`, exit 1, per-branch errors (`delete.rb:79-95`).
-- Returns 0 directly when nothing to pick (`delete.rb:16`).
+- Protected: current, default, `main`, `master`, plus `protected` patterns from [[config]] (`delete.rb`, `37-39`). Refusal code `protected_branch` (`delete.rb`).
+- `-d` unless `--force` then `-D` (`lib/gitflash/repo.rb`).
+- Flow: validate, plan, dry-run, `ui.confirm?`, snapshot, delete each, report (`delete.rb`).
+- Snapshot scope `branches` for the named branches (`delete.rb`). `undo:` set only when something was deleted (`delete.rb`).
+- Partial failure gives status `failed`, exit 1, per-branch errors (`delete.rb`).
+- Returns 0 directly when nothing to pick (`delete.rb`).
 
 ## Connected to
 
@@ -32,7 +32,7 @@ Destructive, so protected names, plan, confirm, a branch snapshot, and a result 
 
 ## If you change this
 
-- **Hits:** [[json-schema]] `delete_plan` / `delete_result`; the recreate-from-SHA and `undo` contracts agents rely on; [[exit-codes]] (hand-built error hash at `delete.rb:94`).
+- **Hits:** [[json-schema]] `delete_plan` / `delete_result`; the recreate-from-SHA and `undo` contracts agents rely on; [[exit-codes]] (hand-built error hash at `delete.rb`).
 - **Does not hit:** [[reset]], [[branches]] list logic.
 
 ## Surfaces

@@ -93,9 +93,9 @@ module Gitflash
     # Tree of the working tree, built in a temporary copy of the index so the real one is untouched
     def worktree_tree
       top = git('rev-parse', '--show-toplevel')
-      Tempfile.create('gitflash-index', File.expand_path(git('rev-parse', '--git-dir'))) do |file|
+      Tempfile.create('gitflash-index', git('rev-parse', '--absolute-git-dir')) do |file|
         file.close
-        real_index = File.expand_path(git('rev-parse', '--git-path', 'index'))
+        real_index = git('rev-parse', '--path-format=absolute', '--git-path', 'index')
         FileUtils.cp(real_index, file.path) if File.exist?(real_index)
         env = { 'GIT_INDEX_FILE' => file.path }
 

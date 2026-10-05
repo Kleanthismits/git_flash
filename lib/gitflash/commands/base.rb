@@ -34,9 +34,11 @@ module Gitflash
         @snapshots ||= Gitflash::Snapshots.new
       end
 
-      # Saves the state a change is about to modify, so `gitflash undo` can restore it
-      def take_snapshot(reason, scope:, branches: nil)
-        snapshots.create(reason: reason, scope: scope, branches: branches)
+      # Saves the state a change is about to modify, so `gitflash undo` can restore it.
+      # `dir` saves the HEAD and files of another worktree instead of the current one.
+      def take_snapshot(reason, scope:, branches: nil, dir: nil)
+        store = dir ? Gitflash::Snapshots.new(bash: Git::InDirectory.new(dir)) : snapshots
+        store.create(reason: reason, scope: scope, branches: branches)
       end
 
       def planned(plan, text)

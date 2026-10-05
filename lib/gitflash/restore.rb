@@ -20,17 +20,16 @@ module Gitflash
       }
     end
 
+    # Parts of the state this restore changes; the state before an undo is saved with the same
+    def scope = @snapshot.scope
+
     def empty?
       plan[:branches].empty? && plan[:head].nil? && !plan[:worktree] && plan[:stashes].empty?
     end
 
     # Applies the plan; returns nil on success or the failed step's Result
     def apply
-      steps.each do |args|
-        result = run(*args)
-        return result unless result.success?
-      end
-      nil
+      steps.lazy.map { |args| run(*args) }.find { |result| !result.success? }
     end
 
     private

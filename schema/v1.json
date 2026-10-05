@@ -27,7 +27,9 @@
         "gc",
         "hook install",
         "hook status",
-        "worktree list"
+        "worktree list",
+        "worktree add",
+        "worktree remove"
       ]
     },
     "ok": {
@@ -320,6 +322,44 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree add"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_add_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_add_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree remove"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_remove_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_remove_result"
+          }
+        }
+      }
     }
   ],
   "$defs": {
@@ -351,7 +391,9 @@
             "unknown_snapshot",
             "wrong_worktree",
             "invalid_settings",
-            "invalid_config"
+            "invalid_config",
+            "unknown_worktree",
+            "protected_worktree"
           ]
         },
         "message": {
@@ -770,6 +812,13 @@
           "items": {
             "$ref": "#/$defs/sha"
           }
+        },
+        "recreate_worktree": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Directory of a removed worktree that undo adds again before restoring it."
         }
       }
     },
@@ -1030,6 +1079,188 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/worktree"
+          }
+        }
+      }
+    },
+    "worktree_add_plan": {
+      "type": "object",
+      "required": [
+        "branch",
+        "path",
+        "source",
+        "from",
+        "owner"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "existing",
+            "remote",
+            "new"
+          ]
+        },
+        "from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ],
+          "description": "Mark given to a branch created here; null for an existing branch."
+        }
+      }
+    },
+    "worktree_add_result": {
+      "type": "object",
+      "required": [
+        "branch",
+        "path",
+        "source",
+        "owner",
+        "head"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "existing",
+            "remote",
+            "new"
+          ]
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ]
+        },
+        "head": {
+          "$ref": "#/$defs/sha"
+        }
+      }
+    },
+    "worktree_remove_plan": {
+      "type": "object",
+      "required": [
+        "worktrees",
+        "force"
+      ],
+      "properties": {
+        "worktrees": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "branch",
+              "dirty",
+              "locked"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "dirty": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "locked": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
+    "worktree_remove_result": {
+      "type": "object",
+      "required": [
+        "removed",
+        "failed"
+      ],
+      "properties": {
+        "removed": {
+          "type": "array",
+          "description": "Bring one back with the undo command in its row.",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "branch",
+              "head",
+              "snapshot",
+              "undo"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "head": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "snapshot": {
+                "type": "string"
+              },
+              "undo": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "error"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "error": {
+                "type": "string"
+              }
+            }
           }
         }
       }

@@ -26,5 +26,45 @@ module Gitflash
     def list
       run_command('worktree list', Commands::WorktreeList)
     end
+
+    desc 'add BRANCH', 'Add a worktree for a branch (existing, remote or new)'
+    long_desc <<~TEXT
+      Adds a worktree for BRANCH. An existing local branch is checked out; a branch that exists
+      only on origin is created to track it; any other name creates a new branch from HEAD
+      (or from --from). New branches are marked as agent work so `gitflash clean` can find them.
+
+      The directory defaults to ../<repo>.worktrees/<branch> (setting `worktree_dir` in
+      .gitflash.yml changes it). The result lists the absolute path: use it, no directory
+      switching is needed.
+
+      Needs no confirmation. Accepts the global --json and --dry-run options after the
+      subcommand: gitflash wt add feature --json
+    TEXT
+    option :path, type: :string, banner: 'DIR', desc: 'Directory for the worktree'
+    option :from, type: :string, banner: 'REF', desc: 'Start a new branch from REF (default HEAD)'
+    option :owner, type: :string, enum: Ownership::OWNERS,
+                   desc: 'Mark a new branch as agent (default) or human work'
+    def add(branch = nil)
+      run_command('worktree add', Commands::WorktreeAdd, *[branch].compact)
+    end
+
+    desc 'remove [WORKTREE...]', 'Remove worktrees (paths or branch names), saving a snapshot first'
+    long_desc <<~TEXT
+      Removes the given worktrees, given as a path or the branch checked out in them. Without
+      arguments, shows a menu in a terminal. The main checkout and the current worktree are
+      never removed; locked worktrees and worktrees with uncommitted changes are refused
+      unless --force is given.
+
+      Each removal saves a snapshot first, including uncommitted and untracked files.
+      `gitflash undo ID` brings the directory, its branch and those files back.
+
+      Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.
+      Accepts the global options after the subcommand: gitflash wt remove feature --yes --json
+    TEXT
+    option :force, type: :boolean, default: false,
+                   desc: 'Remove locked worktrees and worktrees with uncommitted changes'
+    def remove(*worktrees)
+      run_command('worktree remove', Commands::WorktreeRemove, *worktrees)
+    end
   end
 end

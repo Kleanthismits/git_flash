@@ -18,11 +18,11 @@ Immutable `Data` parsed once from `for-each-ref`, so commands filter and report 
 
 ## Shape
 
-- 13 fields; `owner` is nil until [[ownership]]`#annotate` sets it, so `parse` never reads config (`lib/gitflash/branch.rb:7-17`), mirrored by `$defs/branch` in [[json-schema]] (`schema/v1.json:350`).
-- `merged` nil when status unknown (`branch.rb:12-13`, `25`).
-- `stale?(days)` (`branch.rb:51-53`); `to_h` formats time ISO 8601 (`branch.rb:55-57`).
-- `Branch.parse_tips` and `Branch::TIPS_FORMAT` read `{ name => sha }` from full refs; shared by [[state-capture]] and [[restore]] (`branch.rb:32-37`, last line of file).
-- Parse order bound to `Repo::BRANCH_FORMAT` (`branch.rb:14`).
+- 13 fields; `owner` is nil until [[ownership]]`#annotate` sets it, so `parse` never reads config (`lib/gitflash/branch.rb`), mirrored by `$defs/branch` in [[json-schema]] (`schema/v1.json:350`).
+- `merged` nil when status unknown (`branch.rb`, `25`).
+- `stale?(days)` (`branch.rb`); `to_h` formats time ISO 8601 (`branch.rb`).
+- `Branch.parse_tips` and `Branch::TIPS_FORMAT` read `{ name => sha }` from full refs; shared by [[state-capture]] and [[restore]] (`branch.rb`, last line of file).
+- Parse order bound to `Repo::BRANCH_FORMAT` (`branch.rb`).
 
 ## Connected to
 
