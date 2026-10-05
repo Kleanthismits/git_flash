@@ -19,6 +19,17 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run_cli('wt', 'list', '--json').json['result']['worktrees'].first['dirty']).to be_nil
     end
 
+    it 'hides merged for the default branch, wherever it is checked out' do
+      git('branch', 'feat')
+      git('switch', '-q', 'feat')
+      Dir.mktmpdir('gitflash-wt') do |dir|
+        git('worktree', 'add', '-q', File.join(dir, 'default'), 'main')
+        rows = run_cli('wt', 'list').stdout.lines
+        expect(rows.find { |row| row.include?(File.realpath(Dir.pwd)) }).to include('merged')
+        expect(rows.find { |row| row.include?('/default') }).not_to include('merged')
+      end
+    end
+
     it 'prints a table' do
       git('branch', 'other')
       expect(run_cli('wt', 'list').stdout).to match(/main\s+main/)
