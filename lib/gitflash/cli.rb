@@ -94,6 +94,18 @@ module Gitflash
     desc 'hook SUBCOMMAND', 'Agent hooks: claude (run the hook), install (register it)'
     subcommand 'hook', HookCli
 
+    desc 'pick [SOURCE] [SHA...]', descriptions.pick.short
+    long_desc descriptions.pick.long
+    option :list, type: :boolean, desc: 'List the commits of SOURCE that are not on this branch yet'
+    option :commit, type: :boolean, default: true,
+                    desc: 'Create a commit per pick; --no-commit only stages the changes'
+    option :continue, type: :boolean, desc: 'Continue after resolving conflicts'
+    option :skip, type: :boolean, desc: 'Skip the commit that conflicts'
+    option :abort, type: :boolean, desc: 'Give up and return to the state before the pick'
+    def pick(source = nil, *shas)
+      run_command('pick', Commands::Pick.command_for(options), *[source, *shas].compact)
+    end
+
     desc 'worktree SUBCOMMAND', 'Worktrees for parallel agent work (alias: wt)'
     subcommand 'worktree', WorktreeCli
     map 'wt' => :worktree

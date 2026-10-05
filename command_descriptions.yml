@@ -104,3 +104,29 @@ worktree_remove:
 
     Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.
     Accepts the global options after the subcommand: gitflash wt remove feature --yes --json
+
+pick:
+  short: 'Cherry-pick commits from another branch'
+  long: |
+    Moves fixes between branches, for example between agent branches.
+
+    `gitflash pick SOURCE --list` lists the commits of SOURCE that are not on the current branch
+    yet, oldest first, with SHA, subject, author, date and a diff summary. A commit whose change
+    is already here (the same patch under another SHA) is marked `=` (`applied` in JSON) and is
+    never picked. Merge commits are left out.
+
+    `gitflash pick SOURCE SHA...` applies the given commits, oldest first whatever the order
+    given, with `git cherry-pick -x` (the message records the origin). Without SHAs, a menu in a
+    terminal lets you choose. Add --no-commit to only stage the combined changes.
+
+    A snapshot is saved first and the plan asks for confirmation (pass --yes, required without a
+    terminal, or --dry-run). `gitflash undo` returns to the starting point.
+
+    On a conflict the pick stops and the result lists the conflicted files, the commits already
+    applied and the ones still waiting. Resolve the files and stage them, then run
+    `gitflash pick --continue`. `gitflash pick --skip` drops the commit that conflicts and
+    `gitflash pick --abort` returns to the state before the pick (both ask for confirmation and
+    save a snapshot first).
+
+    For agents: `gitflash pick SOURCE --list --json` and
+    `gitflash pick SOURCE SHA... --yes --json`.

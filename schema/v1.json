@@ -35,7 +35,8 @@
         "worktree unlock",
         "worktree move",
         "clean",
-        "worktree clean"
+        "worktree clean",
+        "pick"
       ]
     },
     "ok": {
@@ -480,6 +481,35 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "pick"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/pick_plan"
+          },
+          "result": {
+            "if": {
+              "required": [
+                "commits"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/pick_list_result"
+            },
+            "else": {
+              "$ref": "#/$defs/pick_result"
+            }
+          }
+        }
+      }
     }
   ],
   "$defs": {
@@ -513,7 +543,8 @@
             "invalid_settings",
             "invalid_config",
             "unknown_worktree",
-            "protected_worktree"
+            "protected_worktree",
+            "conflict"
           ]
         },
         "message": {
@@ -1652,6 +1683,177 @@
                 "type": "string"
               }
             }
+          }
+        }
+      }
+    },
+    "pick_candidate": {
+      "type": "object",
+      "required": [
+        "sha",
+        "short_sha",
+        "subject",
+        "author",
+        "date",
+        "status",
+        "files",
+        "insertions",
+        "deletions"
+      ],
+      "properties": {
+        "sha": {
+          "$ref": "#/$defs/sha"
+        },
+        "short_sha": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "enum": [
+            "new",
+            "applied"
+          ],
+          "description": "applied: an equivalent change is already on the current branch."
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "insertions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deletions": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "pick_list_result": {
+      "type": "object",
+      "required": [
+        "source",
+        "commits"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "commits": {
+          "type": "array",
+          "description": "Oldest first.",
+          "items": {
+            "$ref": "#/$defs/pick_candidate"
+          }
+        }
+      }
+    },
+    "pick_plan": {
+      "type": "object",
+      "description": "A new pick, or --continue / --skip / --abort of one in progress.",
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "commits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "sha",
+              "reason"
+            ],
+            "properties": {
+              "sha": {
+                "$ref": "#/$defs/sha"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "commit": {
+          "type": "boolean"
+        },
+        "action": {
+          "enum": [
+            "continue",
+            "skip",
+            "abort"
+          ]
+        },
+        "current": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conflicted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "remaining": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        }
+      }
+    },
+    "pick_result": {
+      "type": "object",
+      "description": "done or noop: applied and head (or action and head); failed on conflicts: applied, current, conflicted, remaining.",
+      "properties": {
+        "applied": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        },
+        "head": {
+          "$ref": "#/$defs/sha"
+        },
+        "action": {
+          "enum": [
+            "continue",
+            "skip",
+            "abort"
+          ]
+        },
+        "current": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conflicted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "remaining": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
           }
         }
       }

@@ -38,6 +38,9 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash checkout [BRANCH]` | Check out a branch, or pick one from a list |
 | `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current, default, `main` and `master` branches are protected. Unmerged branches are kept unless you pass `--force` |
 | `gitflash reset [COMMIT]` | Reset to a commit, or pick one of the latest 100. Mixed by default; `--soft` keeps changes staged, `--hard` discards them after confirmation |
+| `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. Protected: current, default, `main`, `master`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
+| `gitflash worktree` (`wt`) `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock`, `move` | Worktrees for parallel agent work, with absolute paths in `--json` (see below) |
+| `gitflash pick SOURCE [SHA...]` | Cherry-pick commits from another branch: `--list` shows what is missing here, `--continue`, `--skip` and `--abort` handle conflicts |
 | `gitflash undo [SNAPSHOT]` | Restore a snapshot, the latest by default: deleted branches, moved branches, HEAD, uncommitted and untracked files, dropped stashes |
 | `gitflash snapshot` | Save the current state on request (`--scope`, `--message`) |
 | `gitflash snapshots` | List snapshots, newest first |
@@ -46,6 +49,22 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash hook status` | Show whether the hook protects Claude Code sessions in the current directory |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
+
+### Parallel agent work
+
+`gitflash wt add feature` creates a worktree (default `../<repo>.worktrees/feature`) and marks a new branch as agent work. `gitflash wt list --json` gives every worktree's absolute path, branch, dirty state, ahead/behind, merge status, lock state and owner, so an agent never has to switch directories.
+
+`gitflash wt remove` and `gitflash wt clean` save a snapshot first, and `gitflash undo` adds the worktree back with its branch and uncommitted files. Ignored files (`.env`, `node_modules`) are not saved: the plan lists them before they are deleted. A worktree with an untracked file over 50 MB is not removed.
+
+`gitflash pick other-branch --list` lists the commits missing here (a commit whose patch is already here is marked `=`). `gitflash pick other-branch SHA... --yes` applies them oldest first with `-x`. On a conflict it stops and lists the files; resolve them and run `gitflash pick --continue`, or `--skip` / `--abort`.
+
+Settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml` (the repository file wins):
+
+```yaml
+protected: ["release/*"]   # branch patterns clean and delete never touch
+stale_days: 30             # used by --stale without a number
+worktree_dir: "../%<repo>s.worktrees/%<branch>s"
+```
 
 ### Undo
 
