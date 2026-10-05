@@ -4,8 +4,8 @@ cluster: commands
 universe: live
 status: verified
 entity: lib/gitflash/commands/checkout.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-05
+verified_at: 0b7b8d9 plus review fixes
 ---
 
 # Checkout command
@@ -26,7 +26,7 @@ No confirmation; reversible. It saves a HEAD snapshot and also records `previous
 ## Connected to
 
 - **joins:** [[repo]] `checkout`, [[change-flow]], [[json-schema]] `checkout_*`
-- **looks-like-but-is-not:** `git checkout` (never touches files; passes `--`, `repo.rb:72-74`)
+- **looks-like-but-is-not:** `git checkout`. `Repo#checkout` runs `git switch -- NAME` (`repo.rb:72-74`): it never discards local changes or reads the name as a file path, but a switch still updates tracked files when the branches differ, and it refuses when local changes would be overwritten.
 
 ## If you change this
 

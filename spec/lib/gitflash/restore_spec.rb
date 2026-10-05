@@ -47,6 +47,19 @@ RSpec.describe Gitflash::Restore, :git_repo do
     expect(git('rev-parse', 'feature').strip).to eq(old)
   end
 
+  it 'does not overwrite a branch that was created after the restore was planned' do
+    snapshot = snapshots.create(reason: 'test', scope: %w[branches])
+    old = head_sha
+    git('branch', '-D', 'feature')
+    result = restore(snapshot)
+    expect(result.plan[:branches]).to eq([{ branch: 'feature', from: nil, to: old }])
+
+    commit_file('c')
+    git('branch', 'feature') # another process creates it after planning
+    expect(result.apply).not_to be_nil
+    expect(git('rev-parse', 'feature').strip).to eq(head_sha)
+  end
+
   it 'switches HEAD back with a checkout that keeps local changes' do
     snapshot = snapshots.create(reason: 'test', scope: %w[head])
     git('checkout', '-q', 'feature')

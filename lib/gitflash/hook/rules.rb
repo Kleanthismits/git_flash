@@ -19,9 +19,18 @@ module Gitflash
         args.intersect?(flags)
       end
 
-      def checkout(args, _dir)
-        discards = any?(args, %w[-- . -f --force -p --patch --ours --theirs])
+      # `git checkout PATH` overwrites uncommitted changes in PATH without any flag, and telling a
+      # path from a branch needs git; an argument that names an existing file counts as a path.
+      def checkout(args, dir)
+        discards = any?(args, %w[-- . -f --force -p --patch --ours --theirs]) ||
+                   path_arg?(args, dir)
         discards ? { scope: %w[worktree] } : nil
+      end
+
+      def path_arg?(args, dir)
+        args.reject { |arg| arg.start_with?('-') }.any? do |arg|
+          File.exist?(File.expand_path(arg, dir))
+        end
       end
 
       def clean(args, _dir)

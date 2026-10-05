@@ -4,7 +4,7 @@
 #   - the twins (AGENTS.md, routing.md) match docs/map/CLAUDE.md, and the root AGENTS.md matches
 #     the root CLAUDE.md
 #   - every [[link]] in the map names an existing card
-#   - every `path:line` citation points inside an existing file
+#   - every `path:line` or `path:first-last` citation is a valid range inside an existing file
 # Run from anywhere: ruby docs/map/_meta/check.rb
 
 ROOT = File.expand_path('../../..', __dir__)
@@ -40,6 +40,8 @@ Dir.glob(File.join(MAP, '**/*.md')).each do |file|
     matches = sources.select { |source| source.end_with?("/#{path}") }
     if matches.empty?
       errors << "#{name}: cited file #{path} not found"
+    elsif first.to_i < 1 || (last && last.to_i < first.to_i)
+      errors << "#{name}: #{path}:#{[first, last].compact.join('-')} is not a valid line range"
     elsif matches.none? { |match| File.foreach(match).count >= (last || first).to_i }
       errors << "#{name}: #{path}:#{[first, last].compact.join('-')} is past the end of the file"
     end

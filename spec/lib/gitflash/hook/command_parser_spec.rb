@@ -47,6 +47,16 @@ RSpec.describe Gitflash::Hook::CommandParser do
     expect(targets('git commit -m "fix; git reset --hard" && git status')).to eq([])
   end
 
+  it 'treats `git checkout PATH` as a discard when PATH exists' do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, 'app.rb'), 'x')
+      parser = described_class.new(dir)
+
+      expect(parser.targets('git checkout app.rb').map(&:scope)).to eq([%w[worktree]])
+      expect(parser.targets('git checkout main')).to eq([])
+    end
+  end
+
   it 'skips environment assignments and wrappers' do
     expect(targets('GIT_TRACE=1 sudo git clean -f')).to eq([['/repo', %w[worktree], []]])
   end

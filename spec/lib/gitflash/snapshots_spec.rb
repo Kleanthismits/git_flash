@@ -53,6 +53,19 @@ RSpec.describe Gitflash::Snapshots, :git_repo do
       expect(snapshot.skipped_files).to eq(%w[large])
     end
 
+    it 'leaves out an untracked file that disappears while the snapshot is taken' do
+      File.write('gone', "x\n")
+      File.write('stays', "y\n")
+      allow(File).to receive(:lstat).and_wrap_original do |original, path|
+        raise Errno::ENOENT, path if path.end_with?('/gone')
+
+        original.call(path)
+      end
+
+      snapshot = snapshots.create(reason: 'test', scope: %w[worktree])
+      expect(tree_files(snapshot.worktree)).to eq(%w[a stays])
+    end
+
     it 'saves stash entries' do
       File.write('a', "stashed\n")
       git('stash', '-q')

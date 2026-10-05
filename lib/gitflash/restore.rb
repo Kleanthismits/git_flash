@@ -41,7 +41,8 @@ module Gitflash
 
     def branch_steps
       plan[:branches].map do |change|
-        ['update-ref', "refs/heads/#{change[:branch]}", change[:to], change[:from]].compact
+        # An empty old value makes git refuse to overwrite a branch created since the plan
+        ['update-ref', "refs/heads/#{change[:branch]}", change[:to], change[:from] || '']
       end
     end
 

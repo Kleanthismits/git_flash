@@ -4,8 +4,8 @@ cluster: snapshots
 universe: live
 status: verified
 entity: lib/gitflash/state_capture.rb
-verified_on: 2026-10-04
-verified_at: 36940dc plus the tag-safe ref fix
+verified_on: 2026-10-05
+verified_at: 0b7b8d9 plus review fixes
 ---
 
 # State capture
@@ -22,6 +22,7 @@ Work tree is captured through a temporary copy of the index, so the real index i
 - Dirty tree: `index` and `worktree` commits, parented on HEAD (`state_capture.rb:35`, `74-83`). Unresolved merge: `index` nil (`state_capture.rb:76`).
 - Untracked, non-ignored files included; files over 50 MB are skipped and listed in `skipped_files` (`state_capture.rb:10`, `104-113`).
 - Branch names come from full refs with `refs/heads/` removed (`state_capture.rb:64-72`, `Branch.parse_tips`); short names change when a tag has the same name.
+- A file that disappears between `ls-files` and the size check is left out instead of crashing (`file_sizes`, `state_capture.rb:108-115`).
 - Author/committer `gitflash@localhost` (`state_capture.rb:12-15`).
 
 ## Connected to

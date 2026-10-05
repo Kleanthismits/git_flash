@@ -105,13 +105,23 @@ module Gitflash
       end
     end
 
+    # [path, size] pairs. A file removed since `ls-files` ran (a build writing temporary files)
+    # is left out, so `git add` is not given a path that is gone.
+    def file_sizes(top, paths)
+      paths.filter_map do |path|
+        [path, File.lstat(File.join(top, path)).size]
+      rescue Errno::ENOENT
+        nil
+      end
+    end
+
     # Adds untracked files that are not ignored; returns the ones skipped for their size
     def add_untracked(top, env)
       paths = git('-C', top, 'ls-files', '-z', '--others', '--exclude-standard')
               .split("\0").reject { |path| path.end_with?('/') }
-      small, large = paths.partition do |path|
-        File.lstat(File.join(top, path)).size <= MAX_UNTRACKED_FILE_BYTES
-      end
+      sizes = file_sizes(top, paths)
+      small, large = sizes.partition { |_path, size| size <= MAX_UNTRACKED_FILE_BYTES }
+                          .map { |group| group.map(&:first) }
       small.each_slice(ADD_BATCH_SIZE) { |batch| git('-C', top, 'add', '--', *batch, env: env) }
       large
     end
