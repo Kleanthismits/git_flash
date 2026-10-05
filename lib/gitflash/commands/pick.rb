@@ -57,7 +57,7 @@ module Gitflash
       def row(candidate)
         stat = "+#{candidate.insertions} -#{candidate.deletions}"
         "#{candidate.applied ? '=' : ' '} #{candidate.short_sha}  " \
-          "#{TerminalText.safe(candidate.subject)}  (#{candidate.author}, " \
+          "#{TerminalText.safe(candidate.subject)}  (#{TerminalText.safe(candidate.author)}, " \
           "#{candidate.date[0, 10]}, #{candidate.files} files #{stat})"
       end
 

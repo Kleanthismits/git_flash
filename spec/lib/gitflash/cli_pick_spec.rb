@@ -201,6 +201,23 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(subjects.first).to eq('Add three')
     end
 
+    it 'shows author names from the source branch with control characters escaped' do
+      git('switch', '-q', 'feat')
+      ENV['GIT_AUTHOR_NAME'] = "Evil\e]52;c;ZXZpbA==\aName"
+      commit_file('evil.txt')
+      ENV.delete('GIT_AUTHOR_NAME')
+      git('switch', '-q', 'main')
+
+      labels = nil
+      allow(prompt).to receive(:multi_select) do |_message, choices|
+        labels = choices.keys
+        []
+      end
+      run_cli('pick', 'feat')
+      expect(labels.last).to include('Evil\\x1B]52;c;ZXZpbA==\\x07Name')
+      expect(labels.join).not_to include("\e", "\a")
+    end
+
     it 'says so when nothing is selected or nothing is left to pick' do
       allow(prompt).to receive(:multi_select).and_return([])
       allow(prompt).to receive(:proceed_with_warning) { |_message, &block| block.call }

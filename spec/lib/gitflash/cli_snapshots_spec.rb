@@ -134,6 +134,12 @@ RSpec.describe Gitflash::Cli, :git_repo do
     end
   end
 
+  # A settings group running the gitflash hook under the given tool matcher
+  def hook_group(matcher)
+    { 'matcher' => matcher,
+      'hooks' => [{ 'type' => 'command', 'command' => 'gitflash hook claude' }] }
+  end
+
   describe 'hook install' do
     let(:root) { File.realpath(Dir.pwd) }
     let(:settings) { File.join(root, '.claude', 'settings.local.json') }
@@ -178,6 +184,28 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(written.dig('hooks', 'PreToolUse')).to eq([pre])
       expect(written.dig('hooks', 'PostToolUse', 0, 'hooks', 0,
                          'command')).to eq('gitflash hook claude')
+    end
+
+    it 'does not count a gitflash hook under another tool matcher as installed' do
+      FileUtils.mkdir_p('.claude')
+      other = hook_group('Edit')
+      File.write(settings, JSON.generate('hooks' => { 'PreToolUse' => [other],
+                                                      'PostToolUse' => [other] }))
+
+      expect(run_cli('hook', 'install', '--json').json['status']).to eq('done')
+      hooks = JSON.parse(File.read(settings))['hooks']
+      matchers = hooks.values_at('PreToolUse', 'PostToolUse').map do |groups|
+        groups.map { |group| group['matcher'] }
+      end
+      expect(matchers).to eq([%w[Edit Bash], %w[Edit Bash]])
+    end
+
+    it 'accepts a matcher that covers Bash, such as an alternation or an empty one' do
+      FileUtils.mkdir_p('.claude')
+      File.write(settings, JSON.generate('hooks' => { 'PreToolUse' => [hook_group('Bash|Edit')],
+                                                      'PostToolUse' => [hook_group('')] }))
+
+      expect(run_cli('hook', 'install', '--json').json['status']).to eq('noop')
     end
 
     it 'says which sessions it applies to' do
@@ -256,6 +284,13 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run_cli('hook', 'status').stdout).to start_with(
         'gitflash hook: active (branch marking off: run `gitflash hook install` again)'
       )
+    end
+
+    it 'is not active when the hooks only match another tool' do
+      FileUtils.mkdir_p('.claude')
+      File.write('.claude/settings.local.json',
+                 JSON.generate('hooks' => { 'PreToolUse' => [hook_group('Edit')] }))
+      expect(run_cli('hook', 'status', '--json').json['result']).to include('active' => false)
     end
 
     it 'reports branch marking after a full install' do
