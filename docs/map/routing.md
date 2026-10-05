@@ -1,7 +1,7 @@
 # gitflash map
 
 Catalog of what gitflash is made of and what a change hits. Source stays truth; cards cite it.
-Mapped on branch `phase2_snapshots_undo` (0.6.0, unreleased). Cards state the commit they were verified at.
+Mapped on branch `phase3_cleanup` (0.6.0 released, 0.7.0 in progress). Cards state the commit they were verified at.
 
 gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents work in. One JSON contract (`schema/v1.json`).
 
@@ -18,8 +18,8 @@ gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents 
 
 ## Universes
 
-- **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude/install/status; `Repo`, `Ui`, snapshot classes, `schema/v1.json`
-- **ghost:** `docs/ROADMAP.md` phase 3+ (`clean`, `worktree`, `pick`, `.gitflash.yml`, MCP, Skill, ownership marks). Not in `lib/`. Do not implement against.
+- **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude/install/status, worktree list, `.gitflash.yml`; `Repo`, `Ui`, snapshot classes, `schema/v1.json`
+- **ghost:** `docs/ROADMAP.md` phase 3+ (`clean`, `wt` add/remove/clean/prune/lock/move, `pick`, MCP, Skill, ownership marks). Not in `lib/`. Do not implement against.
 - **leftover:** none found
 
 ## Route

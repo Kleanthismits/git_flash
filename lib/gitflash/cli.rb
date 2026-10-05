@@ -81,6 +81,10 @@ module Gitflash
     desc 'hook SUBCOMMAND', 'Agent hooks: claude (run the hook), install (register it)'
     subcommand 'hook', HookCli
 
+    desc 'worktree SUBCOMMAND', 'Worktrees for parallel agent work (alias: wt)'
+    subcommand 'worktree', WorktreeCli
+    map 'wt' => :worktree
+
     desc 'schema', 'Print the JSON Schema of the --json output'
     def schema
       puts File.read(SCHEMA_PATH)

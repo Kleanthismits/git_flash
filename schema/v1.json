@@ -26,7 +26,8 @@
         "snapshot",
         "gc",
         "hook install",
-        "hook status"
+        "hook status",
+        "worktree list"
       ]
     },
     "ok": {
@@ -300,6 +301,22 @@
         "properties": {
           "result": {
             "$ref": "#/$defs/hook_status"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree list"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/worktree_list_result"
           }
         }
       }
@@ -900,6 +917,103 @@
                 "type": "string"
               }
             }
+          }
+        }
+      }
+    },
+    "worktree": {
+      "type": "object",
+      "required": [
+        "path",
+        "head",
+        "branch",
+        "main",
+        "bare",
+        "locked",
+        "lock_reason",
+        "missing",
+        "dirty",
+        "ahead",
+        "behind",
+        "merged"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the worktree directory."
+        },
+        "head": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "branch": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "null for a detached HEAD."
+        },
+        "main": {
+          "type": "boolean"
+        },
+        "bare": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "lock_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "missing": {
+          "type": "boolean",
+          "description": "The directory no longer exists."
+        },
+        "dirty": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Uncommitted or untracked files; null when unknown."
+        },
+        "ahead": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "behind": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "merged": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Branch merged into the default branch; null without a branch."
+        }
+      }
+    },
+    "worktree_list_result": {
+      "type": "object",
+      "required": [
+        "worktrees"
+      ],
+      "properties": {
+        "worktrees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/worktree"
           }
         }
       }

@@ -13,6 +13,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `branch`: branch record. verified. `lib/gitflash/branch.rb`
 - `commit`: commit record. verified. `lib/gitflash/commit.rb`
 - `config`: settings files `.gitflash.yml`, `~/.config/gitflash.yml`. verified. `lib/gitflash/{config,config_keys}.rb`
+- `worktrees`: worktree records from git. verified. `lib/gitflash/{worktrees,worktree}.rb`
 - `bash-command`: git process runner. verified. `lib/gitflash/git/bash_command.rb`
 - `command-runner`: runs one command, maps errors to exit. verified. `lib/gitflash/command_runner.rb`
 
@@ -23,6 +24,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `delete`: remove branches, confirm, snapshot. verified. `lib/gitflash/commands/delete.rb`
 - `reset`: reset to commit, snapshot every mode. verified. `lib/gitflash/commands/reset.rb`
 - `undo`: restore a snapshot, undo-able. verified. `lib/gitflash/commands/undo.rb`
+- `worktree-commands`: `worktree`/`wt` list. verified. `lib/gitflash/{worktree_cli,commands/worktree_list}.rb`
 - `snapshot-commands`: snapshot, snapshots, gc. verified. `lib/gitflash/commands/{snapshot_create,snapshot_list,gc}.rb`
 - `change-flow`: plan, confirm, snapshot, execute, report. verified. `lib/gitflash/commands/base.rb`
 

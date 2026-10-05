@@ -24,6 +24,7 @@ Verified at dde88fd on 2026-10-03.
 | which agent commands get snapshotted | [[hook-rules]], [[hook-claude]] |
 | hook output or modes | [[hook-claude]], [[hook-install]] (command string and `PATTERN`) |
 | where the hook is installed | [[hook-install]], [[repo]] (`toplevel`, `main_root`) |
+| worktree fields or `wt` commands | [[worktrees]], [[worktree-commands]], [[json-schema]] |
 | help text | [[command-descriptions]] |
 
 ## Outside the tree: things that point in
