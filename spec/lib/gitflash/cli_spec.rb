@@ -261,7 +261,9 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
     it 'refuses branches matching `protected` in .gitflash.yml' do
       git('branch', 'release/1.0')
-      File.write('.gitflash.yml', "protected: ['release/*']\n")
+      allow(Dir).to receive(:home).and_return(Dir.pwd) # not the developer's own ~/.config
+      File.write(File.join(Gitflash::Repo.new.main_root, '.gitflash.yml'),
+                 "protected: ['release/*']\n")
       run = run_cli('delete', 'release/1.0', '--yes', '--json')
       expect(run.json['error']).to include('code' => 'protected_branch')
       expect(branch_names).to include('release/1.0')

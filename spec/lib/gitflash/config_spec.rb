@@ -34,6 +34,21 @@ RSpec.describe Gitflash::Config do
     expect(config.protected?('feature/x')).to be(false)
   end
 
+  it 'protects nested branch names: * also matches across slashes' do
+    write_repo("protected: ['release/*']\n")
+    expect(config.protected?('release/1.0/rc')).to be(true)
+  end
+
+  it 'rejects a key given twice, so a protected list is never dropped silently' do
+    write_repo("protected: [a]\nprotected: [b]\n")
+    expect { config }.to raise_error(Gitflash::UsageError, /'protected' more than once/)
+  end
+
+  it 'loads a file whose keys are all different' do
+    write_repo("protected: [a]\nstale_days: 5\n")
+    expect(config.stale_days).to eq(5)
+  end
+
   it 'builds the default worktree path next to the main checkout' do
     expect(config.worktree_path(root: root, branch: 'feat/a'))
       .to eq(File.expand_path('../proj.worktrees/feat/a', root))

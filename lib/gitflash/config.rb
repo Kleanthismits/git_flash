@@ -24,6 +24,7 @@ module Gitflash
     def self.read(path)
       return {} unless File.file?(path)
 
+      reject_duplicate_keys!(path)
       data = YAML.safe_load_file(path) || {}
       validate!(data, path)
       data
@@ -31,6 +32,30 @@ module Gitflash
       raise invalid(path, "cannot be read (#{e.message.lines.first.strip})")
     end
     private_class_method :read
+
+    # A YAML loader keeps only the last of two equal keys, which could drop a `protected` list
+    def self.reject_duplicate_keys!(path)
+      root = Psych.parse_file(path)
+      return unless root
+
+      duplicate = duplicate_key(root)
+      raise invalid(path, "has the key '#{duplicate}' more than once") if duplicate
+    end
+    private_class_method :reject_duplicate_keys!
+
+    def self.duplicate_key(node)
+      own = node.is_a?(Psych::Nodes::Mapping) ? own_duplicate(node) : nil
+      own || (node.children || []).filter_map { |child| duplicate_key(child) }.first
+    end
+    private_class_method :duplicate_key
+
+    def self.own_duplicate(mapping)
+      keys = mapping.children.each_slice(2).filter_map do |key, _value|
+        key.value if key.respond_to?(:value)
+      end
+      keys.tally.find { |_key, count| count > 1 }&.first
+    end
+    private_class_method :own_duplicate
 
     def self.validate!(data, path)
       raise invalid(path, 'must be a mapping') unless data.is_a?(Hash)

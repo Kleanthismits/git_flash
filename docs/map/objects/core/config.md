@@ -19,7 +19,7 @@ One place reads the files and checks them, so commands receive a plain value. An
 ## Shape
 
 - Keys: `protected` (name patterns, `File.fnmatch`), `stale_days` (default 30), `worktree_dir` (default `../%<repo>s.worktrees/%<branch>s`) (`lib/gitflash/config_keys.rb:5-17`).
-- Precedence: repository file (main checkout root), user file, defaults. CLI flags are applied by commands and win (`lib/gitflash/config.rb:11-20`).
+- Precedence: repository file (main checkout root), user file, defaults. CLI flags are applied by commands and win (`lib/gitflash/config.rb:12-18`).
 - `protected` adds to the fixed rule in [[delete]]; it never removes it.
 
 ## Connected to
