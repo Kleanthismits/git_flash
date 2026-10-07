@@ -29,7 +29,7 @@ Same pattern as [[branch]]. Used for the `reset` menu.
 
 ## If you change this
 
-- **Hits:** [[repo]] `COMMIT_FORMAT`; `reset` menu (`lib/gitflash/commands/reset.rb:19`).
+- **Hits:** [[repo]] `COMMIT_FORMAT`; `reset` menu (`lib/gitflash/commands/reset.rb`).
 - **Does not hit:** [[json-schema]], [[branch]].
 
 ## Surfaces

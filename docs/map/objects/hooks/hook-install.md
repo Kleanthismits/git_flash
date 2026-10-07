@@ -10,25 +10,27 @@ verified_at: dde88fd
 
 # Hook install and status
 
-Registers the hook in Claude Code settings and reports whether it is active. Code: `Hook::Settings`, `Commands::HookInstall`, `Commands::HookStatus`.
+Registers the hooks in Claude Code settings and reports whether they are active. Code: `Hook::Settings`, `Commands::HookInstall`, `Commands::HookStatus`.
 
 ## Why this shape
 
-Follows Claude Code's own settings rules so a running session picks the hook up without restart. Install merges into the file and keeps everything else (`lib/gitflash/commands/hook_install.rb:7-8`).
+Follows Claude Code's own settings rules so a running session picks the hook up without restart. Install merges into the file and keeps everything else (`lib/gitflash/commands/hook_install.rb`).
 
 ## Shape
 
-- Scopes `local` (`.claude/settings.local.json` at the main checkout root, default), `project` (`.claude/settings.json` at the repo top level), `user` (`~/.claude/settings.json`) (`lib/gitflash/hook/settings.rb:15`, `23-29`).
-- Hook entry is found by regex `gitflash hook claude` (`settings.rb:16`, `52-57`).
-- Install: idempotent (`hook_install.rb:16`), writes pretty JSON, timeout 30 (`hook_install.rb:34-41`, `60-66`), `--mode` sets the command (`hook_install.rb:50-53`). Invalid JSON raises `invalid_settings` (`settings.rb:44-50`).
-- Status: lists files per scope, whether installed, and whether `gitflash` is on `PATH` (`lib/gitflash/commands/hook_status.rb:9-16`, `34-37`). Works outside a repo (user scope only).
-- Uses `Repo#toplevel` and `Repo#main_root` (`lib/gitflash/repo.rb:40-49`).
+- Scopes `local` (`.claude/settings.local.json` at the main checkout root, default), `project` (`.claude/settings.json` at the repo top level), `user` (`~/.claude/settings.json`) (`lib/gitflash/hook/settings.rb`, `23-29`).
+- Two entries with the same command: `PreToolUse` (snapshots; `--mode` applies) and `PostToolUse` (marks agent branches, see [[hook-marking]]), both matcher `Bash`, timeout 30. Install adds whichever is missing, so running it again upgrades an older install. `Settings#entry(settings, event)` finds one by event and only looks in groups whose `matcher` covers the Bash tool (`Bash`, `Bash|Edit`, empty or `*`); a gitflash command under another matcher counts as not installed.
+- Status adds `marking` (per file and overall); the headline says when marking is off.
+- Hook entry is found by regex `gitflash hook claude` (`settings.rb`, `52-57`).
+- Install: idempotent (`hook_install.rb`), writes pretty JSON, timeout 30 (`hook_install.rb`, `60-66`), `--mode` sets the command (`hook_install.rb`). Invalid JSON raises `invalid_settings` (`settings.rb`).
+- Status: lists files per scope, whether installed, and whether `gitflash` is on `PATH` (`lib/gitflash/commands/hook_status.rb`, `34-37`). Works outside a repo (user scope only).
+- Uses `Repo#toplevel` and `Repo#main_root` (`lib/gitflash/repo.rb`).
 
 ## Connected to
 
 - **owns:** [[hook-claude]] command string
 - **joins:** [[repo]], [[command-runner]] (`repo_required:`), [[json-schema]] `hook_install`, `hook_status`
-- **looks-like-but-is-not:** a gitflash config file. gitflash has none; all state is in Claude's settings and `refs/gitflash/`.
+- **looks-like-but-is-not:** gitflash's own settings file `.gitflash.yml` ([[config]]). Install only reads and writes Claude Code settings; hook state is there and in `refs/gitflash/`.
 
 ## If you change this
 

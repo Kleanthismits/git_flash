@@ -49,11 +49,24 @@ module Gitflash
         raise Error.new("#{path} is not valid JSON: #{e.message}", code: 'invalid_settings')
       end
 
-      # The gitflash hook entry in parsed settings, or nil
-      def entry(settings)
-        groups = Array(settings.dig('hooks', 'PreToolUse'))
-        groups.flat_map { |group| Array(group['hooks']) }
-              .find { |hook| hook['command'].to_s.match?(PATTERN) }
+      # The gitflash hook entry for an event (PreToolUse by default) in parsed settings, or nil.
+      # Only groups whose matcher covers the Bash tool count: a gitflash command under another
+      # matcher (Edit, say) never runs for Bash commands.
+      def entry(settings, event = 'PreToolUse')
+        groups = Array(settings.dig('hooks', event))
+        bash = groups.select { |group| bash_matcher?(group['matcher']) }
+        bash.flat_map { |group| Array(group['hooks']) }
+            .find { |hook| hook['command'].to_s.match?(PATTERN) }
+      end
+
+      # Claude Code matches `matcher` against the tool name: empty or `*` is every tool, anything
+      # else is a pattern such as `Bash` or `Bash|Edit`
+      def bash_matcher?(matcher)
+        return true if matcher.to_s.empty? || matcher == '*'
+
+        'Bash'.match?(/\A(?:#{matcher})\z/)
+      rescue RegexpError
+        false
       end
     end
   end

@@ -18,15 +18,15 @@ No confirmation; reversible. It saves a HEAD snapshot and also records `previous
 
 ## Shape
 
-- No arg needs a terminal (`lib/gitflash/commands/checkout.rb:12`), else menu defaulting to current (`checkout.rb:23-26`).
-- Unknown name raises `unknown_branch` (`checkout.rb:29`). Already there gives `noop` (`checkout.rb:30`).
-- `--dry-run` gives `planned` (`checkout.rb:33`).
-- Snapshot scope `head` (`checkout.rb:35`); result `{ branch, previous_branch }` plus `undo:` (`checkout.rb:38-40`).
+- No arg needs a terminal (`lib/gitflash/commands/checkout.rb`), else menu defaulting to current (`checkout.rb`).
+- Unknown name raises `unknown_branch` (`checkout.rb`). Already there gives `noop` (`checkout.rb`).
+- `--dry-run` gives `planned` (`checkout.rb`).
+- Snapshot scope `head` (`checkout.rb`); result `{ branch, previous_branch }` plus `undo:` (`checkout.rb`).
 
 ## Connected to
 
 - **joins:** [[repo]] `checkout`, [[change-flow]], [[json-schema]] `checkout_*`
-- **looks-like-but-is-not:** `git checkout`. `Repo#checkout` runs `git switch -- NAME` (`repo.rb:72-74`): it never discards local changes or reads the name as a file path, but a switch still updates tracked files when the branches differ, and it refuses when local changes would be overwritten.
+- **looks-like-but-is-not:** `git checkout`. `Repo#checkout` runs `git switch -- NAME` (`repo.rb`): it never discards local changes or reads the name as a file path, but a switch still updates tracked files when the branches differ, and it refuses when local changes would be overwritten.
 
 ## If you change this
 

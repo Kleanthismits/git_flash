@@ -43,6 +43,27 @@ module Gitflash
       run_command('delete', Commands::Delete, *branches)
     end
 
+    desc 'mark [BRANCH...]', descriptions.mark.short
+    long_desc descriptions.mark.long
+    option :owner, type: :string, enum: Ownership::OWNERS, desc: 'agent (default) or human'
+    option :clear, type: :boolean, default: false, desc: 'Remove the mark'
+    def mark(*branches)
+      run_command('mark', Commands::Mark, *branches)
+    end
+
+    desc 'clean', descriptions.clean.short
+    long_desc descriptions.clean.long
+    option :merged, type: :boolean, desc: 'Branches merged into the default branch'
+    option :gone, type: :boolean, desc: 'Branches whose upstream branch was deleted'
+    option :stale, type: :string, banner: 'DAYS', lazy_default: '',
+                   desc: 'Branches without commits for DAYS days (default: stale_days setting)'
+    option :agent, type: :boolean, desc: 'Branches created by an agent'
+    option :force, type: :boolean, default: false,
+                   desc: 'Also delete selected branches that have unmerged changes'
+    def clean
+      run_command('clean', Commands::Clean)
+    end
+
     desc 'reset [COMMIT]', descriptions.reset.short
     long_desc descriptions.reset.long
     option :hard, type: :boolean, default: false, desc: 'Discard all current changes'
@@ -80,6 +101,22 @@ module Gitflash
 
     desc 'hook SUBCOMMAND', 'Agent hooks: claude (run the hook), install (register it)'
     subcommand 'hook', HookCli
+
+    desc 'pick [SOURCE] [SHA...]', descriptions.pick.short
+    long_desc descriptions.pick.long
+    option :list, type: :boolean, desc: 'List the commits of SOURCE that are not on this branch yet'
+    option :commit, type: :boolean, default: true,
+                    desc: 'Create a commit per pick; --no-commit only stages the changes'
+    option :continue, type: :boolean, desc: 'Continue after resolving conflicts'
+    option :skip, type: :boolean, desc: 'Skip the commit that conflicts'
+    option :abort, type: :boolean, desc: 'Give up and return to the state before the pick'
+    def pick(source = nil, *shas)
+      run_command('pick', Commands::Pick.command_for(options), *[source, *shas].compact)
+    end
+
+    desc 'worktree SUBCOMMAND', 'Worktrees for parallel agent work (alias: wt)'
+    subcommand 'worktree', WorktreeCli
+    map 'wt' => :worktree
 
     desc 'schema', 'Print the JSON Schema of the --json output'
     def schema

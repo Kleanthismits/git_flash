@@ -73,3 +73,17 @@ Security fixes for names and text that come from the repository:
 - Add `hook install [--scope local|project|user] [--mode ...]` to register the hook in Claude Code settings; it reports which sessions the file applies to, and the local scope uses the main checkout's root inside a worktree, as Claude Code does
 - Add `hook status` to show whether the hook protects Claude Code sessions in the current directory
 - JSON schema: new `undo` field, commands `undo`, `snapshots`, `snapshot`, `gc`, `hook`, error codes `unknown_snapshot`, `wrong_worktree`, `invalid_settings`
+
+## [0.7.0.beta1] - 2026-10-07
+
+Beta of the parallel agent work release. Install with `gem install gitflash --pre`. The JSON contract of the new commands may still change before 0.7.0. Needs git 2.36 or newer.
+
+- Settings: `.gitflash.yml` in the repository and `~/.config/gitflash.yml` (the repository file wins) with `protected` branch patterns, `stale_days` and `worktree_dir`. Unknown keys, wrong types, duplicate keys and unreadable files fail with the new error code `invalid_config`
+- Ownership marks: `branch.<name>.gitflash-owner` (`agent` or `human`) in git config, shown as `owner` in `branches` and `worktree list`. Add `mark [BRANCH...] [--owner agent|human] [--clear]` to set it
+- Add `worktree` (alias `wt`): `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock` and `move`. `wt list --json` gives absolute paths, dirty state, ahead and behind, merge status, lock state and owner. `wt add` marks the branches it creates as agent work. `wt remove` and `wt clean` save a snapshot first and refuse the main checkout, the current worktree, and locked or dirty worktrees unless `--force`. `undo` adds a removed worktree back with its branch and uncommitted files. Ignored files are not saved: the plan lists them before they are deleted. A worktree with an untracked file over 50 MB is not removed
+- Add `clean`: deletes merged branches and branches whose upstream is gone, and with `--stale [DAYS]` and `--agent` stale and agent-created ones, with a snapshot first. Each chosen branch lists why. Unmerged branches need `--force`
+- `clean` and `delete` never touch the current and default branch, `main`, `master`, `protected` branches or branches checked out in a worktree
+- Add `pick SOURCE [SHA...]`: `--list` shows the commits of SOURCE that are not on the current branch (already applied patches are marked), `SHA...` applies them oldest first with `git cherry-pick -x` after a snapshot, and on a conflict it stops and lists the files. `pick --continue`, `--skip` and `--abort` wrap git's own controls
+- The Claude Code hook also runs after Bash commands (`PostToolUse`): branches created with plain git (`checkout -b`, `switch -c`, `branch NAME`, `worktree add`) are marked as agent work. `hook install` adds it, so run it again after upgrading; `hook status` reports whether marking is on. A gitflash hook under a matcher that does not cover Bash no longer counts as installed
+- JSON schema: new commands `clean`, `mark`, `pick` and `worktree ...`, error codes `invalid_config`, `unknown_worktree`, `protected_worktree` and `conflict`, the `owner` field, and `recreate_worktree` in the `undo` plan
+- Author names from other branches are shown with control characters escaped in `pick` output

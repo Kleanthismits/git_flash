@@ -4,7 +4,8 @@ require 'json'
 
 module Gitflash
   module Hook
-    # Claude Code PreToolUse hook for the Bash tool.
+    # Claude Code hook for the Bash tool. PostToolUse input marks the branches the command
+    # created as agent work (BranchMarker); everything below describes PreToolUse.
     #
     # Reads the hook input (JSON on stdin) and, when the command can lose work git cannot
     # restore, acts according to the mode:
@@ -15,14 +16,20 @@ module Gitflash
     class Claude
       MODES = %w[snapshot ask deny].freeze
       EVENT = 'PreToolUse'
+      POST_EVENT = 'PostToolUse'
 
-      def initialize(mode: 'snapshot', snapshots: -> { Gitflash::Snapshots.new })
+      def initialize(mode: 'snapshot', snapshots: -> { Gitflash::Snapshots.new },
+                     marker: BranchMarker.new)
         @mode = mode
         @snapshots = snapshots
+        @marker = marker
       end
 
       def call(input)
-        targets = targets(JSON.parse(input))
+        data = JSON.parse(input)
+        return after_command(data) if data['hook_event_name'] == POST_EVENT
+
+        targets = targets(data)
         return nil if targets.empty?
         return deny(targets) if @mode == 'deny'
 
@@ -31,6 +38,19 @@ module Gitflash
       end
 
       private
+
+      # PostToolUse: mark the branches the command created, and tell Claude
+      def after_command(data)
+        return nil unless data['tool_name'] == 'Bash'
+
+        marked = @marker.call(data.dig('tool_input', 'command').to_s, data['cwd'] || Dir.pwd)
+        return nil if marked.empty?
+
+        context = "gitflash marked #{marked.join(', ')} as agent work, so " \
+                  '`gitflash clean --agent` can find it. Change it with ' \
+                  '`gitflash mark BRANCH --owner human`.'
+        { hookSpecificOutput: { hookEventName: POST_EVENT, additionalContext: context } }
+      end
 
       def targets(data)
         return [] unless data['tool_name'] == 'Bash'

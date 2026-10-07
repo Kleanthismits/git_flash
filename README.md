@@ -24,9 +24,11 @@ Or install it yourself as:
 
     $ gem install gitflash
 
+Prerelease versions such as `0.7.0.beta1` are only installed when you ask for them: `gem install gitflash --pre`, or `gem 'gitflash', '0.7.0.beta1'` in a Gemfile.
+
 ## Requirements
 
-This gem requires Ruby 3.3+ and git.
+This gem requires Ruby 3.3+ and git 2.36+ (the worktree commands read `git worktree list -z`).
 
 ## Usage
 
@@ -38,14 +40,34 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash checkout [BRANCH]` | Check out a branch, or pick one from a list |
 | `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current, default, `main` and `master` branches are protected. Unmerged branches are kept unless you pass `--force` |
 | `gitflash reset [COMMIT]` | Reset to a commit, or pick one of the latest 100. Mixed by default; `--soft` keeps changes staged, `--hard` discards them after confirmation |
+| `gitflash mark [BRANCH...]` | Mark branches as agent (default) or human work, or `--clear` the mark. Without a branch it marks the current one. Use it for branches made with plain git so `clean --agent` can find them |
+| `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. Protected: current, default, `main`, `master`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
+| `gitflash worktree` (`wt`) `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock`, `move` | Worktrees for parallel agent work, with absolute paths in `--json` (see below) |
+| `gitflash pick SOURCE [SHA...]` | Cherry-pick commits from another branch: `--list` shows what is missing here, `--continue`, `--skip` and `--abort` handle conflicts |
 | `gitflash undo [SNAPSHOT]` | Restore a snapshot, the latest by default: deleted branches, moved branches, HEAD, uncommitted and untracked files, dropped stashes |
 | `gitflash snapshot` | Save the current state on request (`--scope`, `--message`) |
 | `gitflash snapshots` | List snapshots, newest first |
 | `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`) |
-| `gitflash hook install` | Protect plain git commands run by Claude Code (see below) |
+| `gitflash hook install` | Protect plain git commands run by Claude Code and mark the branches it creates (see below) |
 | `gitflash hook status` | Show whether the hook protects Claude Code sessions in the current directory |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
+
+### Parallel agent work
+
+`gitflash wt add feature` creates a worktree (default `../<repo>.worktrees/feature`) and marks a new branch as agent work. For a branch made with plain git, run `gitflash mark` on it (no argument marks the current branch). `gitflash wt list --json` gives every worktree's absolute path, branch, dirty state, ahead/behind, merge status, lock state and owner, so an agent never has to switch directories.
+
+`gitflash wt remove` and `gitflash wt clean` save a snapshot first, and `gitflash undo` adds the worktree back with its branch and uncommitted files. Ignored files (`.env`, `node_modules`) are not saved: the plan lists them before they are deleted. A worktree with an untracked file over 50 MB is not removed.
+
+`gitflash pick other-branch --list` lists the commits missing here (a commit whose patch is already here is marked `=`). `gitflash pick other-branch SHA... --yes` applies them oldest first with `-x`. On a conflict it stops and lists the files; resolve them and run `gitflash pick --continue`, or `--skip` / `--abort`.
+
+Settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml` (the repository file wins):
+
+```yaml
+protected: ["release/*"]   # branch patterns clean and delete never touch
+stale_days: 30             # used by --stale without a number
+worktree_dir: "../%<repo>s.worktrees/%<branch>s"
+```
 
 ### Undo
 
@@ -70,6 +92,8 @@ gitflash hook install
 ```
 
 Before Claude Code runs a command that can discard work git cannot restore (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...), the hook saves a snapshot and tells the agent how to undo it. Other commands pass through; the hook adds about 0.1 s to commands that do not mention git. `--mode ask` also asks you to approve such commands, `--mode deny` blocks them.
+
+The same install adds a second hook that runs after a command: when the agent creates a branch with plain git (`git checkout -b`, `git switch -c`, `git branch NAME`, `git worktree add`), gitflash marks it as agent work, so `gitflash clean --agent` can find it. Only new, unmarked branches are marked, and `gitflash mark BRANCH --owner human` changes it. If you installed the hook with an earlier version, run `gitflash hook install` again to add it; `gitflash hook status` says whether branch marking is on.
 
 Where the hook goes, following Claude Code's own rules:
 

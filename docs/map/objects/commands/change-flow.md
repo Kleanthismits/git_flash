@@ -18,19 +18,25 @@ Agents get the plan back (`confirmation_required` with `plan`), re-run with `--y
 
 ## Shape
 
-- Helpers in `Base`: `snapshots`, `take_snapshot`, `planned`, `cancelled`, `usage_error!`, `git_error!`, `require_interactive!` (`lib/gitflash/commands/base.rb:17-44`).
+- Helpers in `Base`: `snapshots`, `take_snapshot` (`dir:` snapshots another worktree through `Git::InDirectory`), `planned`, `cancelled`, `usage_error!`, `git_error!`, `require_interactive!` (`lib/gitflash/commands/base.rb`).
 - Gate: `Ui#confirm?` (`lib/gitflash/ui.rb:66-73`); prompt text via `Prompt#proceed_with_warning` (`lib/gitflash/prompt.rb:26-32`).
 - Per command (order matters):
 
 | Command | Confirm | Snapshot scope | Snapshot taken |
 |---|---|---|---|
-| checkout | none | head | after dry-run, before git (`checkout.rb:35`) |
-| delete | always | branches (the names) | after confirm (`delete.rb:59-60`) |
-| reset | `--hard` only (`reset.rb:64-66`) | branches, head, worktree | before git, all modes (`reset.rb:51`, `59-61`) |
-| undo | always | scope of target | after confirm (`undo.rb:46`) |
+| checkout | none | head | after dry-run, before git (`checkout.rb`) |
+| delete | always | branches (the names) | after confirm (`delete.rb`) |
+| reset | `--hard` only (`reset.rb`) | branches, head, worktree | before git, all modes (`reset.rb`, `59-61`) |
+| undo | always | scope of target | after confirm (`undo.rb`) |
+| worktree remove | always | branches, head, worktree of the removed worktree (`dir:`); missing directory: branches only | per worktree, after confirm (`worktree_remove.rb`) |
+| pick | always (plan lists the commits) | branches (current), head, worktree | after confirm (`pick.rb`); `--skip` / `--abort` snapshot head and worktree, `--continue` none |
+| clean | always (as delete) | branches (the chosen names) | as delete (`clean.rb` reuses `Delete#delete`) |
+| worktree clean | always (as remove) | as worktree remove | as worktree remove |
+| worktree prune | always | none (git's record of a missing directory only) | `worktree_prune.rb` |
 | gc | always | none | deletes snapshots (`gc.rb:21-28`) |
 
-- `delete` reports `undo` only when something was deleted (`delete.rb:87`).
+- `worktree add` is additive: no confirm, no snapshot, no `undo`. `worktree remove` reports envelope `undo` only when exactly one worktree was removed; each removed row carries its own `snapshot` and `undo` command.
+- `delete` reports `undo` only when something was deleted (`delete.rb`).
 - Snapshot failure raises before the change runs.
 
 ## Connected to

@@ -18,11 +18,18 @@ Verified at dde88fd on 2026-10-03.
 | retention / gc | [[snapshot-commands]], [[snapshot-store]] |
 | how branch names are read from git | [[branch]] (`parse_tips`, `fields`), [[repo]], [[state-capture]], [[restore]], [[hook-claude]]: all use full refs, never `refname:short` / `--short` |
 | a git call or format string | [[repo]], [[bash-command]], [[branch]] or [[commit]] |
+| who created a branch (agent or human) | [[ownership]], [[mark]], [[branch]], [[worktrees]], [[json-schema]] |
 | branch fields | [[branch]], [[json-schema]], [[repo]] |
-| protected branches | [[delete]] |
+| pick, its list, conflicts or control flags | [[pick]], [[cherry-pick]], [[json-schema]], [[exit-codes]], [[change-flow]] |
+| what clean selects or never touches | [[cleanup]], [[clean]], [[worktree-commands]], [[config]], [[ownership]] |
+| protected branches | [[delete]], [[config]] (`protected` patterns) |
+| a settings key or file | [[config]], [[exit-codes]] |
 | which agent commands get snapshotted | [[hook-rules]], [[hook-claude]] |
+| which commands mark a branch, or what the PostToolUse hook does | [[hook-marking]], [[hook-claude]], [[hook-install]], [[ownership]] |
 | hook output or modes | [[hook-claude]], [[hook-install]] (command string and `PATTERN`) |
 | where the hook is installed | [[hook-install]], [[repo]] (`toplevel`, `main_root`) |
+| worktree fields or `wt` commands | [[worktrees]], [[worktree-commands]], [[json-schema]] |
+| what `wt remove` saves or how undo brings a worktree back | [[worktree-commands]], [[worktree-revival]], [[restore]], [[undo]], [[state-capture]] |
 | help text | [[command-descriptions]] |
 
 ## Outside the tree: things that point in

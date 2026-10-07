@@ -52,6 +52,7 @@ module Gitflash
           'default' => branch.default?,
           'merged' => branch.merged && !branch.default?,
           'gone' => branch.upstream_gone?,
+          'agent' => branch.owner == 'agent',
           "ahead #{branch.ahead}" => branch.ahead.positive?,
           "behind #{branch.behind}" => branch.behind.positive?
         }.select { |_label, shown| shown }.keys.join(', ')

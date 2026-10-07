@@ -6,8 +6,6 @@ module Gitflash
     # Uses `git branch -d` (merged branches only) unless --force is given.
     # The result lists each deleted branch with its last commit, so it can be recreated.
     class Delete < Base
-      PROTECTED_NAMES = %w[main master].freeze
-
       def call(*names)
         branches = repo.branches
         candidates = branches.reject { |branch| protected?(branch) }.map(&:name)
@@ -34,8 +32,16 @@ module Gitflash
         options[:force] ? true : false
       end
 
+      def protection
+        @protection ||= Protection.new(config: config, checked_out: checked_out)
+      end
+
+      def checked_out
+        Worktrees.new(repo: repo).list.filter_map(&:branch)
+      end
+
       def protected?(branch)
-        branch.current? || branch.default? || PROTECTED_NAMES.include?(branch.name)
+        protection.protected?(branch)
       end
 
       def validate!(names, branches)
@@ -48,11 +54,12 @@ module Gitflash
 
         usage_error!('protected_branch',
                      "Refusing to delete protected branches: #{refused.join(', ')} " \
-                     '(current, default, main and master are protected)')
+                     '(current, default, main, master, `protected` in .gitflash.yml, ' \
+                     'checked out in a worktree)')
       end
 
       def delete(names, shas)
-        plan = { branches: names, force: force? }
+        plan = build_plan(names)
         return planned(plan, "Would delete:\n#{bullets(names)}") if ui.dry_run?
         return cancelled(plan) unless ui.confirm?(summary(names), plan: plan)
 
@@ -60,6 +67,11 @@ module Gitflash
                                  scope: %w[branches], branches: names)
         outcomes = names.map { |name| [name, repo.delete_branch(name, force: force?)] }
         report_results(plan, outcomes, shas, snapshot)
+      end
+
+      # The plan reported and returned in JSON; `clean` adds why each branch was chosen
+      def build_plan(names)
+        { branches: names, force: force? }
       end
 
       def summary(names)

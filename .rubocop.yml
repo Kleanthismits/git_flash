@@ -16,6 +16,11 @@ Layout/SpaceInLambdaLiteral:
 Metrics/MethodLength:
   Max: 15
 
+# The Thor command table: one desc, long_desc and option block per command, no logic
+Metrics/ClassLength:
+  Exclude:
+    - lib/gitflash/cli.rb
+
 Metrics/BlockLength:
   Enabled: true
   Exclude:

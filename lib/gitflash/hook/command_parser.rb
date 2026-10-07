@@ -23,7 +23,32 @@ module Gitflash
         @cwd = cwd
       end
 
+      # Git commands that can lose work, with what to save before them
       def targets(command_line)
+        git_commands(command_line).filter_map do |git|
+          rule = Rules.for(git.subcommand, git.args, git.dir)
+          next unless rule
+
+          Target.new(dir: rule.fetch(:dir, git.dir), command: git.command, scope: rule[:scope],
+                     branches: rule[:branches] || [])
+        end
+      end
+
+      # Branches that git commands in the line create, as { dir:, branch: }
+      def creations(command_line)
+        git_commands(command_line).filter_map do |git|
+          branch = Creations.for(git.subcommand, git.args)
+          { dir: git.dir, branch: branch } if branch
+        end
+      end
+
+      private
+
+      # A git command found in the line: the directory it runs in (after `cd` and `-C`), the
+      # subcommand and its arguments
+      GitCommand = Data.define(:dir, :command, :subcommand, :args)
+
+      def git_commands(command_line)
         dir = @cwd
         segments(command_line).filter_map do |segment|
           words = words(segment)
@@ -33,11 +58,9 @@ module Gitflash
             dir = File.expand_path(words[1] || Dir.home, dir)
             next
           end
-          git_target(words, dir, segment.strip) if File.basename(words.first) == 'git'
+          git_command(words, dir, segment.strip) if File.basename(words.first) == 'git'
         end
       end
-
-      private
 
       # Splits on unquoted ; & | and newlines
       def segments(line)
@@ -78,13 +101,10 @@ module Gitflash
         word.delete_prefix('(').delete_prefix('{').delete_suffix(')').delete_suffix('}')
       end
 
-      def git_target(words, dir, command)
+      def git_command(words, dir, command)
         index, dir = skip_git_options(words, dir)
-        rule = Rules.for(words[index], words[(index + 1)..] || [], dir)
-        return nil unless rule
-
-        Target.new(dir: rule.fetch(:dir, dir), command: command, scope: rule[:scope],
-                   branches: rule[:branches] || [])
+        GitCommand.new(dir: dir, command: command, subcommand: words[index],
+                       args: words[(index + 1)..] || [])
       end
 
       # Index of the subcommand, and the directory after any -C options

@@ -30,9 +30,8 @@ module Gitflash
     # merged into the default branch (one extra git call).
     def branches(merged_status: false)
       merged_names = merged_status ? merged_branch_names : nil
-      branch_lines.map do |line|
-        Branch.parse(line, default_branch: default_branch, merged_names: merged_names)
-      end
+      list = branch_lines.map { |line| Branch.parse(line, default_branch:, merged_names:) }
+      Ownership.new(bash: @bash).annotate(list)
     end
 
     def current_branch

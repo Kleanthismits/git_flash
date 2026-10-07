@@ -19,13 +19,13 @@ One envelope for all commands, so agents parse one shape. Roadmap standard 4: co
 ## Shape
 
 - Envelope required: `schema`, `command`, `ok`, `status`, `dry_run` (`schema/v1.json:7-13`). Optional: `plan`, `result`, `error`, `undo`.
-- `command` enum (`schema/v1.json:18`): branches, checkout, delete, reset, undo, snapshots, snapshot, gc, `hook install`, `hook status`. `hook claude`, `schema`, `version` are not in it: they print outside the envelope.
+- `command` enum (`schema/v1.json:18`): branches, checkout, delete, reset, undo, snapshots, snapshot, gc, `hook install`, `hook status`, `worktree list`, `worktree add`, `worktree remove`, `worktree lock`, `worktree unlock`, `worktree move`, `worktree prune`, `worktree clean`, `clean`, `pick` and `mark`. `hook claude`, `schema`, `version` are not in it: they print outside the envelope.
 - `status` enum (`schema/v1.json:35-44`): done, planned, noop, cancelled, failed, confirmation_required, error.
 - `ok` true only for done/planned/noop/cancelled, else `error` required (`schema/v1.json:82-110`).
 - `confirmation_required` requires `plan` (`schema/v1.json:118-124`).
 - `undo` object: `{ snapshot, command }`, the snapshot saved before a change (`schema/v1.json:61-70`).
 - Per-command `plan` / `result` under `$defs` (`schema/v1.json:308`): branch, checkout_*, delete_*, reset_*, snapshot, undo_*, snapshots_result, snapshot_result, gc_*, hook_install, hook_status.
-- `error.code` enum has 13 codes (`schema/v1.json:315-342`).
+- `error.code` enum has 17 codes (`schema/v1.json:315-342`).
 - Enforced in specs: `run_cli(...).json` fails on mismatch (`spec/support/cli_helper.rb:11-18`).
 
 ## Connected to

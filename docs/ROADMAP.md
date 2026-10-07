@@ -79,7 +79,7 @@ Speed is not a problem worth solving further; a rewrite in another language is n
 
 ## Roadmap
 
-### Phase 2 — Snapshots, undo and the agent hook (0.6.0) — implemented, not yet released
+### Phase 2 — Snapshots, undo and the agent hook (0.6.0) — released
 
 This is the core of the positioning.
 
@@ -99,7 +99,7 @@ This is the core of the positioning.
 - **`gitflash snapshot`, `snapshots` and `gc --older-than DAYS`** save, list and delete snapshots.
 - **Not covered yet:** `push --force` (the remote cannot be restored locally), hooks for agents other than Claude Code, and a size budget for all snapshots together.
 
-### Phase 3 — Cleanup for parallel agent work (0.7.0)
+### Phase 3 — Cleanup for parallel agent work (0.7.0) — implemented, in beta (0.7.0.beta1)
 
 - **Ownership.** Branches and worktrees created through gitflash, or by an agent session, are marked as agent-created (for example in git config), so cleanup can tell them apart from human work.
 - **`gitflash clean`** selects merged, upstream-gone, stale and agent-created branches and removes them with snapshots.

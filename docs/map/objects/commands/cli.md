@@ -21,6 +21,10 @@ Thin: declares flags and commands, delegates to [[command-runner]]. Heavy logic 
 - Global flags `--json`, `--yes` / `-y`, `--dry-run` (`lib/gitflash/cli.rb:16-21`).
 - Commands via `run_command`: branches, checkout, delete, reset, undo, snapshots, snapshot, gc (`cli.rb:23-79`).
 - `hook` subcommand = `HookCli`: `claude`, `install`, `status` (`cli.rb:81-82`; `lib/gitflash/hook_cli.rb`).
+- `mark` command (see [[mark]]).
+- `pick` command: class chosen by `Pick.command_for` (see [[pick]]).
+- `clean` command (help text in `command_descriptions.yml`).
+- `worktree` subcommand (alias `wt`) = `WorktreeCli`, see [[worktree-commands]].
 - `schema` (`cli.rb:85`) and `version` (`cli.rb:92`) print outside the envelope.
 - `exit_on_failure?` true (`cli.rb:12`). Binary: `bin/gitflash`.
 

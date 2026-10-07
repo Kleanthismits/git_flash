@@ -14,7 +14,8 @@ module Gitflash
       true
     end
 
-    desc 'claude', 'Run as a Claude Code PreToolUse hook (reads the hook input on stdin)'
+    desc 'claude',
+         'Run as a Claude Code hook (PreToolUse and PostToolUse; reads the input on stdin)'
     long_desc <<~TEXT
       Reads the Claude Code hook input on stdin. When the Bash command can discard work git
       cannot restore (for example reset --hard, clean -f, checkout -- ., branch -D, stash drop),
@@ -23,6 +24,10 @@ module Gitflash
       --mode snapshot  save a snapshot and let the command run (default)
       --mode ask       save a snapshot and ask the user to approve the command
       --mode deny      block the command and point to the gitflash equivalent
+
+      As a PostToolUse hook it marks the branches the command created (git checkout -b, switch -c,
+      branch NAME, worktree add) as agent work, so `gitflash clean --agent` can find them. A branch
+      is only marked when it is new (its reflog says it was created a moment ago) and unmarked.
 
       Errors never block the command: they are printed to stderr and the hook exits with 0.
     TEXT
@@ -36,8 +41,10 @@ module Gitflash
 
     desc 'install', 'Register the gitflash hook in Claude Code settings'
     long_desc <<~TEXT
-      Adds `gitflash hook claude` as a PreToolUse hook for Bash commands. Keeps the rest of the
-      settings file unchanged and does nothing when the hook is already installed.
+      Adds `gitflash hook claude` as a PreToolUse hook (snapshots before destructive commands) and
+      as a PostToolUse hook (marks branches an agent creates) for Bash commands. Keeps the rest of
+      the settings file unchanged and does nothing when both are already installed. Run it again
+      to add the PostToolUse hook to an older install.
 
       --scope local    .claude/settings.local.json at the repository root (default, not
                        committed); applies to sessions anywhere in the repository and its worktrees
@@ -59,7 +66,8 @@ module Gitflash
     desc 'status', 'Show whether the gitflash hook protects Claude Code sessions here'
     long_desc <<~TEXT
       Lists the Claude Code settings files that apply to the current directory, whether each
-      holds the gitflash hook and which sessions it applies to, and whether the gitflash
+      holds the gitflash hooks (and whether branch marking is on) and which sessions it applies to,
+      and whether the gitflash
       executable the hook runs is on PATH. Works outside a git repository (user scope only).
     TEXT
     def status

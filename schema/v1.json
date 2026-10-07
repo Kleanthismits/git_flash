@@ -26,7 +26,18 @@
         "snapshot",
         "gc",
         "hook install",
-        "hook status"
+        "hook status",
+        "worktree list",
+        "worktree add",
+        "worktree remove",
+        "worktree prune",
+        "worktree lock",
+        "worktree unlock",
+        "worktree move",
+        "clean",
+        "worktree clean",
+        "pick",
+        "mark"
       ]
     },
     "ok": {
@@ -303,6 +314,222 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree list"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/worktree_list_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree add"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_add_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_add_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree remove"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_remove_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_remove_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree prune"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_prune_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_prune_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree lock"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_lock_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_lock_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree unlock"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_unlock_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_unlock_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree move"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_move_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_move_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "clean"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/clean_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/delete_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "worktree clean"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/worktree_clean_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/worktree_remove_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "pick"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/pick_plan"
+          },
+          "result": {
+            "if": {
+              "required": [
+                "commits"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/pick_list_result"
+            },
+            "else": {
+              "$ref": "#/$defs/pick_result"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "mark"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/mark_plan"
+          },
+          "result": {
+            "$ref": "#/$defs/mark_result"
+          }
+        }
+      }
     }
   ],
   "$defs": {
@@ -333,7 +560,11 @@
             "failed",
             "unknown_snapshot",
             "wrong_worktree",
-            "invalid_settings"
+            "invalid_settings",
+            "invalid_config",
+            "unknown_worktree",
+            "protected_worktree",
+            "conflict"
           ]
         },
         "message": {
@@ -411,6 +642,14 @@
         },
         "last_commit_subject": {
           "type": "string"
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ],
+          "description": "Who created the branch; null when unmarked (treated as human)."
         }
       }
     },
@@ -744,6 +983,13 @@
           "items": {
             "$ref": "#/$defs/sha"
           }
+        },
+        "recreate_worktree": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Directory of a removed worktree that undo adds again before restoring it."
         }
       }
     },
@@ -843,6 +1089,10 @@
         "applies_to": {
           "type": "string",
           "description": "Which Claude Code sessions read this file. Running sessions reload it."
+        },
+        "marking_command": {
+          "type": "string",
+          "description": "The PostToolUse command that marks branches an agent creates as agent work."
         }
       }
     },
@@ -897,6 +1147,804 @@
               },
               "applies_to": {
                 "type": "string"
+              },
+              "marking": {
+                "type": "boolean",
+                "description": "This file has the PostToolUse hook."
+              }
+            }
+          }
+        },
+        "marking": {
+          "type": "boolean",
+          "description": "A settings file that applies here also has the PostToolUse hook that marks agent branches."
+        }
+      }
+    },
+    "worktree": {
+      "type": "object",
+      "required": [
+        "path",
+        "head",
+        "branch",
+        "main",
+        "bare",
+        "locked",
+        "lock_reason",
+        "missing",
+        "dirty",
+        "ahead",
+        "behind",
+        "merged"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the worktree directory."
+        },
+        "head": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "branch": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "null for a detached HEAD."
+        },
+        "main": {
+          "type": "boolean"
+        },
+        "bare": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "lock_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "missing": {
+          "type": "boolean",
+          "description": "The directory no longer exists."
+        },
+        "dirty": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Uncommitted or untracked files; null when unknown."
+        },
+        "ahead": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "behind": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "merged": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Branch merged into the default branch; null without a branch."
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ],
+          "description": "Who created the branch; null when unmarked (treated as human)."
+        }
+      }
+    },
+    "worktree_list_result": {
+      "type": "object",
+      "required": [
+        "worktrees"
+      ],
+      "properties": {
+        "worktrees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/worktree"
+          }
+        }
+      }
+    },
+    "worktree_add_plan": {
+      "type": "object",
+      "required": [
+        "branch",
+        "path",
+        "source",
+        "from",
+        "owner"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "existing",
+            "remote",
+            "new"
+          ]
+        },
+        "from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ],
+          "description": "Mark given to a branch created here; null for an existing branch."
+        }
+      }
+    },
+    "worktree_add_result": {
+      "type": "object",
+      "required": [
+        "branch",
+        "path",
+        "source",
+        "owner",
+        "head"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "existing",
+            "remote",
+            "new"
+          ]
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ]
+        },
+        "head": {
+          "$ref": "#/$defs/sha"
+        }
+      }
+    },
+    "worktree_remove_plan": {
+      "type": "object",
+      "required": [
+        "worktrees",
+        "force"
+      ],
+      "properties": {
+        "worktrees": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "branch",
+              "dirty",
+              "locked"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "dirty": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "locked": {
+                "type": "boolean"
+              },
+              "ignored_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Ignored files and directories that snapshots do not save and removal deletes for good."
+              },
+              "ignored": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The first few of them."
+              }
+            }
+          }
+        },
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
+    "worktree_remove_result": {
+      "type": "object",
+      "required": [
+        "removed",
+        "failed"
+      ],
+      "properties": {
+        "removed": {
+          "type": "array",
+          "description": "Bring one back with the undo command in its row.",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "branch",
+              "head",
+              "snapshot",
+              "undo"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "head": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "snapshot": {
+                "type": "string"
+              },
+              "undo": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "error"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "error": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "worktree_prune_plan": {
+      "type": "object",
+      "required": [
+        "worktrees"
+      ],
+      "properties": {
+        "worktrees": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "worktree_prune_result": {
+      "type": "object",
+      "required": [
+        "pruned"
+      ],
+      "properties": {
+        "pruned": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "worktree_lock_plan": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "worktree_unlock_plan": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      }
+    },
+    "worktree_lock_result": {
+      "type": "object",
+      "required": [
+        "path",
+        "locked"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "worktree_unlock_result": {
+      "type": "object",
+      "required": [
+        "path",
+        "locked"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "worktree_move_plan": {
+      "type": "object",
+      "required": [
+        "from",
+        "to",
+        "force"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
+    "worktree_move_result": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      }
+    },
+    "clean_plan": {
+      "type": "object",
+      "required": [
+        "branches",
+        "force",
+        "reasons",
+        "skipped"
+      ],
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "type": "object",
+          "description": "Why each branch was chosen, by branch name.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "description": "Matching branches that were kept.",
+          "items": {
+            "type": "object",
+            "required": [
+              "branch",
+              "reason"
+            ],
+            "properties": {
+              "branch": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "worktree_clean_plan": {
+      "type": "object",
+      "required": [
+        "worktrees",
+        "force",
+        "skipped"
+      ],
+      "properties": {
+        "worktrees": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "branch",
+              "dirty",
+              "locked"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "dirty": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "locked": {
+                "type": "boolean"
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "ignored_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "ignored": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "skipped": {
+          "type": "array",
+          "description": "Matching worktrees that were kept, with the reason.",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "branch",
+              "reason"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "pick_candidate": {
+      "type": "object",
+      "required": [
+        "sha",
+        "short_sha",
+        "subject",
+        "author",
+        "date",
+        "status",
+        "files",
+        "insertions",
+        "deletions"
+      ],
+      "properties": {
+        "sha": {
+          "$ref": "#/$defs/sha"
+        },
+        "short_sha": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "enum": [
+            "new",
+            "applied"
+          ],
+          "description": "applied: an equivalent change is already on the current branch."
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "insertions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deletions": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "pick_list_result": {
+      "type": "object",
+      "required": [
+        "source",
+        "commits"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "commits": {
+          "type": "array",
+          "description": "Oldest first.",
+          "items": {
+            "$ref": "#/$defs/pick_candidate"
+          }
+        }
+      }
+    },
+    "pick_plan": {
+      "type": "object",
+      "description": "A new pick, or --continue / --skip / --abort of one in progress.",
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "commits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "sha",
+              "reason"
+            ],
+            "properties": {
+              "sha": {
+                "$ref": "#/$defs/sha"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "commit": {
+          "type": "boolean"
+        },
+        "action": {
+          "enum": [
+            "continue",
+            "skip",
+            "abort"
+          ]
+        },
+        "current": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conflicted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "remaining": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        }
+      }
+    },
+    "pick_result": {
+      "type": "object",
+      "description": "done or noop: applied and head (or action and head); failed on conflicts: applied, current, conflicted, remaining.",
+      "properties": {
+        "applied": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        },
+        "head": {
+          "$ref": "#/$defs/sha"
+        },
+        "action": {
+          "enum": [
+            "continue",
+            "skip",
+            "abort"
+          ]
+        },
+        "current": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conflicted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "remaining": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sha"
+          }
+        }
+      }
+    },
+    "mark_plan": {
+      "type": "object",
+      "required": [
+        "branches",
+        "owner"
+      ],
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "owner": {
+          "enum": [
+            "agent",
+            "human",
+            null
+          ],
+          "description": "The owner to set; null clears the mark."
+        }
+      }
+    },
+    "mark_result": {
+      "type": "object",
+      "required": [
+        "branches"
+      ],
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "branch",
+              "owner",
+              "previous"
+            ],
+            "properties": {
+              "branch": {
+                "type": "string"
+              },
+              "owner": {
+                "enum": [
+                  "agent",
+                  "human",
+                  null
+                ]
+              },
+              "previous": {
+                "enum": [
+                  "agent",
+                  "human",
+                  null
+                ]
               }
             }
           }

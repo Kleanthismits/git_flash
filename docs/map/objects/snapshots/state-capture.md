@@ -25,6 +25,8 @@ Work tree is captured through a temporary copy of the index, so the real index i
 - A file that disappears between `ls-files` and the size check is left out instead of crashing (`file_sizes`, `state_capture.rb:108-115`).
 - Author/committer `gitflash@localhost` (`state_capture.rb:12-15`).
 
+- Runs in any directory when given `Git::InDirectory` as its git runner; gitdir and index paths are asked as absolute paths so this works (see [[worktree-revival]]).
+
 ## Connected to
 
 - **owned-by:** [[snapshot-store]]
