@@ -1,7 +1,7 @@
 # gitflash map
 
 Catalog of what gitflash is made of and what a change hits. Source stays truth; cards cite it.
-Mapped on branch `phase3_cleanup` (0.6.0 released, 0.7.0 in progress). Cards state the commit they were verified at.
+Mapped on branch `phase3_cleanup` (0.6.0 released, 0.7.0.beta1 prepared). Cards state the commit they were verified at.
 
 gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents work in. One JSON contract (`schema/v1.json`).
 

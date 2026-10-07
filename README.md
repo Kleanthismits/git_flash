@@ -24,9 +24,11 @@ Or install it yourself as:
 
     $ gem install gitflash
 
+Prerelease versions such as `0.7.0.beta1` are only installed when you ask for them: `gem install gitflash --pre`, or `gem 'gitflash', '0.7.0.beta1'` in a Gemfile.
+
 ## Requirements
 
-This gem requires Ruby 3.3+ and git.
+This gem requires Ruby 3.3+ and git 2.36+ (the worktree commands read `git worktree list -z`).
 
 ## Usage
 
