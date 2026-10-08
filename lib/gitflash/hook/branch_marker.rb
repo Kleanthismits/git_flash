@@ -32,27 +32,49 @@ module Gitflash
       def record(command, cwd, tool_use_id)
         creations = CommandParser.new(cwd).creations(command)
         return if creations.empty? || (path = record_path(tool_use_id)).nil?
-
         return unless private_state_dir?
 
         prune_records
-        existing = creations.select { |creation| branch_exists?(creation[:dir], creation[:branch]) }
-        File.write(path, JSON.generate(existing.map { |creation| key(creation) }))
+        File.write(path, JSON.generate(existing_stamps(creations)))
       end
 
       # PostToolUse: branch names marked as agent work, in the directories the command ran in
       def call(command, cwd, tool_use_id = nil)
         existed = take_record(tool_use_id)
         created = CommandParser.new(cwd).creations(command)
-        created.reject { |creation| existed.include?(key(creation)) }
+        created.reject { |creation| already_there?(existed, creation) }
                .select { |creation| mark(creation[:dir], creation[:branch]) }
                .map { |creation| creation[:branch] }.uniq
       end
 
       private
 
+      # { key => stamp } of the named branches that exist now
+      def existing_stamps(creations)
+        existing = creations.select { |creation| branch_exists?(creation[:dir], creation[:branch]) }
+        existing.to_h { |creation| [key(creation), stamp(creation)] }
+      end
+
       def key(creation)
         "#{creation[:dir]}\0#{creation[:branch]}"
+      end
+
+      # A branch that was there before the command and is the same branch now. One that the
+      # command deleted and created again has a new reflog, so a new stamp, and counts as new.
+      def already_there?(existed, creation)
+        existed.key?(key(creation)) && existed[key(creation)] == stamp(creation)
+      end
+
+      # Time, commit and message of the oldest reflog entry, which is the creation of the branch;
+      # empty when the reflog is off
+      def stamp(creation)
+        return '' unless Dir.exist?(creation[:dir])
+
+        stdout, _stderr, success = Git::BashCommand.capture(
+          'git', '-C', creation[:dir], 'log', '-g', '--format=%ct %H %gs',
+          "#{Repo::HEADS}#{creation[:branch]}", '--'
+        )
+        success ? stdout.lines(chomp: true).last.to_s : ''
       end
 
       # One file per tool call, named from a hash so the id can never form a path
@@ -64,11 +86,12 @@ module Gitflash
 
       def take_record(tool_use_id)
         path = record_path(tool_use_id)
-        return [] unless path && private_state_dir? && File.file?(path)
+        return {} unless path && private_state_dir? && File.file?(path)
 
-        JSON.parse(File.read(path))
+        record = JSON.parse(File.read(path))
+        record.is_a?(Hash) ? record : {}
       rescue JSON::ParserError
-        []
+        {}
       ensure
         FileUtils.rm_f(path) if path
       end

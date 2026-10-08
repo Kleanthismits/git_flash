@@ -81,6 +81,23 @@ RSpec.describe Gitflash::Hook::BranchMarker, :git_repo do
       expect(marker.call('git checkout -b feat', Dir.pwd, 'toolu_2')).to eq(['feat'])
     end
 
+    it 'marks a branch that the command deleted and created again' do
+      git('branch', 'topic')
+      command = 'git branch -D topic && git switch -c topic'
+      marker.record(command, Dir.pwd, 'toolu_re')
+
+      git('branch', '-D', 'topic')
+      git('switch', '-q', '-c', 'topic')
+      expect(marker.call(command, Dir.pwd, 'toolu_re')).to eq(['topic'])
+      expect(owners).to eq('topic' => 'agent')
+    end
+
+    it 'still ignores a branch that was only left alone by the command' do
+      git('branch', 'topic')
+      marker.record('git switch -c topic', Dir.pwd, 'toolu_same')
+      expect(marker.call('git switch -c topic', Dir.pwd, 'toolu_same')).to eq([])
+    end
+
     it 'marks only the new branch of a chain when another one existed' do
       git('branch', 'old')
       marker.record('git branch old && git branch fresh', Dir.pwd, 'toolu_3')
