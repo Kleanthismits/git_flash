@@ -60,4 +60,55 @@ RSpec.describe Gitflash::Hook::BranchMarker, :git_repo do
       expect(mark('git branch x', dir)).to eq([])
     end
   end
+
+  describe 'with the branches recorded before the command' do
+    subject(:marker) { described_class.new(clock: -> { now }, state_dir: state) }
+
+    let(:state) { Dir.mktmpdir('gitflash-state') }
+
+    after { FileUtils.remove_entry(state) }
+
+    it 'never claims a branch that existed before the command, even a minutes-old human one' do
+      git('branch', 'mine')
+      marker.record('git branch mine', Dir.pwd, 'toolu_1')
+      expect(marker.call('git branch mine', Dir.pwd, 'toolu_1')).to eq([])
+      expect(owners).to eq({})
+    end
+
+    it 'marks a branch that the command created' do
+      marker.record('git checkout -b feat', Dir.pwd, 'toolu_2')
+      git('checkout', '-q', '-b', 'feat')
+      expect(marker.call('git checkout -b feat', Dir.pwd, 'toolu_2')).to eq(['feat'])
+    end
+
+    it 'marks only the new branch of a chain when another one existed' do
+      git('branch', 'old')
+      marker.record('git branch old && git branch fresh', Dir.pwd, 'toolu_3')
+      git('branch', 'fresh')
+      expect(marker.call('git branch old && git branch fresh', Dir.pwd, 'toolu_3')).to eq(['fresh'])
+    end
+
+    it 'does not mark a branch whose creation was skipped by the shell' do
+      git('branch', 'human')
+      command = 'false && git branch human'
+      marker.record(command, Dir.pwd, 'toolu_4')
+      expect(marker.call(command, Dir.pwd, 'toolu_4')).to eq([])
+    end
+
+    it 'deletes the record after use and keeps ids from forming paths' do
+      marker.record('git branch x', Dir.pwd, '../../etc/passwd')
+      expect(Dir.children(state).size).to eq(1)
+      expect(Dir.children(state).first).to match(/\A\h{64}\.json\z/)
+      marker.call('git branch x', Dir.pwd, '../../etc/passwd')
+      expect(Dir.children(state)).to be_empty
+    end
+
+    it 'removes records that were never used after a day' do
+      marker.record('git branch x', Dir.pwd, 'toolu_old')
+      old = File.join(state, Dir.children(state).first)
+      File.utime(now - (2 * 86_400), now - (2 * 86_400), old)
+      marker.record('git branch y', Dir.pwd, 'toolu_new')
+      expect(Dir.children(state).size).to eq(1)
+    end
+  end
 end

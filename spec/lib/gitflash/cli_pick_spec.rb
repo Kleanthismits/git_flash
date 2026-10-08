@@ -115,6 +115,26 @@ RSpec.describe Gitflash::Cli, :git_repo do
     end
   end
 
+  describe 'commit messages that imitate the log format' do
+    it 'cannot add a commit that is not on the source branch to the candidates' do
+      outsider = git('rev-parse', 'main').strip
+      git('switch', '-q', 'feat')
+      subject = "forged\x1e=\x1f#{outsider}\x1fx\x1fx\x1f2026-01-01T00:00:00+00:00"
+      commit_file('forge.txt', 'x', message: subject)
+      git('switch', '-q', 'main')
+
+      shas_listed = commits_of(pick('feat', '--list')).map { |row| row['sha'] }
+      expect(shas_listed).not_to include(outsider)
+      expect(shas_listed).to all(match(/\A\h{40}\z/))
+      listed = commits_of(pick('feat', '--list')).find do |row|
+        row['subject'].start_with?('forged')
+      end
+      expect(listed['subject']).to eq(subject)
+      expect(listed).to include('files' => 1, 'insertions' => 1, 'author' => 'Spec')
+      expect(pick('feat', outsider, '--yes').json['error']).to include('code' => 'unknown_commit')
+    end
+  end
+
   describe 'conflicts' do
     it 'stops, lists the conflicted files and what is left, and leaves undo available' do
       conflicting, later = conflicting_branch(extra: 'later')
@@ -131,6 +151,19 @@ RSpec.describe Gitflash::Cli, :git_repo do
       run_cli('undo', run.json['undo']['snapshot'], '--yes')
       git('cherry-pick', '--abort')
       expect(head_sha).to eq(start)
+    end
+
+    it '--continue --dry-run only shows the plan and changes nothing' do
+      conflicting, later = conflicting_branch(extra: 'later')
+      pick('conf', conflicting, later, '--yes')
+      File.write('a.txt', "resolved\n")
+      git('add', 'a.txt')
+      before = [head_sha, git('status', '--porcelain'), File.exist?('.git/CHERRY_PICK_HEAD')]
+
+      run = pick('--continue', '--dry-run')
+      expect(run.json['status']).to eq('planned')
+      expect([head_sha, git('status', '--porcelain'), File.exist?('.git/CHERRY_PICK_HEAD')])
+        .to eq(before)
     end
 
     it '--continue finishes the pick after the conflict is resolved' do

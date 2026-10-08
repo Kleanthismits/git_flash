@@ -24,11 +24,16 @@ module Gitflash
       def pick(worktrees)
         require_interactive!('Pass the worktrees to remove: gitflash wt remove PATH_OR_BRANCH...')
         choices = worktrees.reject { |worktree| worktree.main? || current?(worktree) }
-                           .to_h { |wt| ["#{wt.branch || '(detached)'}  #{wt.path}", wt.path] }
+                           .to_h { |wt| [menu_label(wt), wt.path] }
         return report_nothing('No worktrees available to remove') if choices.empty?
 
         picked = ui.multi_select('Select worktrees to remove', choices)
         picked.empty? ? report_nothing('No worktrees selected') : picked
+      end
+
+      # Paths come from the repository, so control characters in them are shown as escapes
+      def menu_label(worktree)
+        TerminalText.safe("#{worktree.branch || '(detached)'}  #{worktree.path}")
       end
 
       def force?

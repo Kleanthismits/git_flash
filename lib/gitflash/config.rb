@@ -8,13 +8,15 @@ module Gitflash
   # Command-line flags are applied by the commands themselves and win over all of these.
   # An unknown key or a value of the wrong type raises a UsageError, so a typo never goes unnoticed.
   Config = Data.define(:protected_patterns, :stale_days, :worktree_dir) do
-    # `root` is the main checkout; `home` is where the user file lives
+    # `root` is the main checkout; `home` is where the user file lives. The repository file wins
+    # key by key, except `protected`: both files add patterns, so a repository can protect more
+    # branches but never remove what the user protects.
     def self.load(root:, home: Dir.home)
-      values = [File.join(home, ConfigKeys::USER_FILE), File.join(root, ConfigKeys::REPO_FILE)]
+      layers = [File.join(home, ConfigKeys::USER_FILE), File.join(root, ConfigKeys::REPO_FILE)]
                .map { |path| read(path) }
-               .reduce(ConfigKeys::DEFAULTS) { |merged, layer| merged.merge(layer) }
-      new(protected_patterns: values['protected'], stale_days: values['stale_days'],
-          worktree_dir: values['worktree_dir'])
+      values = layers.reduce(ConfigKeys::DEFAULTS) { |merged, layer| merged.merge(layer) }
+      new(protected_patterns: layers.flat_map { |layer| layer.fetch('protected', []) }.uniq,
+          stale_days: values['stale_days'], worktree_dir: values['worktree_dir'])
     end
 
     def self.defaults
@@ -85,10 +87,11 @@ module Gitflash
       protected_patterns.any? { |pattern| File.fnmatch?(pattern, name) }
     end
 
-    # Directory for a new worktree. `%{repo}` and `%{branch}` are replaced; a relative path
-    # is resolved against the main checkout. Slashes in a branch name stay as folders.
+    # Directory for a new worktree. `%<repo>s` and `%<branch>s` are replaced as plain text; a
+    # relative path is resolved against the main checkout. Slashes in a branch name stay as
+    # folders.
     def worktree_path(root:, branch:)
-      path = format(worktree_dir, repo: File.basename(root), branch: branch)
+      path = worktree_dir.gsub('%<repo>s') { File.basename(root) }.gsub('%<branch>s') { branch }
       File.expand_path(path, root)
     end
   end

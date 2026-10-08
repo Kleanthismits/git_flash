@@ -41,9 +41,9 @@ module Gitflash
       def clean(args, _dir)
         flags = args.select { |arg| arg.start_with?('-') }
         short = short_flags(args)
-        force = flags.include?('--force') || short.include?('f')
-        dry_run = any?(flags, %w[--dry-run --interactive]) || short.match?(/[ni]/)
-        force && !dry_run ? { scope: %w[worktree] } : nil
+        removes = any?(flags, %w[--force --interactive]) || short.match?(/[fi]/)
+        dry_run = flags.include?('--dry-run') || short.include?('n')
+        removes && !dry_run ? { scope: %w[worktree] } : nil
       end
 
       def switch(args, _dir)
@@ -59,7 +59,9 @@ module Gitflash
       end
 
       def branch(args, _dir)
-        return nil unless any?(args, %w[-d -D --delete -f --force -m -M --move -C --copy])
+        changes = any?(args, %w[--delete --force --move --copy]) ||
+                  short_flags(args).match?(/[dDfmMcC]/)
+        return nil unless changes
 
         { scope: %w[branches], branches: args.reject { |arg| arg.start_with?('-') } }
       end

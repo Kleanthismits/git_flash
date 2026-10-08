@@ -104,6 +104,23 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
     def remove(*args) = run_cli('wt', 'remove', *args, '--json')
 
+    it 'shows paths from the repository with control characters escaped in the prompt' do
+      evil = wt_path("esc\e]52;c;ZXZpbA==\aend")
+      run_cli('wt', 'add', 'evil', '--path', evil)
+      prompt = instance_double(Gitflash::Prompt)
+      shown = nil
+      allow($stdin).to receive(:tty?).and_return(true)
+      allow(Gitflash::Prompt).to receive(:create).and_return(prompt)
+      allow(prompt).to receive(:proceed_with_warning) do |message, &block|
+        shown = message
+        block.call
+      end
+
+      run_cli('wt', 'remove', 'evil')
+      expect(shown).to include('esc\\x1B]52;c;ZXZpbA==\\x07end')
+      expect(shown).not_to include("\e", "\a")
+    end
+
     it 'asks for confirmation without --yes' do
       run = remove('feat')
       expect(run).to have_attributes(status: 2)

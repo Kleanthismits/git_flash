@@ -19,7 +19,8 @@ One place reads the files and checks them, so commands receive a plain value. An
 ## Shape
 
 - Keys: `protected` (name patterns, `File.fnmatch`), `stale_days` (default 30), `worktree_dir` (default `../%<repo>s.worktrees/%<branch>s`) (`lib/gitflash/config_keys.rb:5-17`).
-- Precedence: repository file (main checkout root), user file, defaults. CLI flags are applied by commands and win (`lib/gitflash/config.rb:12-18`).
+- Precedence: repository file (main checkout root), user file, defaults, key by key; CLI flags are applied by commands and win. Exception: `protected` is the union of both files, so a repository can add protection but never remove the user's (`Config.load`).
+- `worktree_dir` is a template with only `%<repo>s` and `%<branch>s`, at most 512 characters, substituted as plain text (`ConfigKeys.template?`, `Config#worktree_path`); no `format`, so no width directives.
 - `protected` adds to the fixed rule in [[delete]]; it never removes it.
 
 ## Connected to

@@ -20,7 +20,14 @@ RSpec.describe Gitflash::Hook::CommandParser do
     'git update-ref -d refs/heads/old' => [['/repo', %w[branches], %w[old]]],
     'git rebase main' => [['/repo', %w[branches head worktree], [:current]]],
     'git merge --abort' => [['/repo', %w[worktree], []]],
-    'git worktree remove --force ../wt' => [['/wt', %w[worktree], []]]
+    'git worktree remove --force ../wt' => [['/wt', %w[worktree], []]],
+    'git branch -qD old' => [['/repo', %w[branches], %w[old]]],
+    'git branch -fq old' => [['/repo', %w[branches], %w[old]]],
+    'git clean -i' => [['/repo', %w[worktree], []]],
+    'bash -c "cd /other && git reset --hard"' => [['/other', %w[branches head worktree],
+                                                   [:current]]],
+    "sh -lc 'git clean -fd'" => [['/repo', %w[worktree], []]],
+    'eval "git branch -D old"' => [['/repo', %w[branches], %w[old]]]
   }.each do |command, expected|
     it "reports `#{command}`" do
       expect(targets(command)).to eq(expected)

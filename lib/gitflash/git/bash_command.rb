@@ -16,9 +16,12 @@ module Gitflash
         end
 
         # Runs a command without a shell and returns [stdout, stderr, success].
-        # `env` adds environment variables for this command only.
+        # `env` adds environment variables for this command only. The executable is passed as a
+        # pair, which keeps Ruby from handing a lone string to a shell.
         def capture(*args, env: {})
-          stdout, stderr, status = Open3.capture3(env, *args)
+          raise CommandError, 'no command given' if args.empty?
+
+          stdout, stderr, status = Open3.capture3(env, [args.first, args.first], *args.drop(1))
           [stdout, stderr, status.success?]
         rescue SystemCallError => e
           raise CommandError, "#{args.join(' ')} failed: #{e.message}"

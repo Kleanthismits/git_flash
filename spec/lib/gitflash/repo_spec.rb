@@ -72,6 +72,19 @@ RSpec.describe Gitflash::Repo, :git_repo do
     end
   end
 
+  describe '#toplevel' do
+    it 'keeps whitespace at the end of the directory name' do
+      Dir.mktmpdir('gitflash-repo') do |dir|
+        spaced = File.join(File.realpath(dir), 'with space ')
+        FileUtils.mkdir_p(spaced)
+        Dir.chdir(spaced) do
+          git('init', '-q')
+          expect(described_class.new.toplevel).to eq(spaced)
+        end
+      end
+    end
+  end
+
   describe '#default_branch' do
     it 'falls back to master when main does not exist' do
       git('branch', '-m', 'main', 'master')

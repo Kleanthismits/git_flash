@@ -15,8 +15,8 @@ module Gitflash
         usage_error!('invalid_usage', 'No cherry-pick in progress') unless cherry_pick.in_progress?
 
         plan = build_plan(action)
-        return perform(action, plan, nil) if action == 'continue'
         return planned(plan, "Would #{action} the cherry-pick in progress") if ui.dry_run?
+        return perform(action, plan, nil) if action == 'continue'
         return cancelled(plan) unless ui.confirm?(summary(action), plan: plan)
 
         perform(action, plan, take_snapshot("gitflash pick --#{action}", scope: %w[head worktree]))

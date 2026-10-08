@@ -7,7 +7,7 @@ RSpec.describe Gitflash::Git::BashCommand do
 
     it 'runs the command without a shell and returns stdout' do
       allow(Open3).to receive(:capture3)
-        .with({}, 'git', 'branch').and_return(["main\n", '', success])
+        .with({}, %w[git git], 'branch').and_return(["main\n", '', success])
       expect(described_class.exec('git', 'branch')).to eq("main\n")
     end
 
@@ -22,6 +22,17 @@ RSpec.describe Gitflash::Git::BashCommand do
       expect { described_class.exec('git', 'branch') }.to raise_error(
         Gitflash::Git::CommandError, 'git branch failed: fatal: not a git repository'
       )
+    end
+
+    it 'never lets a lone string reach a shell' do
+      marker = File.join(Dir.tmpdir, "gitflash-shell-#{Process.pid}")
+      expect { described_class.capture("echo hi; touch #{marker}") }
+        .to raise_error(Gitflash::Git::CommandError)
+      expect(File.exist?(marker)).to be(false)
+    end
+
+    it 'raises CommandError when no command is given' do
+      expect { described_class.capture }.to raise_error(Gitflash::Git::CommandError, /no command/)
     end
 
     it 'raises CommandError when the executable is missing' do

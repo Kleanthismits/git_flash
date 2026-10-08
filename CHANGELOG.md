@@ -92,3 +92,14 @@ Beta of the parallel agent work release. Install with `gem install gitflash --pr
 
 - `pick` without a source branch shows a list of the other local branches in a terminal, as `checkout` does; without a terminal the source is still required
 - `hook claude` is no longer listed in `gitflash hook` help (it is run by Claude Code, not by hand; `gitflash hook help claude` still describes it) and prints a short note instead of waiting for input when run in a terminal. The `hook` line in `gitflash help` now says it installs and checks the Claude Code hooks
+- Security hardening, from a CodeRabbit scan of the repository:
+  - Snapshots save untracked files whose names look like Git pathspec magic (`:(exclude)*`) or start or end with a space; before, such a name could drop other files from the snapshot. `Repo#toplevel` and the git readers keep whitespace at the end of a path
+  - Confirmation prompts show control characters in paths as escapes, as other output does
+  - `protected` branch patterns of the user file and the repository file add up; a repository can protect more branches but can no longer remove the ones the user protects
+  - `worktree_dir` may only use `%<repo>s` and `%<branch>s` and is limited to 512 characters (anything else is `invalid_config`); a format width such as `%<repo>999999999s` could exhaust memory
+  - `pick --continue --dry-run` only shows the plan
+  - `pick` reads `git log -z` with one field per line, so a commit message cannot forge entries in the list, and only commits found by `git rev-list` are offered
+  - The git runner never hands a lone string to a shell
+  - The Claude hook in `ask` mode asks also when no snapshot could be saved, notices bundled branch flags (`git branch -qD x`), `git clean -i`, and commands inside `bash -c`, `sh -c` and `eval`, and marks a branch as agent work only if it did not exist before the command
+  - `hook install` refuses to write `.claude` settings through a symbolic link in the repository (the user scope may be a link)
+  - `docs/map/_meta/check.rb` and `sync-twins.sh` do not follow links, read files over 2 MB, or print raw file names

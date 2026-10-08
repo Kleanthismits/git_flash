@@ -78,4 +78,39 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
       expect(context(output)).to include('gitflash undo')
     end
   end
+
+  describe 'ask mode outside a git work tree' do
+    it 'still asks, because asking must not depend on a snapshot being saved' do
+      Dir.mktmpdir do |dir|
+        output = described_class.new(mode: 'ask').call(input('git reset --hard', cwd: dir))
+        expect(output[:hookSpecificOutput]).to include(permissionDecision: 'ask')
+        expect(context(output)).to include('could not save a snapshot', 'git reset --hard')
+      end
+    end
+
+    it 'stays silent in snapshot mode when there is nothing to snapshot' do
+      Dir.mktmpdir do |dir|
+        expect(described_class.new.call(input('git reset --hard', cwd: dir))).to be_nil
+      end
+    end
+  end
+
+  describe 'branches recorded by PreToolUse' do
+    it 'does not mark a branch that existed when the command started' do
+      Dir.mktmpdir do |state|
+        marker = Gitflash::Hook::BranchMarker.new(state_dir: state)
+        hook = described_class.new(marker: marker)
+        git('branch', 'human')
+        id = 'toolu_x'
+        pre = JSON.generate(tool_name: 'Bash', cwd: Dir.pwd, tool_use_id: id,
+                            tool_input: { command: 'git branch human' })
+        post = JSON.generate(hook_event_name: 'PostToolUse', tool_name: 'Bash', cwd: Dir.pwd,
+                             tool_use_id: id, tool_input: { command: 'git branch human' })
+
+        hook.call(pre)
+        expect(hook.call(post)).to be_nil
+        expect(Gitflash::Ownership.new.all).to eq({})
+      end
+    end
+  end
 end

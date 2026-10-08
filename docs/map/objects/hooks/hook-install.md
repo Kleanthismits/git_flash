@@ -20,6 +20,7 @@ Follows Claude Code's own settings rules so a running session picks the hook up 
 
 - Scopes `local` (`.claude/settings.local.json` at the main checkout root, default), `project` (`.claude/settings.json` at the repo top level), `user` (`~/.claude/settings.json`) (`lib/gitflash/hook/settings.rb`, `23-29`).
 - Two entries with the same command: `PreToolUse` (snapshots; `--mode` applies) and `PostToolUse` (marks agent branches, see [[hook-marking]]), both matcher `Bash`, timeout 30. Install adds whichever is missing, so running it again upgrades an older install. `Settings#entry(settings, event)` finds one by event and only looks in groups whose `matcher` covers the Bash tool (`Bash`, `Bash|Edit`, empty or `*`); a gitflash command under another matcher counts as not installed.
+- Local and project scope refuse a settings file or `.claude` directory that is a symbolic link (`invalid_settings`): the repository controls it, and writing through it could change the user's own settings. The user scope may be a link (dotfiles).
 - Status adds `marking` (per file and overall); the headline says when marking is off.
 - Hook entry is found by regex `gitflash hook claude` (`settings.rb`, `52-57`).
 - Install: idempotent (`hook_install.rb`), writes pretty JSON, timeout 30 (`hook_install.rb`, `60-66`), `--mode` sets the command (`hook_install.rb`). Invalid JSON raises `invalid_settings` (`settings.rb`).

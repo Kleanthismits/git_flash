@@ -39,12 +39,12 @@ module Gitflash
     end
 
     def toplevel
-      @bash.exec('git', 'rev-parse', '--show-toplevel').strip
+      @bash.exec('git', 'rev-parse', '--show-toplevel').chomp
     end
 
     # Root of the main checkout; differs from toplevel inside a linked worktree
     def main_root
-      common = @bash.exec('git', 'rev-parse', '--path-format=absolute', '--git-common-dir').strip
+      common = @bash.exec('git', 'rev-parse', '--path-format=absolute', '--git-common-dir').chomp
       File.basename(common) == '.git' ? File.dirname(common) : toplevel
     end
 

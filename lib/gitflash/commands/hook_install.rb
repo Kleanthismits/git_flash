@@ -30,8 +30,21 @@ module Gitflash
 
       def build_plan
         scope = choice(:scope, SCOPES, 'local')
-        { scope: scope, file: settings.path(scope), command: hook_command,
+        file = settings.path(scope)
+        refuse_symlink!(file) unless scope == 'user'
+        { scope: scope, file: file, command: hook_command,
           marking_command: MARKING_COMMAND, applies_to: settings.applies_to(scope) }
+      end
+
+      # The repository decides what .claude holds, and a link there could point at the user's own
+      # settings; writing through it would change a scope other than the one asked for. The
+      # user scope may be a link (dotfiles) because the user owns it.
+      def refuse_symlink!(file)
+        linked = [file, File.dirname(file)].find { |path| File.symlink?(path) }
+        return unless linked
+
+        raise Error.new("#{linked} is a symbolic link; gitflash will not write settings through it",
+                        code: 'invalid_settings')
       end
 
       def settings

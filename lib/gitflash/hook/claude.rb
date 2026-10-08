@@ -29,21 +29,34 @@ module Gitflash
         data = JSON.parse(input)
         return after_command(data) if data['hook_event_name'] == POST_EVENT
 
+        before_command(data)
+      end
+
+      private
+
+      # PreToolUse: remember which branches exist, then snapshot, ask or deny for risky commands
+      def before_command(data)
+        record_branches(data)
         targets = targets(data)
         return nil if targets.empty?
         return deny(targets) if @mode == 'deny'
 
         saved = merge_by_dir(targets).filter_map { |target| save(target) }
-        saved.empty? ? nil : output(saved)
+        # Asking is the user's protection: it must not depend on a snapshot having been saved
+        saved.empty? && @mode != 'ask' ? nil : output(saved, targets)
       end
 
-      private
+      def record_branches(data)
+        return unless bash?(data)
+
+        @marker.record(command_of(data), data['cwd'] || Dir.pwd, data['tool_use_id'])
+      end
 
       # PostToolUse: mark the branches the command created, and tell Claude
       def after_command(data)
         return nil unless data['tool_name'] == 'Bash'
 
-        marked = @marker.call(data.dig('tool_input', 'command').to_s, data['cwd'] || Dir.pwd)
+        marked = @marker.call(command_of(data), data['cwd'] || Dir.pwd, data['tool_use_id'])
         return nil if marked.empty?
 
         context = "gitflash marked #{marked.join(', ')} as agent work, so " \
@@ -52,11 +65,18 @@ module Gitflash
         { hookSpecificOutput: { hookEventName: POST_EVENT, additionalContext: context } }
       end
 
-      def targets(data)
-        return [] unless data['tool_name'] == 'Bash'
+      def bash?(data)
+        data['tool_name'] == 'Bash'
+      end
 
-        command = data.dig('tool_input', 'command').to_s
-        CommandParser.new(data['cwd'] || Dir.pwd).targets(command)
+      def command_of(data)
+        data.dig('tool_input', 'command').to_s
+      end
+
+      def targets(data)
+        return [] unless bash?(data)
+
+        CommandParser.new(data['cwd'] || Dir.pwd).targets(command_of(data))
       end
 
       # One snapshot per directory, covering every command run there
@@ -93,11 +113,8 @@ module Gitflash
         end
       end
 
-      def output(saved)
-        notes = saved.map { |target, snap| "snapshot #{snap.id} before `#{target.command}`" }
-        context = "gitflash saved #{notes.join('; ')}. If this discards work that was still " \
-                  "needed, restore it with `gitflash undo #{saved.last[1].id}` " \
-                  '(list snapshots with `gitflash snapshots`).'
+      def output(saved, targets)
+        context = saved.empty? ? Messages.unsaved(targets) : Messages.saved(saved)
         specific = { hookEventName: EVENT, additionalContext: context }
         if @mode == 'ask'
           specific[:permissionDecision] = 'ask'
@@ -108,12 +125,8 @@ module Gitflash
       end
 
       def deny(targets)
-        commands = targets.map { |target| "`#{target.command}`" }.join(', ')
-        reason = "gitflash blocked #{commands}: it can discard work git cannot restore. " \
-                 'Use the gitflash equivalent (gitflash reset, gitflash delete, ...), which ' \
-                 'saves a snapshot first, or run `gitflash snapshot` before retrying.'
         { hookSpecificOutput: { hookEventName: EVENT, permissionDecision: 'deny',
-                                permissionDecisionReason: reason } }
+                                permissionDecisionReason: Messages.denial(targets) } }
       end
 
       # Stripped stdout of a git command, or nil when it fails

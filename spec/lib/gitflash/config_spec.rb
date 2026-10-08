@@ -27,6 +27,16 @@ RSpec.describe Gitflash::Config do
     expect(config.protected_patterns).to eq(['release/*'])
   end
 
+  it 'adds the repository protected patterns to the user ones and never removes them' do
+    write_user("protected: ['release/*', develop]\n")
+    write_repo("protected: []\n")
+    expect(config.protected_patterns).to eq(['release/*', 'develop'])
+
+    write_repo("protected: [develop, hotfix/*]\n")
+    reloaded = described_class.load(root: root, home: home)
+    expect(reloaded.protected_patterns).to eq(['release/*', 'develop', 'hotfix/*'])
+  end
+
   it 'matches protected patterns shell-style' do
     write_repo("protected: ['release/*', develop]\n")
     expect(config.protected?('release/1.0')).to be(true)
@@ -62,6 +72,12 @@ RSpec.describe Gitflash::Config do
       .to eq(File.expand_path('../proj.worktrees/feat/a', root))
   end
 
+  it 'substitutes the placeholders as plain text, even when a branch name has a percent sign' do
+    write_repo("worktree_dir: /tmp/wt/%<repo>s/%<branch>s\n")
+    expect(config.worktree_path(root: root, branch: '100%<branch>s'))
+      .to eq('/tmp/wt/proj/100%<branch>s')
+  end
+
   it 'honours a custom worktree_dir' do
     write_repo("worktree_dir: /tmp/wt/%<branch>s\n")
     expect(config.worktree_path(root: root, branch: 'a')).to eq('/tmp/wt/a')
@@ -73,7 +89,11 @@ RSpec.describe Gitflash::Config do
     "stale_days: 0\n" => /'stale_days' must be/,
     "protected: main\n" => /'protected' must be/,
     "- a\n" => /must be a mapping/,
-    "a: [\n" => /cannot be read/
+    "a: [\n" => /cannot be read/,
+    "worktree_dir: '../%<repo>999999999s/x'\n" => /'worktree_dir' must be/,
+    "worktree_dir: '../%d/%<branch>s'\n" => /'worktree_dir' must be/,
+    "worktree_dir: '%%'\n" => /'worktree_dir' must be/,
+    "worktree_dir: '#{'a' * 513}'\n" => /'worktree_dir' must be/
   }.each do |yaml, message|
     it "rejects #{yaml.inspect}" do
       write_repo(yaml)
