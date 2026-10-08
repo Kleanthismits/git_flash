@@ -95,6 +95,28 @@ RSpec.describe Gitflash::Hook::BranchMarker, :git_repo do
       expect(marker.call(command, Dir.pwd, 'toolu_4')).to eq([])
     end
 
+    it 'writes nothing into a state directory that is open to others' do
+      FileUtils.chmod(0o777, state)
+      marker.record('git branch x', Dir.pwd, 'toolu_open')
+      expect(Dir.children(state)).to be_empty
+    end
+
+    it 'writes nothing through a state directory that is a symbolic link' do
+      real = Dir.mktmpdir('gitflash-real')
+      link = File.join(Dir.mktmpdir('gitflash-link'), 'state')
+      File.symlink(real, link)
+      linked = described_class.new(clock: -> { now }, state_dir: link)
+
+      linked.record('git branch x', Dir.pwd, 'toolu_link')
+      expect(Dir.children(real)).to be_empty
+    end
+
+    it 'keeps pruning when another hook removes a record at the same moment' do
+      marker.record('git branch x', Dir.pwd, 'toolu_a')
+      allow(File).to receive(:mtime).and_raise(Errno::ENOENT)
+      expect { marker.record('git branch y', Dir.pwd, 'toolu_b') }.not_to raise_error
+    end
+
     it 'deletes the record after use and keeps ids from forming paths' do
       marker.record('git branch x', Dir.pwd, '../../etc/passwd')
       expect(Dir.children(state).size).to eq(1)

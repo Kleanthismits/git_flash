@@ -13,7 +13,10 @@ module Gitflash
         worktree = find!(target)
         refuse_main!(worktree, verb)
         return noop(worktree) if worktree.locked? == lock?
-        return planned(plan(worktree), "Would #{verb} #{worktree.path}") if ui.dry_run?
+        if ui.dry_run?
+          return planned(plan(worktree),
+                         "Would #{verb} #{TerminalText.line(worktree.path)}")
+        end
 
         change(worktree)
       end
@@ -32,7 +35,7 @@ module Gitflash
         result = git_change(worktree)
         git_error!("worktree #{verb}", result) unless result.success?
 
-        report('done', worktree, "#{verb.capitalize}ed #{worktree.path}")
+        report('done', worktree, "#{verb.capitalize}ed #{TerminalText.line(worktree.path)}")
       end
 
       def git_change(worktree)
@@ -42,7 +45,8 @@ module Gitflash
       end
 
       def noop(worktree)
-        report('noop', worktree, "#{worktree.path} is #{lock? ? 'already locked' : 'not locked'}")
+        report('noop', worktree,
+               "#{TerminalText.line(worktree.path)} is #{lock? ? 'already locked' : 'not locked'}")
       end
 
       def report(status, worktree, text)

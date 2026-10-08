@@ -34,7 +34,7 @@ module Gitflash
       end
 
       def bullets(plan)
-        plan[:worktrees].map { |path| "* #{path}" }.join("\n")
+        plan[:worktrees].map { |path| "* #{TerminalText.line(path)}" }.join("\n")
       end
     end
   end

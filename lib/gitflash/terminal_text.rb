@@ -15,5 +15,11 @@ module Gitflash
         format(char.ord > 0xFF ? '\\u%04X' : '\\x%02X', char.ord)
       end
     end
+
+    # Text that must stay on one line, such as a path inside a bullet list: as `safe`, and a
+    # newline or tab in it is shown as an escape too, so it cannot start a fake row
+    def line(text)
+      safe(text).gsub("\n", '\\n').gsub("\t", '\\t')
+    end
   end
 end

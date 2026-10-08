@@ -13,13 +13,13 @@ module Gitflash
       private
 
       def table(worktrees)
-        width = worktrees.map { |worktree| worktree.path.length }.max
+        width = worktrees.map { |worktree| TerminalText.line(worktree.path).length }.max
         worktrees.map { |worktree| row(worktree, width) }.join("\n")
       end
 
       def row(worktree, width)
-        [worktree.path.ljust(width), worktree.branch || "(detached #{worktree.head.to_s[0, 7]})",
-         flags(worktree)].join('  ').rstrip
+        name = worktree.branch || "(detached #{worktree.head.to_s[0, 7]})"
+        [TerminalText.line(worktree.path).ljust(width), name, flags(worktree)].join('  ').rstrip
       end
 
       def flags(worktree)

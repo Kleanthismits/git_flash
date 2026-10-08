@@ -15,7 +15,7 @@ module Gitflash
         plan = build_plan(branch, source)
         if ui.dry_run?
           return planned(plan,
-                         "Would add worktree #{plan[:path]} on #{branch} (#{source})")
+                         "Would add worktree #{shown(plan[:path])} on #{branch} (#{source})")
         end
 
         add(worktrees, plan)
@@ -48,13 +48,15 @@ module Gitflash
         holder = worktrees.list.find { |worktree| worktree.branch == branch }
         return unless holder
 
-        usage_error!('invalid_usage', "Branch #{branch} is already checked out at #{holder.path}")
+        usage_error!('invalid_usage',
+                     "Branch #{branch} is already checked out at #{TerminalText.line(holder.path)}")
       end
 
       def build_plan(branch, source)
         path = target_path(branch)
         if File.exist?(path) && !(File.directory?(path) && Dir.empty?(path))
-          usage_error!('invalid_usage', "#{path} already exists and is not an empty directory")
+          usage_error!('invalid_usage',
+                       "#{TerminalText.line(path)} already exists and is not an empty directory")
         end
 
         { branch: branch, path: path, source: source.to_s, from: options[:from],
@@ -86,7 +88,7 @@ module Gitflash
 
       def report(plan)
         ui.report(status: 'done', plan: plan, result: outcome(plan),
-                  text: "Added worktree #{plan[:path]} on #{plan[:branch]}")
+                  text: "Added worktree #{TerminalText.line(plan[:path])} on #{plan[:branch]}")
       end
 
       def outcome(plan)

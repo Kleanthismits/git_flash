@@ -85,6 +85,19 @@ RSpec.describe Gitflash::Repo, :git_repo do
     end
   end
 
+  describe '#toplevel with a carriage return at the end of the path' do
+    it 'removes only the newline git adds' do
+      Dir.mktmpdir('gitflash-repo') do |dir|
+        odd = File.join(File.realpath(dir), "cr\r")
+        FileUtils.mkdir_p(odd)
+        Dir.chdir(odd) do
+          git('init', '-q')
+          expect(described_class.new.toplevel).to eq(odd)
+        end
+      end
+    end
+  end
+
   describe '#default_branch' do
     it 'falls back to master when main does not exist' do
       git('branch', '-m', 'main', 'master')

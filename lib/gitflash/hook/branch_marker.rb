@@ -33,7 +33,8 @@ module Gitflash
         creations = CommandParser.new(cwd).creations(command)
         return if creations.empty? || (path = record_path(tool_use_id)).nil?
 
-        FileUtils.mkdir_p(@state_dir, mode: 0o700)
+        return unless private_state_dir?
+
         prune_records
         existing = creations.select { |creation| branch_exists?(creation[:dir], creation[:branch]) }
         File.write(path, JSON.generate(existing.map { |creation| key(creation) }))
@@ -63,7 +64,7 @@ module Gitflash
 
       def take_record(tool_use_id)
         path = record_path(tool_use_id)
-        return [] unless path && File.file?(path)
+        return [] unless path && private_state_dir? && File.file?(path)
 
         JSON.parse(File.read(path))
       rescue JSON::ParserError
@@ -72,9 +73,23 @@ module Gitflash
         FileUtils.rm_f(path) if path
       end
 
+      # The directory holds the records of this user only: created with mode 0700, and refused
+      # when it is a link, belongs to someone else or is open to the group or others (a shared
+      # /tmp lets another user create the name first)
+      def private_state_dir?
+        FileUtils.mkdir_p(@state_dir, mode: 0o700)
+        stat = File.lstat(@state_dir)
+        stat.directory? && stat.owned? && stat.mode.nobits?(0o077)
+      rescue SystemCallError
+        false
+      end
+
+      # Another hook may delete a record at the same moment: a vanished file is not an error
       def prune_records
         Dir.glob(File.join(@state_dir, '*.json')).each do |file|
           FileUtils.rm_f(file) if @clock.call - File.mtime(file) > STALE_RECORD_SECONDS
+        rescue SystemCallError
+          next
         end
       end
 

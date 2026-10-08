@@ -14,6 +14,9 @@ module Gitflash
 
       attr_reader :repo, :ui, :options
 
+      # A path from the repository, kept on one line of the output
+      def shown(path) = TerminalText.line(path)
+
       def require_interactive!(message)
         usage_error!('input_required', message) unless ui.interactive?
       end

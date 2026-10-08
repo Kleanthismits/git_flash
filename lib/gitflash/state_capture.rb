@@ -48,14 +48,15 @@ module Gitflash
     private
 
     def git(*, env: {})
-      # Only the final newline goes: a path may start or end with whitespace
-      @bash.exec('git', *, env: env).chomp
+      # Only git's final newline goes: a path may start or end with whitespace, even a carriage
+      # return, which `chomp` would take together with the newline
+      @bash.exec('git', *, env: env).delete_suffix("\n")
     end
 
     # Stripped stdout, or nil when the command fails
     def try(*)
       stdout, _stderr, success = @bash.capture('git', *)
-      success ? stdout.chomp : nil
+      success ? stdout.delete_suffix("\n") : nil
     end
 
     def rev(ref)

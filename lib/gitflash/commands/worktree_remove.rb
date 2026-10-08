@@ -33,7 +33,7 @@ module Gitflash
 
       # Paths come from the repository, so control characters in them are shown as escapes
       def menu_label(worktree)
-        TerminalText.safe("#{worktree.branch || '(detached)'}  #{worktree.path}")
+        TerminalText.line("#{worktree.branch || '(detached)'}  #{worktree.path}")
       end
 
       def force?
@@ -112,7 +112,9 @@ module Gitflash
       end
 
       def bullets(chosen)
-        chosen.map { |worktree| "* #{worktree.path} (#{worktree.branch || 'detached'})" }.join("\n")
+        chosen.map { |worktree|
+          "* #{TerminalText.line(worktree.path)} (#{worktree.branch || 'detached'})"
+        }.join("\n")
       end
 
       def report_nothing(text)

@@ -121,6 +121,15 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(shown).not_to include("\e", "\a")
     end
 
+    it 'keeps a path with a newline on one row of the confirmation text' do
+      odd = wt_path("two\n* /fake/row")
+      run_cli('wt', 'add', 'odd', '--path', odd)
+
+      run = run_cli('wt', 'remove', 'odd')
+      expect(run.stderr).to include('two\\n* /fake/row')
+      expect(run.stderr.lines.grep(%r{\A\* /fake/row})).to be_empty
+    end
+
     it 'asks for confirmation without --yes' do
       run = remove('feat')
       expect(run).to have_attributes(status: 2)

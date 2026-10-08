@@ -46,10 +46,13 @@ module Gitflash
         saved.empty? && @mode != 'ask' ? nil : output(saved, targets)
       end
 
+      # Recording is a side feature: when it fails, snapshots and the ask or deny decision still run
       def record_branches(data)
         return unless bash?(data)
 
         @marker.record(command_of(data), data['cwd'] || Dir.pwd, data['tool_use_id'])
+      rescue StandardError => e
+        warn "gitflash hook: could not record branches (#{e.message})"
       end
 
       # PostToolUse: mark the branches the command created, and tell Claude

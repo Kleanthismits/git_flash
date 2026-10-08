@@ -103,3 +103,5 @@ Beta of the parallel agent work release. Install with `gem install gitflash --pr
   - The Claude hook in `ask` mode asks also when no snapshot could be saved, notices bundled branch flags (`git branch -qD x`), `git clean -i`, and commands inside `bash -c`, `sh -c` and `eval`, and marks a branch as agent work only if it did not exist before the command
   - `hook install` refuses to write `.claude` settings through a symbolic link in the repository (the user scope may be a link)
   - `docs/map/_meta/check.rb` and `sync-twins.sh` do not follow links, read files over 2 MB, or print raw file names
+  - Output keeps a path from the repository on one line: a newline or tab in a worktree path is shown as an escape, so it cannot forge a row in the confirmation text, the list or the menus. `Repo#toplevel` and the git readers remove only git's final newline, not a carriage return that ends the path
+  - When a command touches several directories the hook tells Claude one `gitflash undo` command per snapshot; a failure to record branches never stops the snapshot; the record directory is refused unless it is a real directory only the user can use
