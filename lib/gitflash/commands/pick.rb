@@ -18,8 +18,10 @@ module Gitflash
       end
 
       def call(source = nil, *shas)
-        usage_error!('input_required', 'Pass the source branch: gitflash pick SOURCE') unless source
         check_idle!
+        source ||= pick_source
+        return 0 if source.nil?
+
         candidates = cherry_pick.candidates(source_ref(source))
         return list(source, candidates) if options[:list]
 
@@ -30,6 +32,16 @@ module Gitflash
       end
 
       private
+
+      # The branch picked from a menu of the other local branches (as `checkout` does), nil after
+      # telling the user there is no other branch
+      def pick_source
+        require_interactive!('Pass the source branch: gitflash pick SOURCE')
+        names = repo.branches.reject(&:current?).map(&:name)
+        return nothing_chosen('You only have one branch!') if names.empty?
+
+        ui.select('Select the branch to pick commits from', names)
+      end
 
       def check_idle!
         return unless cherry_pick.in_progress?

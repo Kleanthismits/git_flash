@@ -110,6 +110,10 @@ pick:
   long: |
     Moves fixes between branches, for example between agent branches.
 
+    Without SOURCE, a terminal shows a list of the other local branches to choose from (use the
+    arrow keys, type to search, `enter` to choose and `ctrl+c` to cancel). Without a terminal,
+    SOURCE is required.
+
     `gitflash pick SOURCE --list` lists the commits of SOURCE that are not on the current branch
     yet, oldest first, with SHA, subject, author, date and a diff summary. A commit whose change
     is already here (the same patch under another SHA) is marked `=` (`applied` in JSON) and is
