@@ -42,9 +42,21 @@ module Gitflash
                       deletions: deletions)
       end
 
+      # [files, insertions, deletions] from a line such as
+      # " 2 files changed, 3 insertions(+), 1 deletion(-)". Split on commas and spaces, with no
+      # regular expression, so a long run of digits in the text costs only its own length.
       def stat(text)
-        [text[/(\d+) files? changed/, 1], text[/(\d+) insertions?\(\+\)/, 1],
-         text[/(\d+) deletions?\(-\)/, 1]].map(&:to_i)
+        line = text.to_s.lines.map(&:strip).reject(&:empty?).last.to_s
+        counts = { 'file' => 0, 'insertion' => 0, 'deletion' => 0 }
+        line.split(',').each { |part| tally(counts, part) }
+        counts.values
+      end
+
+      def tally(counts, part)
+        count, label = part.strip.split(' ', 2)
+        number = Integer(count, 10, exception: false)
+        kind = counts.keys.find { |name| label.to_s.start_with?(name) }
+        counts[kind] = number if number && kind
       end
     end
   end
