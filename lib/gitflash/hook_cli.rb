@@ -14,8 +14,12 @@ module Gitflash
       true
     end
 
+    TERMINAL_NOTE = 'gitflash hook claude is run by Claude Code, not by hand. Use ' \
+                    '`gitflash hook install` to set it up and `gitflash hook status` to check it.'
+
     desc 'claude',
-         'Run as a Claude Code hook (PreToolUse and PostToolUse; reads the input on stdin)'
+         'Run as a Claude Code hook (PreToolUse and PostToolUse; reads the input on stdin)',
+         hide: true
     long_desc <<~TEXT
       Reads the Claude Code hook input on stdin. When the Bash command can discard work git
       cannot restore (for example reset --hard, clean -f, checkout -- ., branch -D, stash drop),
@@ -29,10 +33,13 @@ module Gitflash
       branch NAME, worktree add) as agent work, so `gitflash clean --agent` can find them. A branch
       is only marked when it is new (its reflog says it was created a moment ago) and unmarked.
 
-      Errors never block the command: they are printed to stderr and the hook exits with 0.
+      Not meant to be run by hand: in a terminal it only prints a note. Errors never block the
+      command: they are printed to stderr and the hook exits with 0.
     TEXT
     option :mode, type: :string, default: 'snapshot', enum: Hook::Claude::MODES
     def claude
+      return puts(TERMINAL_NOTE) if $stdin.tty?
+
       output = Hook::Claude.new(mode: options[:mode]).call($stdin.read)
       puts JSON.generate(output) if output
     rescue StandardError => e

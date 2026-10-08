@@ -99,7 +99,7 @@ module Gitflash
       run_command('gc', Commands::Gc)
     end
 
-    desc 'hook SUBCOMMAND', 'Agent hooks: claude (run the hook), install (register it)'
+    desc 'hook SUBCOMMAND', 'Claude Code hooks: install them and check they are active'
     subcommand 'hook', HookCli
 
     desc 'pick [SOURCE] [SHA...]', descriptions.pick.short

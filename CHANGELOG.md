@@ -91,3 +91,4 @@ Beta of the parallel agent work release. Install with `gem install gitflash --pr
 ## [Unreleased]
 
 - `pick` without a source branch shows a list of the other local branches in a terminal, as `checkout` does; without a terminal the source is still required
+- `hook claude` is no longer listed in `gitflash hook` help (it is run by Claude Code, not by hand; `gitflash hook help claude` still describes it) and prints a short note instead of waiting for input when run in a terminal. The `hook` line in `gitflash help` now says it installs and checks the Claude Code hooks

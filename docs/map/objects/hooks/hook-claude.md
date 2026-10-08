@@ -19,6 +19,7 @@ The agent keeps using plain git. The hook snapshots first and tells the agent ho
 ## Shape
 
 - Event: `hook_event_name == 'PostToolUse'` goes to [[hook-marking]] (marks branches the command created, `additionalContext` tells the agent); anything else, including input without an event name, is the PreToolUse path below. The same command string is registered under both events, so existing installs keep working.
+- Run by Claude Code, not by people: the command is `hide: true` in `HookCli` (missing from `gitflash hook` help; `gitflash hook help claude` still works) and, when stdin is a terminal, prints `TERMINAL_NOTE` and returns instead of waiting for input. Piped input, as Claude Code sends, is unchanged. Specs that feed it input stub `$stdin.tty?` false so they pass in a terminal too.
 - Input: hook JSON on stdin. Only `tool_name == 'Bash'` is looked at (`lib/gitflash/hook/claude.rb`).
 - Modes (`claude.rb`): `snapshot` (default; save, allow), `ask` (save, ask user), `deny` (block, point to gitflash command) (`claude.rb`, `71-92`).
 - One snapshot per directory, merged across commands there (`claude.rb`); reason `agent hook: before ...` (`claude.rb`).
