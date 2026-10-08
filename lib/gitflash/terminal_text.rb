@@ -17,9 +17,12 @@ module Gitflash
     end
 
     # Text that must stay on one line, such as a path inside a bullet list: as `safe`, and a
-    # newline or tab in it is shown as an escape too, so it cannot start a fake row
+    # newline or tab in it is shown as an escape too, so it cannot start a fake row. A literal
+    # backslash is doubled first, so two different texts never look the same (a real newline
+    # shows as `\n`, the two characters backslash and n as `\\n`); that keeps menu labels unique.
     def line(text)
-      safe(text).gsub("\n", '\\n').gsub("\t", '\\t')
+      doubled = text.to_s.scrub.gsub('\\') { '\\\\' }
+      safe(doubled).gsub("\n") { '\\n' }.gsub("\t") { '\\t' }
     end
   end
 end

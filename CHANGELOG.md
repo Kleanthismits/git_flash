@@ -105,3 +105,4 @@ Beta of the parallel agent work release. Install with `gem install gitflash --pr
   - `docs/map/_meta/check.rb` and `sync-twins.sh` do not follow links, read files over 2 MB, or print raw file names
   - Output keeps a path from the repository on one line: a newline or tab in a worktree path is shown as an escape, so it cannot forge a row in the confirmation text, the list or the menus. `Repo#toplevel` and the git readers remove only git's final newline, not a carriage return that ends the path
   - When a command touches several directories the hook tells Claude one `gitflash undo` command per snapshot; a failure to record branches never stops the snapshot; the record directory is refused unless it is a real directory only the user can use
+  - A literal backslash in a path is shown doubled, so a path with a newline and a path with the characters backslash and n stay two different choices in the `wt remove` menu
