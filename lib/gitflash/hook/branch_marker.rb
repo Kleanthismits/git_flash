@@ -61,6 +61,9 @@ module Gitflash
 
       # A branch that was there before the command and is the same branch now. One that the
       # command deleted and created again has a new reflog, so a new stamp, and counts as new.
+      # An empty stamp (no reflog) is no evidence of a new branch either: all that is known is
+      # that the branch existed, and claiming a branch a person may have made is the worse
+      # mistake, so it is left alone. Without a reflog nothing could be marked in any case.
       def already_there?(existed, creation)
         existed.key?(key(creation)) && existed[key(creation)] == stamp(creation)
       end

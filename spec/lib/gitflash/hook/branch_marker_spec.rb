@@ -92,6 +92,18 @@ RSpec.describe Gitflash::Hook::BranchMarker, :git_repo do
       expect(owners).to eq('topic' => 'agent')
     end
 
+    it 'marks nothing without a reflog, whether or not the branch was recreated' do
+      git('config', 'core.logAllRefUpdates', 'false')
+      git('branch', 'topic')
+      command = 'git branch -D topic && git switch -c topic'
+      marker.record(command, Dir.pwd, 'toolu_noreflog')
+
+      git('branch', '-D', 'topic')
+      git('switch', '-q', '-c', 'topic')
+      expect(marker.call(command, Dir.pwd, 'toolu_noreflog')).to eq([])
+      expect(owners).to eq({})
+    end
+
     it 'still ignores a branch that was only left alone by the command' do
       git('branch', 'topic')
       marker.record('git switch -c topic', Dir.pwd, 'toolu_same')
