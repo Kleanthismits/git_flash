@@ -88,7 +88,9 @@ Beta of the parallel agent work release. Install with `gem install gitflash --pr
 - JSON schema: new commands `clean`, `mark`, `pick` and `worktree ...`, error codes `invalid_config`, `unknown_worktree`, `protected_worktree` and `conflict`, the `owner` field, and `recreate_worktree` in the `undo` plan
 - Author names from other branches are shown with control characters escaped in `pick` output
 
-## [Unreleased]
+## [0.7.0.beta2] - 2026-10-08
+
+Second beta of the parallel agent work release: the `pick` branch list, a quieter `hook claude` and a round of security fixes on top of beta1. Install with `gem install gitflash --pre`. If you installed the hook before, run `gitflash hook install` again. Needs git 2.36 or newer.
 
 - `pick` without a source branch shows a list of the other local branches in a terminal, as `checkout` does; without a terminal the source is still required
 - `hook claude` is no longer listed in `gitflash hook` help (it is run by Claude Code, not by hand; `gitflash hook help claude` still describes it) and prints a short note instead of waiting for input when run in a terminal. The `hook` line in `gitflash help` now says it installs and checks the Claude Code hooks
