@@ -109,6 +109,27 @@ RSpec.describe Gitflash::Cli, :git_repo do
   end
 
   describe 'hook claude' do
+    before { allow($stdin).to receive(:tty?).and_return(false) }
+
+    it 'prints a note instead of waiting when a person runs it in a terminal' do
+      allow($stdin).to receive(:tty?).and_return(true)
+      allow($stdin).to receive(:read).and_raise('must not read the terminal')
+
+      run = run_cli('hook', 'claude')
+      expect(run).to have_attributes(status: 0, stderr: '')
+      expect(run.stdout).to include('run by Claude Code, not by hand', 'gitflash hook install',
+                                    'gitflash hook status')
+    end
+
+    it 'is left out of the hook command list but still has help' do
+      listing = run_cli('hook', 'help').stdout
+      expect(listing).to include('hook install', 'hook status')
+      expect(listing).not_to include('hook claude')
+      expect(run_cli('hook', 'help',
+                     'claude').stdout).to include('PostToolUse', 'Not meant to be run by hand')
+      expect(run_cli('help').stdout).to include('Claude Code hooks: install them')
+    end
+
     it 'prints the Claude hook output for a destructive command' do
       input = JSON.generate(tool_name: 'Bash', cwd: Dir.pwd,
                             tool_input: { command: 'git branch -D feature' })

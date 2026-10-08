@@ -188,6 +188,61 @@ RSpec.describe Gitflash::Cli, :git_repo do
       allow(Gitflash::Prompt).to receive(:create).and_return(prompt)
     end
 
+    it 'offers the other local branches when no source is given, then the commits' do
+      git('branch', 'other')
+      allow(prompt).to receive(:select) do |message, choices|
+        expect(message).to eq('Select the branch to pick commits from')
+        expect(choices).to eq(%w[feat other])
+        'feat'
+      end
+      allow(prompt).to receive(:multi_select) do |_message, choices|
+        expect(choices.values).to eq(shas.values_at('one', 'two', 'three'))
+        [shas['two']]
+      end
+      allow(prompt).to receive(:proceed_with_warning) { |_message, &block| block.call }
+
+      expect(run_cli('pick').stdout).to include('Applied 1 commit(s)')
+      expect(subjects.first).to eq('Add two')
+    end
+
+    it 'lists the commits of the branch chosen from the menu with --list' do
+      allow(prompt).to receive(:select).and_return('feat')
+      stdout = run_cli('pick', '--list').stdout
+      expect(stdout).to include('Add one')
+      expect(stdout).to include('Add three')
+    end
+
+    it 'does not ask for a branch when one is given, and exits quietly when the menu has none' do
+      allow(prompt).to receive(:select).and_raise('menu must not be shown')
+      expect(run_cli('pick', 'feat', '--list').status).to eq(0)
+
+      git('branch', '-D', 'feat')
+      allow(prompt).to receive(:select).and_raise('menu must not be shown')
+      run = run_cli('pick')
+      expect(run).to have_attributes(status: 0, stdout: "You only have one branch!\n")
+    end
+
+    it 'handles a detached HEAD: every branch is offered, and one branch is still one branch' do
+      git('checkout', '-q', '--detach')
+      allow(prompt).to receive(:select) do |_message, choices|
+        expect(choices).to eq(%w[feat main])
+        'feat'
+      end
+      expect(run_cli('pick', '--list').status).to eq(0)
+
+      git('branch', '-D', 'feat')
+      allow(prompt).to receive(:select).and_raise('menu must not be shown')
+      run = run_cli('pick')
+      expect(run).to have_attributes(status: 0, stdout: "You only have one branch!\n")
+    end
+
+    it 'still asks for the source without a terminal' do
+      allow($stdin).to receive(:tty?).and_return(false)
+      run = run_cli('pick', '--json')
+      expect(run.status).to eq(2)
+      expect(run.json['error']).to include('code' => 'input_required')
+    end
+
     it 'offers the commits that are not on the branch yet and applies the chosen ones' do
       git('cherry-pick', shas['one'])
       allow(prompt).to receive(:multi_select) do |message, choices|

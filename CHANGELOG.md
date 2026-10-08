@@ -87,3 +87,8 @@ Beta of the parallel agent work release. Install with `gem install gitflash --pr
 - The Claude Code hook also runs after Bash commands (`PostToolUse`): branches created with plain git (`checkout -b`, `switch -c`, `branch NAME`, `worktree add`) are marked as agent work. `hook install` adds it, so run it again after upgrading; `hook status` reports whether marking is on. A gitflash hook under a matcher that does not cover Bash no longer counts as installed
 - JSON schema: new commands `clean`, `mark`, `pick` and `worktree ...`, error codes `invalid_config`, `unknown_worktree`, `protected_worktree` and `conflict`, the `owner` field, and `recreate_worktree` in the `undo` plan
 - Author names from other branches are shown with control characters escaped in `pick` output
+
+## [Unreleased]
+
+- `pick` without a source branch shows a list of the other local branches in a terminal, as `checkout` does; without a terminal the source is still required
+- `hook claude` is no longer listed in `gitflash hook` help (it is run by Claude Code, not by hand; `gitflash hook help claude` still describes it) and prints a short note instead of waiting for input when run in a terminal. The `hook` line in `gitflash help` now says it installs and checks the Claude Code hooks

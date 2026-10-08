@@ -43,7 +43,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash mark [BRANCH...]` | Mark branches as agent (default) or human work, or `--clear` the mark. Without a branch it marks the current one. Use it for branches made with plain git so `clean --agent` can find them |
 | `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. Protected: current, default, `main`, `master`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
 | `gitflash worktree` (`wt`) `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock`, `move` | Worktrees for parallel agent work, with absolute paths in `--json` (see below) |
-| `gitflash pick SOURCE [SHA...]` | Cherry-pick commits from another branch: `--list` shows what is missing here, `--continue`, `--skip` and `--abort` handle conflicts |
+| `gitflash pick [SOURCE] [SHA...]` | Cherry-pick commits from another branch (pick SOURCE from a list when you omit it): `--list` shows what is missing here, `--continue`, `--skip` and `--abort` handle conflicts |
 | `gitflash undo [SNAPSHOT]` | Restore a snapshot, the latest by default: deleted branches, moved branches, HEAD, uncommitted and untracked files, dropped stashes |
 | `gitflash snapshot` | Save the current state on request (`--scope`, `--message`) |
 | `gitflash snapshots` | List snapshots, newest first |
