@@ -222,6 +222,20 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run).to have_attributes(status: 0, stdout: "You only have one branch!\n")
     end
 
+    it 'handles a detached HEAD: every branch is offered, and one branch is still one branch' do
+      git('checkout', '-q', '--detach')
+      allow(prompt).to receive(:select) do |_message, choices|
+        expect(choices).to eq(%w[feat main])
+        'feat'
+      end
+      expect(run_cli('pick', '--list').status).to eq(0)
+
+      git('branch', '-D', 'feat')
+      allow(prompt).to receive(:select).and_raise('menu must not be shown')
+      run = run_cli('pick')
+      expect(run).to have_attributes(status: 0, stdout: "You only have one branch!\n")
+    end
+
     it 'still asks for the source without a terminal' do
       allow($stdin).to receive(:tty?).and_return(false)
       run = run_cli('pick', '--json')

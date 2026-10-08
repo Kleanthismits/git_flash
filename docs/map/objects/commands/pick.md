@@ -19,7 +19,7 @@ Moving fixes between agent branches needs a list of what is missing, a safe appl
 ## Shape
 
 - Author names and subjects come from the source branch, so both go through `TerminalText.safe` in the rows and the menu labels (`Pick#row`).
-- Without SOURCE: in a terminal `Pick#pick_source` shows a list of the other local branches (`ui.select`, like [[checkout]]); with only one branch it says `You only have one branch!`; without a terminal it stays `input_required` (exit 2). The check for a pick in progress comes first.
+- Without SOURCE: in a terminal `Pick#pick_source` shows a list of the other local branches (`ui.select`, like [[checkout]]); with fewer than two local branches (also on a detached HEAD, where no branch is current) it says `You only have one branch!`; without a terminal it stays `input_required` (exit 2). The check for a pick in progress comes first.
 - `pick SOURCE --list`: commits of SOURCE (local or remote-tracking branch) not on HEAD, oldest first, merges left out; `status` `new` or `applied` (an equivalent patch is already here, from `--cherry-mark`). Result `pick_list_result`.
 - `pick SOURCE SHA...`: SHAs may be 4+ character prefixes; applied in source order whatever the argument order; already-applied ones go to `plan.skipped`; nothing new gives `noop`. Without SHAs a menu in a terminal. Always `-x`; `--no-commit` stages only.
 - Snapshot scope `branches` (current branch), `head`, `worktree`, taken after confirm (`pick.rb`). `undo` is in the envelope.

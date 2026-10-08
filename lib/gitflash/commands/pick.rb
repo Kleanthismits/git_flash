@@ -37,10 +37,10 @@ module Gitflash
       # telling the user there is no other branch
       def pick_source
         require_interactive!('Pass the source branch: gitflash pick SOURCE')
-        names = repo.branches.reject(&:current?).map(&:name)
-        return nothing_chosen('You only have one branch!') if names.empty?
+        branches = repo.branches
+        return nothing_chosen('You only have one branch!') if branches.size < 2
 
-        ui.select('Select the branch to pick commits from', names)
+        ui.select('Select the branch to pick commits from', branches.reject(&:current?).map(&:name))
       end
 
       def check_idle!
