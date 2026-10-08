@@ -48,13 +48,15 @@ module Gitflash
     private
 
     def git(*, env: {})
-      @bash.exec('git', *, env: env).strip
+      # Only git's final newline goes: a path may start or end with whitespace, even a carriage
+      # return, which `chomp` would take together with the newline
+      @bash.exec('git', *, env: env).delete_suffix("\n")
     end
 
     # Stripped stdout, or nil when the command fails
     def try(*)
       stdout, _stderr, success = @bash.capture('git', *)
-      success ? stdout.strip : nil
+      success ? stdout.delete_suffix("\n") : nil
     end
 
     def rev(ref)
@@ -122,7 +124,10 @@ module Gitflash
       sizes = file_sizes(top, paths)
       small, large = sizes.partition { |_path, size| size <= MAX_UNTRACKED_FILE_BYTES }
                           .map { |group| group.map(&:first) }
-      small.each_slice(ADD_BATCH_SIZE) { |batch| git('-C', top, 'add', '--', *batch, env: env) }
+      # File names are literal paths, never pathspec magic such as `:(exclude)*`
+      small.each_slice(ADD_BATCH_SIZE) do |batch|
+        git('--literal-pathspecs', '-C', top, 'add', '--', *batch, env: env)
+      end
       large
     end
   end

@@ -19,9 +19,6 @@ module Gitflash
     # The state of an unfinished pick: files with conflicts and the commits still to apply
     Progress = Data.define(:conflicted, :remaining, :current)
 
-    RECORD = "\x1e"
-    SEPARATOR = "\x1f"
-    FORMAT = ['%m', '%H', '%s', '%an', '%cI'].join(SEPARATOR)
     ENV_NO_EDITOR = { 'GIT_EDITOR' => 'true', 'GIT_SEQUENCE_EDITOR' => 'true' }.freeze
 
     def initialize(bash: Git::BashCommand)
@@ -38,10 +35,11 @@ module Gitflash
     # Commits of `source_ref` that are not merges, oldest first, each marked as applied when an
     # equivalent change (same patch) is already on HEAD
     def candidates(source_ref)
-      output = @bash.exec('git', 'log', '--left-right', '--cherry-mark', '--right-only',
-                          '--no-merges', '--reverse', '--shortstat', "--format=#{RECORD}#{FORMAT}",
+      output = @bash.exec('git', 'log', '-z', '--left-right', '--cherry-mark', '--right-only',
+                          '--no-merges', '--reverse', '--shortstat', "--format=#{LogParser::FORMAT}",
                           "HEAD...#{source_ref}", '--')
-      output.split(RECORD).reject { |record| record.strip.empty? }.map { |record| parse(record) }
+      eligible = eligible_shas(source_ref)
+      LogParser.parse(output).select { |candidate| eligible.include?(candidate.sha) }.uniq(&:sha)
     end
 
     # Applies the commits (full shas, in the given order) with `git cherry-pick`.
@@ -70,18 +68,12 @@ module Gitflash
 
     private
 
-    def parse(record)
-      line, *rest = record.split("\n", 2)
-      mark, sha, subject, author, date = line.split(SEPARATOR, 5)
-      files, insertions, deletions = stat(rest.first.to_s)
-      Candidate.new(sha: sha, subject: subject.to_s, author: author, date: date,
-                    applied: mark == '=', files: files, insertions: insertions,
-                    deletions: deletions)
-    end
-
-    def stat(text)
-      [text[/(\d+) files? changed/, 1], text[/(\d+) insertions?\(\+\)/, 1],
-       text[/(\d+) deletions?\(-\)/, 1]].map(&:to_i)
+    # The commits of the source that are not merges and not on HEAD, listed by git without any
+    # text a commit author controls. A commit message holding the separators of the log format
+    # could forge extra records; only SHAs found here become candidates.
+    def eligible_shas(source_ref)
+      @bash.exec('git', 'rev-list', '--right-only', '--no-merges', "HEAD...#{source_ref}", '--')
+           .lines(chomp: true).to_set
     end
 
     def conflicted_files

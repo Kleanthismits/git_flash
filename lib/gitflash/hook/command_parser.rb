@@ -17,6 +17,8 @@ module Gitflash
       Target = Data.define(:dir, :command, :scope, :branches)
 
       PREFIXES = %w[sudo command exec time nohup env].freeze
+      SHELLS = %w[bash sh zsh dash ksh].freeze
+      MAX_NESTING = 3
       OPTIONS_WITH_VALUE = %w[-c --git-dir --work-tree --namespace --exec-path --config-env].freeze
 
       def initialize(cwd)
@@ -48,18 +50,34 @@ module Gitflash
       # subcommand and its arguments
       GitCommand = Data.define(:dir, :command, :subcommand, :args)
 
-      def git_commands(command_line)
-        dir = @cwd
-        segments(command_line).filter_map do |segment|
+      def git_commands(command_line, dir = @cwd, depth = 0)
+        segments(command_line).flat_map do |segment|
           words = words(segment)
-          next if words.empty?
+          next [] if words.empty?
 
           if words.first == 'cd'
             dir = File.expand_path(words[1] || Dir.home, dir)
-            next
+            next []
           end
-          git_command(words, dir, segment.strip) if File.basename(words.first) == 'git'
+          commands_in(words, dir, segment.strip, depth)
         end
+      end
+
+      # The git command of one segment, or the ones inside `bash -c "..."` and `eval "..."`
+      def commands_in(words, dir, segment, depth)
+        return [git_command(words, dir, segment)] if File.basename(words.first) == 'git'
+
+        script = nested_script(words)
+        script && depth < MAX_NESTING ? git_commands(script, dir, depth + 1) : []
+      end
+
+      # The script text passed to a shell (`bash -c`, `sh -lc`) or to `eval`
+      def nested_script(words)
+        return words.drop(1).join(' ') if words.first == 'eval'
+        return nil unless SHELLS.include?(File.basename(words.first))
+
+        index = words.index { |word| word.match?(/\A-[a-z]*c[a-z]*\z/) }
+        index && words[index + 1]
       end
 
       # Splits on unquoted ; & | and newlines

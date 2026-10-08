@@ -23,7 +23,8 @@ Only git commands that lose work git cannot restore matter: uncommitted or untra
 - `checkout` also counts an argument that names an existing file as a discard (`git checkout src/app.rb`), because telling a path from a branch needs git; this can add an extra snapshot, which is harmless (`rules.rb`).
 - Examples: `reset` always saves branches+head+worktree for the current branch (`rules.rb`); `clean` only when forced and not dry-run (`rules.rb`); `branch` only for delete/move/force flags (`rules.rb`).
 - Parser: splits on unquoted `; & |` and newlines (`command_parser.rb`), strips `sudo`, `env`, `VAR=x` (`command_parser.rb`, `60-69`), follows `cd` and `git -C` (`command_parser.rb`, `91-98`).
-- **Known miss, checked 2026-10-03:** `bash -c "git reset --hard"`, `echo $(git reset --hard)`, `sh -c "cd x && git clean -fd"` and `xargs git branch -D` return no target; `(git reset --hard)` and `git stash drop` do. Also true for `deny` mode.
+- Commands inside `bash -c`, `sh -c`, `zsh -c` (also `-lc`) and `eval` are parsed too, up to three levels deep (`CommandParser#nested_script`). Bundled branch flags (`git branch -qD x`) and `git clean -i` count as destructive.
+- **Known misses:** `echo $(git reset --hard)`, backticks, `xargs git branch -D`, `--git-dir` / `--work-tree` (the repository git really uses), a `cd` that fails, and subshell scope (`(cd x; ...)`). The directory is inferred from the text. Also true for `deny` mode.
 
 - Creation rules are separate: `Hook::Creations` says which commands create a branch (see [[hook-marking]]); `CommandParser#creations` reuses the same `cd` and `-C` walk through `git_commands`.
 

@@ -14,7 +14,10 @@ module Gitflash
         worktree = find!(target)
         check!(worktree)
         plan = { from: worktree.path, to: File.expand_path(destination), force: force? }
-        return planned(plan, "Would move #{plan[:from]} to #{plan[:to]}") if ui.dry_run?
+        if ui.dry_run?
+          return planned(plan,
+                         "Would move #{shown(plan[:from])} to #{shown(plan[:to])}")
+        end
 
         move(plan)
       end
@@ -28,11 +31,13 @@ module Gitflash
       def check!(worktree)
         refuse_main!(worktree, 'move')
         if worktree.path == repo.toplevel
-          usage_error!('protected_worktree', "#{worktree.path} is the current worktree")
+          usage_error!('protected_worktree',
+                       "#{TerminalText.line(worktree.path)} is the current worktree")
         end
         return unless worktree.locked? && !force?
 
-        usage_error!('protected_worktree', "#{worktree.path} is locked (use --force)")
+        usage_error!('protected_worktree',
+                     "#{TerminalText.line(worktree.path)} is locked (use --force)")
       end
 
       def move(plan)
@@ -40,7 +45,7 @@ module Gitflash
         git_error!('worktree move', result) unless result.success?
 
         ui.report(status: 'done', plan: plan, result: plan.slice(:from, :to),
-                  text: "Moved #{plan[:from]} to #{plan[:to]}")
+                  text: "Moved #{shown(plan[:from])} to #{shown(plan[:to])}")
       end
     end
   end

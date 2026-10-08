@@ -27,4 +27,22 @@ RSpec.describe Gitflash::TerminalText do
       expect(described_class.safe("bad\xFF")).to eq("bad\uFFFD")
     end
   end
+
+  describe '.line' do
+    it 'also shows newlines and tabs as escapes, so text cannot start a fake row' do
+      expect(described_class.line("a\n* fake row\tb\e[2J")).to eq('a\\n* fake row\\tb\\x1B[2J')
+    end
+
+    it 'keeps different texts different: a newline and a backslash followed by n' do
+      real = described_class.line("x\ny")
+      literal = described_class.line('x\\ny')
+      expect(real).to eq('x\\ny')
+      expect(literal).to eq('x\\\\ny')
+      expect(real).not_to eq(literal)
+    end
+
+    it 'leaves ordinary text alone' do
+      expect(described_class.line('/tmp/wt/feature x')).to eq('/tmp/wt/feature x')
+    end
+  end
 end

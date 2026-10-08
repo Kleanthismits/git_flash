@@ -64,9 +64,9 @@ Run `gitflash` inside a git repository to get a list with the available commands
 Settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml` (the repository file wins):
 
 ```yaml
-protected: ["release/*"]   # branch patterns clean and delete never touch
+protected: ["release/*"]   # branch patterns clean and delete never touch; both files add up
 stale_days: 30             # used by --stale without a number
-worktree_dir: "../%<repo>s.worktrees/%<branch>s"
+worktree_dir: "../%<repo>s.worktrees/%<branch>s"   # only these two placeholders, up to 512 characters
 ```
 
 ### Undo

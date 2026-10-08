@@ -259,6 +259,40 @@ RSpec.describe Gitflash::Cli, :git_repo do
       end
     end
 
+    it 'refuses to write through a symbolic link in the repository' do
+      FileUtils.mkdir_p('.claude')
+      target = File.join(Dir.mktmpdir, 'global-settings.json')
+      File.write(target, JSON.generate('hooks' => {}))
+      File.symlink(target, settings)
+
+      error = run_cli('hook', 'install', '--json').json['error']
+      expect(error).to include('code' => 'invalid_settings')
+      expect(error['message']).to include('symbolic link')
+      expect(File.read(target)).to eq(JSON.generate('hooks' => {}))
+    end
+
+    it 'refuses a .claude directory that is a symbolic link' do
+      real = Dir.mktmpdir
+      File.symlink(real, '.claude')
+
+      error = run_cli('hook', 'install', '--scope', 'project', '--json').json['error']
+      expect(error).to include('code' => 'invalid_settings')
+      expect(Dir.children(real)).to be_empty
+    end
+
+    it 'still writes the user settings when that file is a link (dotfiles)' do
+      Dir.mktmpdir do |home|
+        real = File.join(home, 'dotfiles-settings.json')
+        File.write(real, '{}')
+        FileUtils.mkdir_p(File.join(home, '.claude'))
+        File.symlink(real, File.join(home, '.claude', 'settings.json'))
+        allow(Dir).to receive(:home).and_return(home)
+
+        expect(run_cli('hook', 'install', '--scope', 'user', '--json').json['status']).to eq('done')
+        expect(JSON.parse(File.read(real)).dig('hooks', 'PreToolUse')).not_to be_nil
+      end
+    end
+
     it 'refuses invalid settings files' do
       FileUtils.mkdir_p('.claude')
       File.write(settings, '{ nope')

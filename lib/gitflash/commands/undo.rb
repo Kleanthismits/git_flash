@@ -80,8 +80,9 @@ module Gitflash
       def revival_hint(plan)
         return '' unless plan[:recreate_worktree]
 
-        "\nThe worktree #{plan[:recreate_worktree]} was added again and may be partly restored; " \
-          "remove it with: gitflash wt remove #{plan[:recreate_worktree]} --force"
+        path = TerminalText.line(plan[:recreate_worktree])
+        "\nThe worktree #{path} was added again and may be partly restored; " \
+          "remove it with: gitflash wt remove #{path} --force"
       end
 
       def no_snapshots
@@ -100,7 +101,9 @@ module Gitflash
 
       def describe(plan)
         lines = plan[:branches].map { |change| branch_line(change) }
-        lines << "* add worktree #{plan[:recreate_worktree]} again" if plan[:recreate_worktree]
+        if plan[:recreate_worktree]
+          lines << "* add worktree #{TerminalText.line(plan[:recreate_worktree])} again"
+        end
         lines << head_line(plan[:head]) if plan[:head] && !plan[:recreate_worktree]
         (lines + file_lines(plan)).join("\n")
       end

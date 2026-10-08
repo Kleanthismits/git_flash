@@ -14,7 +14,7 @@ Process runner for git. Code: `Git::BashCommand`.
 
 ## Why this shape
 
-No shell, so no injection from branch names (`Open3.capture3(env, *args)`, `lib/gitflash/git/bash_command.rb:21`).
+No shell, so no injection from branch names. The executable is passed as an `[exe, exe]` pair, so Ruby never hands even a lone string to a shell (`lib/gitflash/git/bash_command.rb`).
 
 ## Shape
 

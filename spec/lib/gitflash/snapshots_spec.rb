@@ -25,6 +25,15 @@ RSpec.describe Gitflash::Snapshots, :git_repo do
       expect(git('for-each-ref', 'refs/gitflash/snapshots/')).to include(snapshot.id)
     end
 
+    it 'saves untracked files named like pathspec magic or with spaces at either end' do
+      names = [':(exclude)*', ':(top)x', ' lead', 'trail ', 'keep.txt']
+      names.each { |name| File.write(name, name) }
+
+      snapshot = snapshots.create(reason: 'odd names')
+      saved = git('ls-tree', '-r', '--name-only', '-z', snapshot.worktree).split("\0")
+      expect(saved).to include(*names)
+    end
+
     it 'saves edited, staged and untracked files without changing them' do
       File.write('a', "edited\n")
       commit_file('b')

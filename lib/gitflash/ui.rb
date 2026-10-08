@@ -69,7 +69,7 @@ module Gitflash
       message = "#{summary}\nRe-run with --yes to confirm."
       raise ConfirmationRequired.new(message, plan: plan) unless interactive?
 
-      prompt.proceed_with_warning(summary) { true } == true
+      prompt.proceed_with_warning(TerminalText.safe(summary)) { true } == true
     end
 
     private

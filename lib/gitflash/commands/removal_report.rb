@@ -21,7 +21,8 @@ module Gitflash
       end
 
       def ignored_line(row)
-        "* #{row[:path]}: #{row[:ignored_count]} (#{row[:ignored].join(', ')})"
+        "* #{TerminalText.line(row[:path])}: #{row[:ignored_count]} " \
+          "(#{TerminalText.line(row[:ignored].join(', '))})"
       end
 
       def report_results(plan, outcomes)
@@ -56,8 +57,12 @@ module Gitflash
       end
 
       def results_text(result)
-        lines = result[:removed].map { |row| "Removed #{row[:path]} (undo: #{row[:undo]})" }
-        lines += result[:failed].map { |row| "Not removed #{row[:path]}: #{row[:error]}" }
+        lines = result[:removed].map do |row|
+          "Removed #{TerminalText.line(row[:path])} (undo: #{row[:undo]})"
+        end
+        lines += result[:failed].map do |row|
+          "Not removed #{TerminalText.line(row[:path])}: #{row[:error]}"
+        end
         lines.join("\n")
       end
     end
