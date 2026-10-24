@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: lib/gitflash/hook/rules.rb
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the fixes for #34 to #37
+verified_at: 6b41e31 plus the fixes for #34 to #38
 ---
 
 # Hook rules and parser
@@ -18,8 +18,10 @@ Only git commands that lose work git cannot restore matter: uncommitted or untra
 
 ## Shape
 
-- `RULES` map: reset, checkout, restore, clean, switch, stash, branch, update-ref, rebase, merge/cherry-pick/revert/am (abort only), worktree (`lib/gitflash/hook/rules.rb`). Each returns `{ scope, branches, dir }` or nil.
+- `RULES` map: reset, checkout, restore, clean, switch, stash, branch, update-ref, rebase, merge/cherry-pick/revert/am (abort only), worktree (`lib/gitflash/hook/rules.rb`), plus `HistoryRules::RULES` (`lib/gitflash/hook/history_rules.rb`): `rm -f` (not `--cached`), `checkout-index -f`, `read-tree -u --reset`, `reflog expire|delete`, `gc --prune=now|all`, `prune`, and `push . :branch` / `push . --delete branch`. Each returns `{ scope, branches, dir }` or nil.
 - `branch` deletions whose names the shell or xargs fills in (`$b`, `{}`) save every branch (empty `branches`). When targets of one directory are merged, an empty `branches` with the `branches` scope wins (`CommandParser::Target.merge`), so a named deletion cannot narrow an unnamed one.
+- `worktree remove` counts without `--force` too: git deletes the worktree's ignored files either way. `clean` without `-f` counts when `git config clean.requireForce` is false in that directory (`Rules.require_force?`, one git call, only when no force flag is given). `update-ref --stdin` saves every branch (the refs come from input).
+- Reflog and prune rules save the current state (`FULL`); commits that only the reflog pointed at are not saved by a snapshot.
 - Short options may be bundled: `short_flags` joins their letters, so `git checkout -fq main`, `git switch -fq main` and `git clean -fdq` are seen (`rules.rb`).
 - `checkout` also counts an argument that names an existing file as a discard (`git checkout src/app.rb`), because telling a path from a branch needs git; this can add an extra snapshot, which is harmless (`rules.rb`).
 - Examples: `reset` always saves branches+head+worktree for the current branch (`rules.rb`); `clean` only when forced and not dry-run (`rules.rb`); `branch` only for delete/move/force flags (`rules.rb`).

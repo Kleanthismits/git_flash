@@ -46,6 +46,13 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
     expect(Gitflash::Snapshots.new.list.first.branches.keys).to include('a', 'b', 'c')
   end
 
+  it 'sees git clean without -f when clean.requireForce is false' do
+    expect(described_class.new.call(input('git clean -d'))).to be_nil
+    git('config', 'clean.requireForce', 'false')
+    expect(context(described_class.new.call(input('git clean -d')))).to include('gitflash undo')
+    expect(described_class.new.call(input('git clean -dn'))).to be_nil
+  end
+
   it 'asks for approval in ask mode' do
     output = described_class.new(mode: 'ask').call(input('git clean -f'))
     expect(output[:hookSpecificOutput]).to include(permissionDecision: 'ask')

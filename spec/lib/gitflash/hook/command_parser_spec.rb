@@ -43,7 +43,20 @@ RSpec.describe Gitflash::Hook::CommandParser do
     'echo `printf \\` && git clean -f`' => [['/repo', %w[worktree], []]],
     'echo $(printf ")" && git clean -f)' => [['/repo', %w[worktree], []]],
     "echo $(printf ')' && git clean -f)" => [['/repo', %w[worktree], []]],
-    'echo $(echo $(echo $(echo $(git clean -f))))' => [['/repo', %w[branches head worktree], []]]
+    'echo $(echo $(echo $(echo $(git clean -f))))' => [['/repo', %w[branches head worktree], []]],
+    'git worktree remove ../wt' => [['/wt', %w[worktree], []]],
+    'git rm -f a' => [['/repo', %w[worktree], []]],
+    'git rm -rf dir' => [['/repo', %w[worktree], []]],
+    'git checkout-index -f -a' => [['/repo', %w[worktree], []]],
+    'git read-tree -u --reset HEAD' => [['/repo', %w[worktree], []]],
+    'git reflog expire --expire=now --all' => [['/repo', %w[branches head worktree], []]],
+    'git reflog delete HEAD@{1}' => [['/repo', %w[branches head worktree], []]],
+    'git gc --prune=now' => [['/repo', %w[branches head worktree], []]],
+    'git prune' => [['/repo', %w[branches head worktree], []]],
+    'git push . :old' => [['/repo', %w[branches], %w[old]]],
+    'git push . :refs/heads/old' => [['/repo', %w[branches], %w[old]]],
+    'git push . --delete old other' => [['/repo', %w[branches], %w[old other]]],
+    'git update-ref --stdin < cmds' => [['/repo', %w[branches], []]]
   }.each do |command, expected|
     it "reports `#{command}`" do
       expect(targets(command)).to eq(expected)
@@ -53,7 +66,9 @@ RSpec.describe Gitflash::Hook::CommandParser do
   [
     'git status', 'git commit -m "wip"', 'git checkout main', 'git clean -n', 'git clean -fn',
     'git stash', 'git branch new', 'git rebase --continue', 'git push --force', 'ls -la',
-    'git worktree remove ../wt', 'echo "git reset --hard"', "echo '$(git reset --hard)'",
+    'echo "git reset --hard"', 'git rm --cached -f a', 'git rm a', 'git checkout-index -a',
+    'git read-tree -u -m HEAD', 'git reflog show', 'git gc', 'git push origin :old',
+    'git push . main:other', "echo '$(git reset --hard)'",
     'echo \\$(git reset --hard)', 'echo "\\`git stash clear\\`"', 'echo "<(git stash drop)"',
     'echo $(echo $(echo $(echo $(ls))))'
   ].each do |command|

@@ -43,12 +43,20 @@ module Gitflash
         end
       end
 
-      def clean(args, _dir)
+      # `git clean` without -f removes files too when clean.requireForce is false
+      def clean(args, dir)
         flags = args.select { |arg| arg.start_with?('-') }
         short = short_flags(args)
-        removes = any?(flags, %w[--force --interactive]) || short.match?(/[fi]/)
+        removes = any?(flags, %w[--force --interactive]) || short.match?(/[fi]/) ||
+                  !require_force?(dir)
         dry_run = flags.include?('--dry-run') || short.include?('n')
         removes && !dry_run ? { scope: %w[worktree] } : nil
+      end
+
+      def require_force?(dir)
+        stdout, _stderr, success = Git::BashCommand.capture('git', '-C', dir, 'config', '--bool',
+                                                            'clean.requireForce')
+        !(success && stdout.strip == 'false')
       end
 
       def switch(args, _dir)
@@ -75,6 +83,8 @@ module Gitflash
       end
 
       def update_ref(args, _dir)
+        # `--stdin` reads the refs to delete from input the text does not show: save all branches
+        return { scope: %w[branches] } if args.include?('--stdin')
         return nil unless args.include?('-d')
 
         heads = args.select { |arg| arg.start_with?('refs/heads/') }
@@ -89,9 +99,10 @@ module Gitflash
         any?(args, %w[--abort --quit]) ? { scope: %w[worktree] } : nil
       end
 
-      # `git worktree remove --force PATH` deletes that worktree's uncommitted files
+      # `git worktree remove PATH` deletes that worktree's ignored files, and with --force its
+      # uncommitted ones too
       def worktree(args, dir)
-        return nil unless args.first == 'remove' && any?(args, %w[-f --force])
+        return nil unless args.first == 'remove'
 
         path = args[1..].reject { |arg| arg.start_with?('-') }.first
         path && { scope: %w[worktree], dir: Paths.change_dir(path, dir, dir) }
@@ -112,7 +123,7 @@ module Gitflash
         'revert' => method(:abort),
         'am' => method(:abort),
         'worktree' => method(:worktree)
-      }.freeze
+      }.merge(HistoryRules::RULES).freeze
     end
   end
 end
