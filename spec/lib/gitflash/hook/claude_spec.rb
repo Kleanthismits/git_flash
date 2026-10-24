@@ -174,6 +174,14 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
       end
     end
 
+    it 'says the directory was only guessed, next to the undo advice' do
+      output = described_class.new.call(input('git -C "$REPO" clean -fd'))
+      expect(context(output)).to include('gitflash undo', 'could only guess the directory',
+                                         'another repository')
+      plain = described_class.new.call(input('git clean -fd'))
+      expect(context(plain)).not_to include('guess')
+    end
+
     it 'names the commands it could not snapshot next to the ones it did' do
       Dir.mktmpdir do |dir|
         output = described_class.new.call(input("git clean -fd; git -C #{dir} clean -fd"))

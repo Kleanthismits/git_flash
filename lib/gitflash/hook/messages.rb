@@ -27,6 +27,15 @@ module Gitflash
           'if the work matters.'
       end
 
+      # The directory of these commands is decided by the shell (`cd "$REPO"`, `git -C "$X"`),
+      # so the snapshot was taken where Claude runs and may not cover what they change
+      def guessed(targets)
+        "The shell decides where #{commands(targets)} runs, so gitflash could only guess the " \
+          "directory (#{targets.map(&:dir).uniq.join(', ')}). If the command changes another " \
+          'repository, nothing it discards there can be restored; run `gitflash snapshot` in ' \
+          'that repository first if the work matters.'
+      end
+
       def denial(targets)
         "gitflash blocked #{commands(targets)}: it can discard work git cannot restore. " \
           'Use the gitflash equivalent (gitflash reset, gitflash delete, ...), which ' \

@@ -51,6 +51,14 @@ RSpec.describe Gitflash::Hook::CommandParser do
       .to eq(%w[/repo /repo])
   end
 
+  it 'marks the targets whose directory is a guess, also after a relative cd' do
+    guessed = ->(command) { parser.targets(command).map(&:guessed) }
+    expect(guessed.call('cd "$R"; git clean -f; cd sub; git clean -f; cd /abs; git clean -f'))
+      .to eq([true, true, false])
+    expect(guessed.call('git -C "$R" worktree remove --force wt')).to eq([true])
+    expect(guessed.call('git clean -f')).to eq([false])
+  end
+
   it 'follows cd and git -C' do
     expect(targets('cd sub && git clean -f; git -C /other reset --hard')).to eq(
       [['/repo/sub', %w[worktree], []], ['/other', %w[branches head worktree], [:current]]]

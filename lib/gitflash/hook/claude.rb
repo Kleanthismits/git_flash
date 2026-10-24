@@ -89,7 +89,8 @@ module Gitflash
         targets.group_by(&:dir).map do |dir, group|
           CommandParser::Target.new(
             dir: dir, command: group.map(&:command).join(' && '),
-            scope: group.flat_map(&:scope).uniq, branches: group.flat_map(&:branches).uniq
+            scope: group.flat_map(&:scope).uniq, branches: group.flat_map(&:branches).uniq,
+            guessed: group.any?(&:guessed)
           )
         end
       end
@@ -123,8 +124,10 @@ module Gitflash
       end
 
       def output(saved, unsaved)
+        guessed = (saved.map(&:first) + unsaved).select(&:guessed)
         context = [(Messages.saved(saved) unless saved.empty?),
-                   (Messages.unsaved(unsaved) unless unsaved.empty?)].compact.join(' ')
+                   (Messages.unsaved(unsaved) unless unsaved.empty?),
+                   (Messages.guessed(guessed) unless guessed.empty?)].compact.join(' ')
         specific = { hookEventName: EVENT, additionalContext: context }
         if @mode == 'ask'
           specific[:permissionDecision] = 'ask'

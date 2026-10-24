@@ -14,7 +14,8 @@ module Gitflash
     # snapshot is harmless; a missed one is not.
     class CommandParser
       # dir: where to take the snapshot; branches: names, or :current for the checked-out one
-      Target = Data.define(:dir, :command, :scope, :branches)
+      # guessed: the shell decides the directory (`cd "$REPO"`), so dir is only a fallback
+      Target = Data.define(:dir, :command, :scope, :branches, :guessed)
 
       PREFIXES = %w[sudo command exec time nohup env].freeze
       SHELLS = %w[bash sh zsh dash ksh].freeze
@@ -31,8 +32,9 @@ module Gitflash
           rule = Rules.for(git.subcommand, git.args, git.dir)
           next unless rule
 
-          Target.new(dir: rule.fetch(:dir, git.dir), command: git.command, scope: rule[:scope],
-                     branches: rule[:branches] || [])
+          dir = rule.fetch(:dir, git.dir)
+          Target.new(dir: dir.to_s, command: git.command, scope: rule[:scope],
+                     branches: rule[:branches] || [], guessed: Paths.guessed?(dir))
         end
       end
 
@@ -84,7 +86,7 @@ module Gitflash
       # (`cd "$(git rev-parse --show-toplevel)"`, `cd "$REPO"`, `cd -`) falls back to the
       # directory Claude runs in: a snapshot there is better than none.
       def change_dir(path, dir)
-        Paths.unresolved?(path) ? @cwd : Paths.expand(path, dir)
+        Paths.change_dir(path, dir, @cwd)
       end
 
       # Splits on unquoted ; & | and newlines
