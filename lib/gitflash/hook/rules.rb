@@ -50,7 +50,10 @@ module Gitflash
         removes = any?(flags, %w[--force --interactive]) || short.match?(/[fi]/) ||
                   !require_force?(dir)
         dry_run = flags.include?('--dry-run') || short.include?('n')
-        removes && !dry_run ? { scope: %w[worktree] } : nil
+        return nil unless removes && !dry_run
+
+        # -x and -X delete ignored files too
+        { scope: %w[worktree], ignored: short.match?(/[xX]/) }
       end
 
       def require_force?(dir)
@@ -105,7 +108,7 @@ module Gitflash
         return nil unless args.first == 'remove'
 
         path = args[1..].reject { |arg| arg.start_with?('-') }.first
-        path && { scope: %w[worktree], dir: Paths.change_dir(path, dir, dir) }
+        path && { scope: %w[worktree], dir: Paths.change_dir(path, dir, dir), ignored: true }
       end
 
       RULES = {

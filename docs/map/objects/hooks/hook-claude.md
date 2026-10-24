@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: lib/gitflash/hook/claude.rb
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the fixes for #34, #35 and #37
+verified_at: 6b41e31 plus the fixes for #34, #35, #37 and #41
 ---
 
 # Claude hook
@@ -24,6 +24,7 @@ The agent keeps using plain git. The hook snapshots first and tells the agent ho
 - In `ask` mode a risky command is asked about even when no snapshot could be saved (not in a git work tree); the note then says nothing can be undone (`Hook::Messages.unsaved`). Texts for Claude live in `Hook::Messages`; with several directories it lists one `gitflash undo ID` per snapshot, each with the directory to run it in. A failure while recording branches (`record_branches`) is warned about and never stops the snapshot or the decision.
 - Modes (`claude.rb`): `snapshot` (default; save, allow), `ask` (save, ask user), `deny` (block, point to gitflash command) (`claude.rb`, `71-92`).
 - One snapshot per directory, merged across commands there (`CommandParser::Target.merge`); reason `agent hook: before ...` (`claude.rb`).
+- What no snapshot can bring back is named to the agent by `Hook::Losses` (`lib/gitflash/hook/losses.rb`): the ignored files a target with `ignored` deletes (`git clean -x/-X`, `git worktree remove`; read with `git ls-files --others --ignored --exclude-standard --directory`, first five shown) and a snapshot's `skipped_files` (untracked files over 50 MB). The undo advice no longer implies these come back. Snapshot mode still does not ask about them.
 - A target without branch names (`xargs git branch -D < list`, `git update-ref -d` with no `refs/heads/` argument) saves every branch (`branches` returns nil), not none.
 - The `:current` branch is read from the full ref with `refs/heads/` removed (`claude.rb`), so a tag named like the branch cannot change the name saved.
 - Output is Claude Code's hook protocol (`hookSpecificOutput`, `additionalContext`, `permissionDecision`), not gitflash's envelope (`claude.rb`).

@@ -125,7 +125,8 @@ module Gitflash
         guessed = (saved.map(&:first) + unsaved).select(&:guessed)
         context = [(Messages.saved(saved) unless saved.empty?),
                    (Messages.unsaved(unsaved) unless unsaved.empty?),
-                   (Messages.guessed(guessed) unless guessed.empty?)].compact.join(' ')
+                   (Messages.guessed(guessed) unless guessed.empty?),
+                   Losses.note(saved, saved.map(&:first) + unsaved)].compact.join(' ')
         specific = { hookEventName: EVENT, additionalContext: context }
         if @mode == 'ask'
           specific[:permissionDecision] = 'ask'
