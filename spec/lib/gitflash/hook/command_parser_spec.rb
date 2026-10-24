@@ -27,7 +27,23 @@ RSpec.describe Gitflash::Hook::CommandParser do
     'bash -c "cd /other && git reset --hard"' => [['/other', %w[branches head worktree],
                                                    [:current]]],
     "sh -lc 'git clean -fd'" => [['/repo', %w[worktree], []]],
-    'eval "git branch -D old"' => [['/repo', %w[branches], %w[old]]]
+    'eval "git branch -D old"' => [['/repo', %w[branches], %w[old]]],
+    'if true; then git reset --hard; fi' => [['/repo', %w[branches head worktree], [:current]]],
+    'for b in x; do git branch -D old; done' => [['/repo', %w[branches], %w[old]]],
+    'while git stash pop; do :; done' => [['/repo', %w[worktree stashes], []]],
+    '! git clean -f' => [['/repo', %w[worktree], []]],
+    'echo $(git clean -f)' => [['/repo', %w[worktree], []]],
+    'echo `git stash clear`' => [['/repo', %w[stashes], []]],
+    'x=$(echo $(git stash drop))' => [['/repo', %w[stashes], []]],
+    'diff <(git stash drop) file' => [['/repo', %w[stashes], []]],
+    'echo "a\\"b" ; git clean -f' => [['/repo', %w[worktree], []]],
+    'cd /other && echo $(git clean -f)' => [['/other', %w[worktree], []]],
+    %q{echo "it's $(git clean -f)"} => [['/repo', %w[worktree], []]],
+    'echo `printf \\` && git clean -f`' => [['/repo', %w[worktree], []]],
+    'echo $(printf ")" && git clean -f)' => [['/repo', %w[worktree], []]],
+    "echo $(printf ')' && git clean -f)" => [['/repo', %w[worktree], []]],
+    'echo $(echo $(echo $(echo $(git clean -f))))' => [['/repo', %w[branches head worktree],
+                                                        [:current]]]
   }.each do |command, expected|
     it "reports `#{command}`" do
       expect(targets(command)).to eq(expected)
@@ -37,7 +53,9 @@ RSpec.describe Gitflash::Hook::CommandParser do
   [
     'git status', 'git commit -m "wip"', 'git checkout main', 'git clean -n', 'git clean -fn',
     'git stash', 'git branch new', 'git rebase --continue', 'git push --force', 'ls -la',
-    'git worktree remove ../wt', 'echo "git reset --hard"'
+    'git worktree remove ../wt', 'echo "git reset --hard"', "echo '$(git reset --hard)'",
+    'echo \\$(git reset --hard)', 'echo "\\`git stash clear\\`"', 'echo "<(git stash drop)"',
+    'echo $(echo $(echo $(echo $(ls))))'
   ].each do |command|
     it "ignores `#{command}`" do
       expect(targets(command)).to eq([])

@@ -7,10 +7,14 @@ module Gitflash
     # { scope:, branches:, dir: } where branches may contain :current for the checked-out one.
     module Rules
       FULL = %w[branches head worktree].freeze
+      # A command too deeply nested to read (see CommandParser#nested): save everything
+      UNREAD = :unread
 
       module_function
 
       def for(subcommand, args, dir)
+        return { scope: FULL, branches: [:current] } if subcommand == UNREAD
+
         rule = RULES[subcommand]
         rule&.call(args, dir)
       end
