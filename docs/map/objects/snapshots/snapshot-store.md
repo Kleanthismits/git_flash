@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: lib/gitflash/snapshots.rb
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the error envelope fix (#46)
+verified_at: 6b41e31 plus the error envelope (#46) and snapshot checks (#48)
 ---
 
 # Snapshot store
@@ -50,3 +50,7 @@ Nothing outside git's object store is written, so snapshots survive without a da
 ## Damaged refs
 
 `Snapshots#list` reads `%(refname)` with each message; a ref whose message is not a JSON object with a valid `created_at` is skipped with a warning on stderr (`Snapshots#parse`), so one bad ref cannot break every command that lists or takes snapshots.
+
+A snapshot is also skipped when `SnapshotCheck.problem` (`lib/gitflash/snapshot_check.rb`) finds a field it cannot trust: a ref name that is not `REF_PREFIX + id`, a commit id that is not a full hex SHA, a branch name git would refuse (leading `-`, `..`, control characters and the like), or a `worktree_path` that is not absolute. These fields go into git commands and paths in [[restore]] and [[worktree-revival]].
+
+The list is ordered by `created_at` inside each snapshot (then id), not by ref name, so a ref named to sort first cannot become `undo`'s default.
