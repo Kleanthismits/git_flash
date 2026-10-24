@@ -20,6 +20,8 @@ module Gitflash
       PREFIXES = %w[sudo command exec time nohup env].freeze
       SHELLS = %w[bash sh zsh dash ksh].freeze
       MAX_NESTING = 3
+      # Shell words that can come before a command: `if git ...`, `then git ...`, `! git ...`
+      KEYWORDS = %w[if then else elif do while until !].freeze
       OPTIONS_WITH_VALUE = %w[-c --git-dir --work-tree --namespace --exec-path --config-env].freeze
 
       def initialize(cwd)
@@ -53,15 +55,25 @@ module Gitflash
       GitCommand = Data.define(:dir, :command, :subcommand, :args)
 
       def git_commands(command_line, dir = @cwd, depth = 0)
-        segments(command_line).flat_map do |segment|
+        ShellText.segments(command_line).flat_map do |segment|
+          found = substituted(segment, dir, depth)
           words = words(segment)
-          next [] if words.empty?
+          next found if words.empty?
 
           if words.first == 'cd'
             dir = change_dir(words[1] || Dir.home, dir)
-            next []
+            next found
           end
-          commands_in(words, dir, segment.strip, depth)
+          found + commands_in(words, dir, segment.strip, depth)
+        end
+      end
+
+      # Git commands inside `$(...)`, `<(...)` and backticks, which the shell runs first
+      def substituted(command_line, dir, depth)
+        return [] if depth >= MAX_NESTING
+
+        ShellText.substitutions(command_line).flat_map do |script|
+          git_commands(script, dir, depth + 1)
         end
       end
 
@@ -89,28 +101,11 @@ module Gitflash
         Paths.change_dir(path, dir, @cwd)
       end
 
-      # Splits on unquoted ; & | and newlines
-      def segments(line)
-        parts = [+'']
-        quote = nil
-        line.each_char do |char|
-          if quote
-            quote = nil if char == quote
-          elsif ["'", '"'].include?(char)
-            quote = char
-          elsif ";&|\n".include?(char)
-            parts << +''
-            next
-          end
-          parts.last << char
-        end
-        parts.reject { |part| part.strip.empty? }
-      end
-
-      # Shell words without subshell brackets, environment assignments and wrappers like sudo
+      # Shell words without subshell brackets, environment assignments, wrappers like sudo and
+      # keywords like `then`
       def words(segment)
         words = split(segment).map { |word| unwrap(word) }.reject(&:empty?)
-        words.shift while words.first && prefix?(words.first)
+        words.shift while words.first && (prefix?(words.first) || KEYWORDS.include?(words.first))
         words
       end
 
