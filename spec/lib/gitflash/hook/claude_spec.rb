@@ -32,6 +32,20 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
     expect(Gitflash::Snapshots.new.list.first.branches.keys).to eq(%w[main])
   end
 
+  it 'saves every branch when the command does not name the ones it deletes' do
+    git('branch', 'one')
+    git('branch', 'two')
+    described_class.new.call(input('printf "one\\ntwo" | xargs git branch -D'))
+    expect(Gitflash::Snapshots.new.list.first.branches.keys).to contain_exactly('main', 'one',
+                                                                                'two')
+  end
+
+  it 'keeps saving every branch when an unnamed deletion shares a directory with a named one' do
+    %w[a b c].each { |name| git('branch', name) }
+    described_class.new.call(input('git branch -D a && printf "b" | xargs git branch -D'))
+    expect(Gitflash::Snapshots.new.list.first.branches.keys).to include('a', 'b', 'c')
+  end
+
   it 'asks for approval in ask mode' do
     output = described_class.new(mode: 'ask').call(input('git clean -f'))
     expect(output[:hookSpecificOutput]).to include(permissionDecision: 'ask')

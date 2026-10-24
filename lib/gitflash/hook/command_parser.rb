@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'shellwords'
-
 module Gitflash
   module Hook
     # Finds git commands in a shell command line that can lose work git itself cannot restore:
@@ -15,17 +13,39 @@ module Gitflash
     class CommandParser
       # dir: where to take the snapshot; branches: names, or :current for the checked-out one
       # guessed: the shell decides the directory (`cd "$REPO"`), so dir is only a fallback
-      Target = Data.define(:dir, :command, :scope, :branches, :guessed)
+      Target = Data.define(:dir, :command, :scope, :branches, :guessed) do
+        # One target for all the commands of a group that run in dir
+        def self.merge(dir, group)
+          new(dir: dir, command: group.map(&:command).join(' && '),
+              scope: group.flat_map(&:scope).uniq, branches: merged_branches(group),
+              guessed: group.any?(&:guessed))
+        end
 
-      PREFIXES = %w[sudo command exec time nohup env].freeze
+        # A target that saves branches without naming them saves every branch, so the merge
+        # does too: naming the others' branches would drop the ones it could not name
+        def self.merged_branches(group)
+          all = group.any? { |target| target.scope.include?('branches') && target.branches.empty? }
+          all ? [] : group.flat_map(&:branches).uniq
+        end
+      end
+
       SHELLS = %w[bash sh zsh dash ksh].freeze
       MAX_NESTING = 3
-      # Shell words that can come before a command: `if git ...`, `then git ...`, `! git ...`
-      KEYWORDS = %w[if then else elif do while until !].freeze
-      OPTIONS_WITH_VALUE = %w[-c --git-dir --work-tree --namespace --exec-path --config-env].freeze
+      # Subcommands git never lets an alias replace and that have no rule, so their aliases need
+      # not be read
+      BUILTINS = (Rules::RULES.keys + %w[status log diff show add commit push pull fetch rev-parse
+                                         config ls-files remote describe blame grep tag init
+                                         clone mv]).freeze
 
-      def initialize(cwd)
+      DIR_COMMANDS = %w[cd pushd popd].freeze
+
+      # `aliases` returns the git aliases configured for a directory, as { name => value }
+      def initialize(cwd, aliases: GitInvocation.method(:configured_aliases))
         @cwd = cwd
+        @aliases = aliases
+        @alias_cache = {}
+        @invocation = GitInvocation.new(dir_after: method(:change_dir),
+                                        aliases: method(:aliases_in))
       end
 
       # Git commands that can lose work, with what to save before them
@@ -56,16 +76,25 @@ module Gitflash
 
       def git_commands(command_line, dir = @cwd, depth = 0)
         ShellText.segments(command_line).flat_map do |segment|
-          found = substituted(segment, dir, depth)
-          words = words(segment)
-          next found if words.empty?
-
-          if words.first == 'cd'
-            dir = change_dir(words[1] || Dir.home, dir)
-            next found
+          words = CommandWords.new(segment)
+          if DIR_COMMANDS.include?(words.words.first)
+            dir = dir_after(words.words, dir)
+            next substituted(segment, dir, depth)
           end
-          found + commands_in(words, dir, segment.strip, depth)
+          substituted(segment, dir, depth) + in_segment(words, dir, segment.strip, depth)
         end
+      end
+
+      # `cd DIR` and `pushd DIR` move; `popd` goes back to a directory the text does not show
+      def dir_after(words, dir)
+        words.first == 'popd' ? @cwd : change_dir(words[1] || Dir.home, dir)
+      end
+
+      def in_segment(words, dir, segment, depth)
+        return [] if words.words.empty?
+
+        dir = change_dir(words.chdir, dir) if words.chdir
+        commands_in(words.words, dir, segment, depth, words.env)
       end
 
       # Git commands inside `$(...)`, `<(...)` and backticks, which the shell runs first
@@ -84,9 +113,12 @@ module Gitflash
         [GitCommand.new(dir: dir, command: script.strip, subcommand: Rules::UNREAD, args: [])]
       end
 
-      # The git command of one segment, or the ones inside `bash -c "..."` and `eval "..."`
-      def commands_in(words, dir, segment, depth)
-        return [git_command(words, dir, segment)] if File.basename(words.first) == 'git'
+      # The git command of one segment, or the ones inside `bash -c "..."`, `eval "..."`,
+      # `find -exec` and `!` aliases
+      def commands_in(words, dir, segment, depth, env = {})
+        words = Wrappers.find_exec(words) || words
+        git = File.basename(words.first.to_s) == 'git'
+        return git_command(words, dir, segment, depth, env) if git
 
         script = nested_script(words)
         script ? nested(script, dir, depth) : []
@@ -108,42 +140,15 @@ module Gitflash
         Paths.change_dir(path, dir, @cwd)
       end
 
-      # Shell words without subshell brackets, environment assignments, wrappers like sudo and
-      # keywords like `then`
-      def words(segment)
-        words = split(segment).map { |word| unwrap(word) }.reject(&:empty?)
-        words.shift while words.first && (prefix?(words.first) || KEYWORDS.include?(words.first))
-        words
+      def git_command(words, dir, command, depth, env)
+        git = @invocation.parse(words, dir, env)
+        return nested(git.script, git.dir, depth) if git.script
+
+        [GitCommand.new(dir: git.dir, command: command, subcommand: git.subcommand, args: git.args)]
       end
 
-      def prefix?(word)
-        PREFIXES.include?(word) || word.match?(/\A\w+=/)
-      end
-
-      def split(segment)
-        Shellwords.split(segment)
-      rescue ArgumentError
-        segment.split
-      end
-
-      def unwrap(word)
-        word.delete_prefix('(').delete_prefix('{').delete_suffix(')').delete_suffix('}')
-      end
-
-      def git_command(words, dir, command)
-        index, dir = skip_git_options(words, dir)
-        GitCommand.new(dir: dir, command: command, subcommand: words[index],
-                       args: words[(index + 1)..] || [])
-      end
-
-      # Index of the subcommand, and the directory after any -C options
-      def skip_git_options(words, dir)
-        index = 1
-        while (option = words[index])&.start_with?('-')
-          dir = change_dir(words[index + 1].to_s, dir) if option == '-C'
-          index += option == '-C' || OPTIONS_WITH_VALUE.include?(option) ? 2 : 1
-        end
-        [index, dir]
+      def aliases_in(dir)
+        @alias_cache[dir] ||= @aliases.call(dir)
       end
     end
   end

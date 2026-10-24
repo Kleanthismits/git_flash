@@ -30,6 +30,7 @@ RSpec.describe Gitflash::Hook::CommandParser do
     'eval "git branch -D old"' => [['/repo', %w[branches], %w[old]]],
     'if true; then git reset --hard; fi' => [['/repo', %w[branches head worktree], [:current]]],
     'for b in x; do git branch -D old; done' => [['/repo', %w[branches], %w[old]]],
+    'for b in x y; do git branch -D "$b"; done' => [['/repo', %w[branches], []]],
     'while git stash pop; do :; done' => [['/repo', %w[worktree stashes], []]],
     '! git clean -f' => [['/repo', %w[worktree], []]],
     'echo $(git clean -f)' => [['/repo', %w[worktree], []]],
@@ -42,8 +43,7 @@ RSpec.describe Gitflash::Hook::CommandParser do
     'echo `printf \\` && git clean -f`' => [['/repo', %w[worktree], []]],
     'echo $(printf ")" && git clean -f)' => [['/repo', %w[worktree], []]],
     "echo $(printf ')' && git clean -f)" => [['/repo', %w[worktree], []]],
-    'echo $(echo $(echo $(echo $(git clean -f))))' => [['/repo', %w[branches head worktree],
-                                                        [:current]]]
+    'echo $(echo $(echo $(echo $(git clean -f))))' => [['/repo', %w[branches head worktree], []]]
   }.each do |command, expected|
     it "reports `#{command}`" do
       expect(targets(command)).to eq(expected)
@@ -106,6 +106,88 @@ RSpec.describe Gitflash::Hook::CommandParser do
 
   it 'skips environment assignments and wrappers' do
     expect(targets('GIT_TRACE=1 sudo git clean -f')).to eq([['/repo', %w[worktree], []]])
+  end
+
+  describe 'wrapped commands' do
+    reset = ['/repo', %w[branches head worktree], [:current]]
+    {
+      '/usr/bin/env git reset --hard' => reset,
+      'env -i git reset --hard' => reset,
+      'env -u HOME FOO=1 git reset --hard' => reset,
+      'sudo -u me git reset --hard' => reset,
+      'command -p git reset --hard' => reset,
+      'timeout 5 git reset --hard' => reset,
+      'timeout -s KILL 5s git reset --hard' => reset,
+      'nice -n 5 nohup git reset --hard' => reset,
+      'xargs git branch -D < list' => ['/repo', %w[branches], []],
+      'xargs -n 1 git branch -D' => ['/repo', %w[branches], []],
+      'find . -name x -exec git checkout -- {} \\;' => ['/repo', %w[worktree], []],
+      'git branch -D old >/dev/null 2>&1' => ['/repo', %w[branches], %w[old]],
+      'sudo -D /d git clean -f' => ['/d', %w[worktree], []],
+      'env -C /e git clean -f' => ['/e', %w[worktree], []],
+      'pushd /p && git clean -f' => ['/p', %w[worktree], []]
+    }.each do |command, expected|
+      it "reports `#{command}`" do
+        expect(targets(command)).to eq([expected])
+      end
+    end
+
+    it 'reads a brace group, xargs -i and an empty find -exec' do
+      expect(targets('{ git clean -f; }')).to eq([['/repo', %w[worktree], []]])
+      expect(targets('xargs -i git branch -D {}')).to eq([['/repo', %w[branches], []]])
+      expect(targets('find . -exec \\; && git clean -f')).to eq([['/repo', %w[worktree], []]])
+      expect(targets('find . -exec git branch -D {} \\;')).to eq([['/repo', %w[branches], []]])
+    end
+
+    it 'skips shell comments, so an apostrophe in one hides nothing' do
+      expect(targets("# Don't forget\ngit clean -f")).to eq([['/repo', %w[worktree], []]])
+      expect(targets("git clean -f # don't")).to eq([['/repo', %w[worktree], []]])
+      expect(targets("# git clean -f\nls")).to eq([])
+      expect(targets('echo a#b; git clean -f')).to eq([['/repo', %w[worktree], []]])
+    end
+
+    it 'goes back to the directory Claude runs in after popd' do
+      expect(targets('pushd /p; popd; git clean -f')).to eq([['/repo', %w[worktree], []]])
+    end
+  end
+
+  describe 'the repository git uses' do
+    {
+      'git --work-tree=/other --git-dir=/other/.git reset --hard' => '/other',
+      'git --git-dir /other/.git clean -f' => '/other',
+      'GIT_DIR=/o/.git git clean -f' => '/o',
+      'GIT_WORK_TREE=/w GIT_DIR=/x/.git git clean -f' => '/w',
+      'git -C /a --work-tree ../b clean -f' => '/b'
+    }.each do |command, dir|
+      it "snapshots #{dir} for `#{command}`" do
+        expect(targets(command).map(&:first)).to eq([dir])
+      end
+    end
+  end
+
+  describe 'aliases' do
+    subject(:parser) do
+      described_class.new('/repo', aliases: lambda { |dir|
+        dir == '/repo' ? aliases : {}
+      })
+    end
+
+    let(:aliases) { { 'nuke' => 'reset --hard', 'wipe' => '!git clean -fd', 'st' => 'status' } }
+
+    def scopes(command)
+      targets(command).map { |target| target[1] }
+    end
+
+    it 'replaces an alias from -c or the configuration by what it stands for' do
+      expect(scopes('git -c alias.x="reset --hard" x')).to eq([%w[branches head worktree]])
+      expect(scopes('git nuke')).to eq([%w[branches head worktree]])
+      expect(scopes('git wipe')).to eq([%w[worktree]])
+      expect(scopes('git st')).to eq([])
+    end
+
+    it 'never lets an alias replace a built-in command, as git does' do
+      expect(targets('git -c alias.status="reset --hard" status')).to eq([])
+    end
   end
 
   it 'finds commands after pipes and in subshells' do

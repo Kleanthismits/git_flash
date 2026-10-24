@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: lib/gitflash/hook/claude.rb
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the fixes for #34 and #35
+verified_at: 6b41e31 plus the fixes for #34, #35 and #37
 ---
 
 # Claude hook
@@ -23,7 +23,8 @@ The agent keeps using plain git. The hook snapshots first and tells the agent ho
 - Input: hook JSON on stdin. Only `tool_name == 'Bash'` is looked at (`lib/gitflash/hook/claude.rb`).
 - In `ask` mode a risky command is asked about even when no snapshot could be saved (not in a git work tree); the note then says nothing can be undone (`Hook::Messages.unsaved`). Texts for Claude live in `Hook::Messages`; with several directories it lists one `gitflash undo ID` per snapshot, each with the directory to run it in. A failure while recording branches (`record_branches`) is warned about and never stops the snapshot or the decision.
 - Modes (`claude.rb`): `snapshot` (default; save, allow), `ask` (save, ask user), `deny` (block, point to gitflash command) (`claude.rb`, `71-92`).
-- One snapshot per directory, merged across commands there (`claude.rb`); reason `agent hook: before ...` (`claude.rb`).
+- One snapshot per directory, merged across commands there (`CommandParser::Target.merge`); reason `agent hook: before ...` (`claude.rb`).
+- A target without branch names (`xargs git branch -D < list`, `git update-ref -d` with no `refs/heads/` argument) saves every branch (`branches` returns nil), not none.
 - The `:current` branch is read from the full ref with `refs/heads/` removed (`claude.rb`), so a tag named like the branch cannot change the name saved.
 - Output is Claude Code's hook protocol (`hookSpecificOutput`, `additionalContext`, `permissionDecision`), not gitflash's envelope (`claude.rb`).
 - `HookCli#claude` rescues `StandardError`, warns and exits 0 (`lib/gitflash/hook_cli.rb`). The output then comes from `Hook::Failure.output` (`lib/gitflash/hook/failure.rb`): nothing in snapshot mode or for PostToolUse input, otherwise `permissionDecision` `ask` / `deny` with `Messages.failure`. If that output cannot be written either (stdin or stdout fails), ask and deny mode exit 2, which Claude Code reads as a block; snapshot mode still exits 0. It does not use [[command-runner]] or [[ui-output]].

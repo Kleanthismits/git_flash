@@ -13,7 +13,8 @@ module Gitflash
       module_function
 
       def for(subcommand, args, dir)
-        return { scope: FULL, branches: [:current] } if subcommand == UNREAD
+        # No branch names: the snapshot keeps every branch
+        return { scope: FULL } if subcommand == UNREAD
 
         rule = RULES[subcommand]
         rule&.call(args, dir)
@@ -67,7 +68,10 @@ module Gitflash
                   short_flags(args).match?(/[dDfmMcC]/)
         return nil unless changes
 
-        { scope: %w[branches], branches: args.reject { |arg| arg.start_with?('-') } }
+        names = args.reject { |arg| arg.start_with?('-') }
+        # A name the shell or xargs fills in (`$b`, `{}`) is unknown: save every branch
+        names = [] if names.any? { |name| Paths.unresolved?(name) || name.include?('{}') }
+        { scope: %w[branches], branches: names }
       end
 
       def update_ref(args, _dir)
