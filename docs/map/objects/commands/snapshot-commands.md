@@ -6,6 +6,7 @@ status: verified
 entity: lib/gitflash/commands/snapshot_create.rb
 verified_on: 2026-10-24
 verified_at: 6b41e31 plus the gc fix (#39)
+verified_at: 6b41e31 plus the --confirm token (#42)
 ---
 
 # Snapshot commands

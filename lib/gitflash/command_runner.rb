@@ -17,7 +17,8 @@ module Gitflash
     end
 
     def build_ui(name)
-      Ui.new(command: name, json: options[:json], yes: options[:yes], dry_run: options[:dry_run])
+      Ui.new(command: name, json: options[:json], yes: options[:yes], dry_run: options[:dry_run],
+             confirm: options[:confirm])
     end
   end
 end

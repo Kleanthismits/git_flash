@@ -100,9 +100,17 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
       travel = Time.now + (3 * 86_400)
       allow(Time).to receive(:now).and_return(travel)
-      expect(run_cli('gc', '--older-than', '1', '--json').json)
-        .to include('status' => 'confirmation_required')
-      deleted = run_cli('gc', '--older-than', '1', '--yes', '--json').json.dig('result', 'deleted')
+      required = run_cli('gc', '--older-than', '1', '--json').json
+      expect(required).to include('status' => 'confirmation_required')
+      token = required.dig('error', 'confirm_token')
+      expect(required.dig('error', 'message')).to include("--confirm #{token}", 'cannot revert')
+
+      expect(run_cli('gc', '--older-than', '1', '--yes', '--json').json['status'])
+        .to eq('confirmation_required')
+      expect(run_cli('gc', '--older-than', '1', '--confirm', 'nottoken', '--json').json['status'])
+        .to eq('confirmation_required')
+      deleted = run_cli('gc', '--older-than', '1', '--confirm', token, '--json').json
+                                                                                .dig('result', 'deleted')
       expect(deleted.size).to eq(1)
       expect(snapshot_ids).to eq([])
     end

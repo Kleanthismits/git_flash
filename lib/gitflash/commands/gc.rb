@@ -32,7 +32,10 @@ module Gitflash
 
       def delete(plan, text)
         return planned(plan, "Would delete #{text}") if ui.dry_run?
-        return cancelled(plan) unless ui.confirm?("You are about to delete #{text}", plan: plan)
+
+        # Deleted snapshots are gone for good: no snapshot of the snapshots is kept
+        summary = "You are about to delete #{text}"
+        return cancelled(plan) unless ui.confirm?(summary, plan: plan, irreversible: true)
 
         plan[:snapshots].each { |id| snapshots.delete(id) }
         ui.report(status: 'done', plan: plan, result: { deleted: plan[:snapshots] },

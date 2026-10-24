@@ -16,7 +16,10 @@ module Gitflash
     class_option :json, type: :boolean, default: false,
                         desc: 'Print JSON instead of text; never prompts'
     class_option :yes, type: :boolean, aliases: '-y', default: false,
-                       desc: 'Skip confirmation prompts'
+                       desc: 'Skip confirmation prompts for changes gitflash undo can revert'
+    class_option :confirm, type: :string, banner: 'TOKEN',
+                           desc: 'Confirm a change gitflash undo cannot revert, with the token ' \
+                                 'from its plan'
     class_option :dry_run, type: :boolean, default: false,
                            desc: 'Show what would happen without changing anything'
 
@@ -95,6 +98,13 @@ module Gitflash
     desc 'gc', 'Delete old snapshots'
     option :older_than, type: :string, banner: 'DAYS',
                         desc: 'Delete snapshots older than DAYS days, at least 1 (default 30)'
+    long_desc <<~TEXT
+      Deletes snapshots older than --older-than DAYS (default 30). gitflash undo cannot bring a
+      deleted snapshot back, so --yes is not enough: without a terminal gc returns the plan and a
+      confirm_token; re-run with --confirm TOKEN to delete exactly those snapshots. In a terminal
+      you type the token. Pass --dry-run to see the plan.
+    TEXT
+    option :older_than, type: :numeric, banner: 'DAYS',
     def gc
       run_command('gc', Commands::Gc)
     end

@@ -4,8 +4,8 @@ cluster: commands
 universe: live
 status: verified
 entity: lib/gitflash/commands/base.rb
-verified_on: 2026-10-05
-verified_at: 0b7b8d9 plus review fixes
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus the --confirm token (#42)
 ---
 
 # Change flow
@@ -14,7 +14,7 @@ Shared steps for commands that change the repo: plan, confirm, snapshot, execute
 
 ## Why this shape
 
-Agents get the plan back (`confirmation_required` with `plan`), re-run with `--yes`, and every executed change that takes a snapshot (checkout, delete, reset, undo) reports an `undo` snapshot. `gc` takes none: pruning snapshots cannot be undone with `undo`. Humans get a prompt.
+Agents get the plan back (`confirmation_required` with `plan`), re-run with `--yes` (or, for a change `gitflash undo` cannot revert, with `--confirm` and the `confirm_token` from the error; see [[ui-output]]), and every executed change that takes a snapshot (checkout, delete, reset, undo) reports an `undo` snapshot. `gc` takes none: pruning snapshots cannot be undone with `undo`. Humans get a prompt.
 
 ## Shape
 
@@ -54,7 +54,7 @@ Agents get the plan back (`confirmation_required` with `plan`), re-run with `--y
 
 | Surface | Role |
 |---|---|
-| agents | re-run with `--yes`; read `undo` |
+| agents | re-run with `--yes` (irreversible: `--confirm TOKEN`); read `undo` |
 | terminal user | answers prompt |
 
 ## See
