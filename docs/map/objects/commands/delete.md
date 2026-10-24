@@ -4,8 +4,8 @@ cluster: commands
 universe: live
 status: verified
 entity: lib/gitflash/commands/delete.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus long-lived branch protection (#45)
 ---
 
 # Delete command
@@ -18,7 +18,7 @@ Destructive, so protected names, plan, confirm, a branch snapshot, and a result 
 
 ## Shape
 
-- Protected: current, default, `main`, `master`, `protected` patterns from [[config]], branches checked out in a worktree: rule in `Protection` ([[cleanup]]) (`delete.rb`, `37-39`). Refusal code `protected_branch` (`delete.rb`).
+- Protected: current, default, `main`, `master`, `develop`, `development`, `trunk`, `release/*` (`Protection::NAMES` / `PATTERNS`), `protected` patterns from [[config]], branches checked out in a worktree: rule in `Protection` ([[cleanup]]) (`delete.rb`, `37-39`). Refusal code `protected_branch` (`delete.rb`).
 - `-d` unless `--force` then `-D` (`lib/gitflash/repo.rb`).
 - Flow: validate, plan, dry-run, `ui.confirm?`, snapshot, delete each, report (`delete.rb`).
 - Snapshot scope `branches` for the named branches (`delete.rb`). `undo:` set only when something was deleted (`delete.rb`).

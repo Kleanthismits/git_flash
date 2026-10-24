@@ -26,7 +26,8 @@ delete:
   short: 'Delete branches'
   long: |
     Deletes the given BRANCHES. Without them, presents a list with the local branches
-    (without the current, default, main or master branch): press `space` to choose
+    (without the current and default branch or main, master, develop, development, trunk and
+    release/*): press `space` to choose
     branches and `enter` to confirm. Without a terminal, BRANCHES are required.
 
     Branches with unmerged changes are kept unless --force is given.
@@ -89,8 +90,9 @@ clean:
       --stale [DAYS] no commits for DAYS days (default: `stale_days` setting, 30)
       --agent        created by an agent (marked by `gitflash wt add`)
 
-    Never selected: the current and default branch, main, master, `protected` branches from
-    .gitflash.yml, and branches checked out in any worktree. Unmerged branches are kept unless
+    Never selected: the current and default branch, main, master, develop, development, trunk,
+    release/*, `protected` branches from .gitflash.yml, and branches checked out in any
+    worktree. Without origin/HEAD the default branch is guessed, and the plan warns about it. Unmerged branches are kept unless
     --force is given. Every chosen branch lists why it was chosen.
 
     Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.

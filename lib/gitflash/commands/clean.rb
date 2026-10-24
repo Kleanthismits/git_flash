@@ -29,7 +29,34 @@ module Gitflash
       end
 
       def build_plan(names)
-        super.merge(reasons: @reasons.slice(*names), skipped: @skipped)
+        plan = super.merge(reasons: @reasons.slice(*names), skipped: @skipped)
+        warning ? plan.merge(warning: warning) : plan
+      end
+
+      def summary(names)
+        warning ? "#{super}\n\nNote: #{warning}" : super
+      end
+
+      # Without origin/HEAD, "merged" means merged into a local main or master, which may not be
+      # the branch the team ships from
+      def warning
+        return @warning if defined?(@warning)
+
+        @warning = if default_branch_guessed?
+                     'origin/HEAD is not set, so gitflash guessed the default branch ' \
+                       "(#{repo.default_branch || 'none'}). Run `git remote set-head origin " \
+                       '--auto` so merged branches are judged against the right one.'
+                   end
+      end
+
+      # A remote but no origin/HEAD: the default branch came from a local main or master
+      def default_branch_guessed?
+        _out, _err, set = Git::BashCommand.capture('git', 'symbolic-ref', '--quiet',
+                                                   "#{Repo::REMOTE_HEAD}HEAD")
+        return false if set
+
+        remotes, _err, = Git::BashCommand.capture('git', 'remote')
+        !remotes.strip.empty?
       end
 
       def skipped_row(candidate)
