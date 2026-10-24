@@ -2,15 +2,15 @@
 
 module Gitflash
   module Commands
-    # Restores a snapshot (the latest one by default). The current state is saved first,
-    # so an undo can itself be undone.
+    # Restores a snapshot (by default the latest one taken in this worktree). The current state
+    # is saved first, so an undo can itself be undone.
     class Undo < Base
       def call(id = nil)
         snapshot = find(id)
         return no_snapshots unless snapshot
 
         restore = build_restore(snapshot)
-        plan = restore.plan.merge(snapshot: snapshot.id)
+        plan = restore.plan.merge(snapshot: snapshot.id, reason: snapshot.reason)
         return nothing_to_undo(plan) if restore.empty?
 
         restore!(snapshot, restore, plan)
@@ -18,10 +18,17 @@ module Gitflash
 
       private
 
+      # Snapshots are shared by all worktrees of the repository, and another agent may have
+      # taken the newest one elsewhere; without an ID only this worktree's count
       def find(id)
-        return snapshots.list.first if id.nil?
+        return snapshots.list.find { |snapshot| own?(snapshot) } if id.nil?
 
         snapshots.find(id) || usage_error!('unknown_snapshot', "Unknown snapshot '#{id}'")
+      end
+
+      # Taken in this worktree; snapshots from before worktree_path was recorded count too
+      def own?(snapshot)
+        snapshot.worktree_path.nil? || snapshot.worktree_path == repo.toplevel
       end
 
       # A snapshot of a worktree that is gone is restored by adding the worktree again
@@ -86,7 +93,9 @@ module Gitflash
       end
 
       def no_snapshots
-        ui.report(status: 'noop', result: { snapshot: nil }, text: 'No snapshots to undo')
+        ui.report(status: 'noop', result: { snapshot: nil },
+                  text: 'No snapshots of this worktree to undo (`gitflash snapshots` lists all; ' \
+                        'pass an ID to restore one taken elsewhere)')
       end
 
       def nothing_to_undo(plan)

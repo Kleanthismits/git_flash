@@ -48,7 +48,7 @@ reset:
     confirmation; pass --yes to skip it, which is required without a terminal.
 
 undo:
-  short: 'Restore a snapshot (the latest by default)'
+  short: 'Restore a snapshot (the latest of this worktree by default)'
   long: |
     Restores the parts of the repository a snapshot saved: deleted or moved branches,
     HEAD, tracked, staged and untracked files, and dropped stash entries. Only parts that
@@ -56,6 +56,10 @@ undo:
 
     gitflash saves a snapshot before every change it makes, and the agent hook saves one
     before destructive git commands. List them with `gitflash snapshots`.
+
+    Without SNAPSHOT it restores the latest snapshot taken in this worktree. All worktrees of
+    a repository share the snapshots, so the newest one may belong to another agent's
+    worktree; pass its ID to restore it. The plan shows the snapshot's reason.
 
     The current state is saved as a new snapshot first, so an undo can itself be undone.
     Asks for confirmation; pass --yes to skip it (required without a terminal) or

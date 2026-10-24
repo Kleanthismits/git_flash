@@ -928,6 +928,10 @@
         "snapshot": {
           "type": "string"
         },
+        "reason": {
+          "type": "string",
+          "description": "Why the snapshot was taken, such as `agent hook: before ...`; check it before confirming."
+        },
         "branches": {
           "type": "array",
           "items": {
