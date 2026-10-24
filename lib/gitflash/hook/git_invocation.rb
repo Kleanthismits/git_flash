@@ -13,6 +13,7 @@ module Gitflash
 
       VALUE_OPTIONS = %w[-C -c --git-dir --work-tree --namespace --exec-path --config-env
                          --super-prefix].freeze
+      MAX_ALIAS_DEPTH = 10
       DIR_OPTIONS = { '-C' => :dir, '--git-dir' => :git_dir, '--work-tree' => :work_tree }.freeze
 
       # Aliases from `git config` in the directory, as { name => value }; none when it is not a
@@ -40,8 +41,7 @@ module Gitflash
         dir = repository_dir(options, env)
         subcommand = words[index]
         args = words[(index + 1)..] || []
-        expansion = alias_for(subcommand, options[:aliases], dir)
-        expansion ? expand(expansion, args, dir) : Parsed.new(dir:, subcommand:, args:, script: nil)
+        resolve(Parsed.new(dir:, subcommand:, args:, script: nil), options[:aliases])
       end
 
       private
@@ -88,6 +88,18 @@ module Gitflash
         return nil if subcommand.nil? || CommandParser::BUILTINS.include?(subcommand)
 
         inline[subcommand] || @aliases.call(dir)[subcommand]
+      end
+
+      # Follows an alias to what it stands for, and an alias of an alias, as git does (bounded,
+      # so an alias loop cannot hang the hook)
+      def resolve(parsed, inline)
+        MAX_ALIAS_DEPTH.times do
+          expansion = parsed.script ? nil : alias_for(parsed.subcommand, inline, parsed.dir)
+          return parsed unless expansion
+
+          parsed = expand(expansion, parsed.args, parsed.dir)
+        end
+        parsed
       end
 
       # `!cmd` aliases run in the shell; others are git arguments

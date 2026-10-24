@@ -75,19 +75,24 @@ module Gitflash
       GitCommand = Data.define(:dir, :command, :subcommand, :args)
 
       def git_commands(command_line, dir = @cwd, depth = 0)
+        stack = []
         ShellText.segments(command_line).flat_map do |segment|
           words = CommandWords.new(segment)
           if DIR_COMMANDS.include?(words.words.first)
-            dir = dir_after(words.words, dir)
+            dir = dir_after(words.words, dir, stack)
             next substituted(segment, dir, depth)
           end
           substituted(segment, dir, depth) + in_segment(words, dir, segment.strip, depth)
         end
       end
 
-      # `cd DIR` and `pushd DIR` move; `popd` goes back to a directory the text does not show
-      def dir_after(words, dir)
-        words.first == 'popd' ? @cwd : change_dir(words[1] || Dir.home, dir)
+      # `cd DIR` and `pushd DIR` move, `pushd` remembering where it was; `popd` goes back there,
+      # or to the directory Claude runs in when the line pushed nothing
+      def dir_after(words, dir, stack)
+        return stack.pop || @cwd if words.first == 'popd'
+
+        stack.push(dir) if words.first == 'pushd'
+        change_dir(words[1] || Dir.home, dir)
       end
 
       def in_segment(words, dir, segment, depth)

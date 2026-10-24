@@ -49,13 +49,21 @@ module Gitflash
         return nil unless positional.first == '.'
 
         names = deleted_refs(args, positional.drop(1))
-        names.empty? ? nil : { scope: %w[branches], branches: names }
+        return nil if names.nil?
+
+        # Names the shell or xargs fills in are unknown: save every branch
+        names = [] if names.any? { |name| Paths.unresolved?(name) || name.include?('{}') }
+        { scope: %w[branches], branches: names }
       end
 
-      # Branch names a local push deletes: every ref with --delete, else the `:ref` ones
+      # Branch names a local push deletes: every ref with --delete, else the `:ref` ones.
+      # [] when --delete names no refs (they come from stdin, as with xargs): every branch is
+      # saved; nil when the push deletes nothing
       def deleted_refs(args, refs)
         delete = args.include?('--delete') || Rules.short_flags(args).include?('d')
         refs = refs.select { |ref| ref.start_with?(':') } unless delete
+        return nil if refs.empty? && !delete
+
         refs.map { |ref| ref.delete_prefix(':').delete_prefix(Repo::HEADS) }
       end
 

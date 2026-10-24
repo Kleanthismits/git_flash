@@ -33,7 +33,6 @@ module Gitflash
           words, dir = drop_options(words.drop(1), options)
           chdir = dir || chdir
           words = words.drop(1) if LEADING_ARGUMENT.include?(name)
-          words = words.drop_while { |word| word.match?(/\A\w+=/) } if name == 'env'
         end
         [words, chdir]
       end

@@ -56,7 +56,10 @@ RSpec.describe Gitflash::Hook::CommandParser do
     'git push . :old' => [['/repo', %w[branches], %w[old]]],
     'git push . :refs/heads/old' => [['/repo', %w[branches], %w[old]]],
     'git push . --delete old other' => [['/repo', %w[branches], %w[old other]]],
-    'git update-ref --stdin < cmds' => [['/repo', %w[branches], []]]
+    'git update-ref --stdin < cmds' => [['/repo', %w[branches], []]],
+    'for b in x; do git push . --delete "$b"; done' => [['/repo', %w[branches], []]],
+    'xargs -I{} git push . :{}' => [['/repo', %w[branches], []]],
+    'xargs git push . --delete' => [['/repo', %w[branches], []]]
   }.each do |command, expected|
     it "reports `#{command}`" do
       expect(targets(command)).to eq(expected)
@@ -161,6 +164,10 @@ RSpec.describe Gitflash::Hook::CommandParser do
       expect(targets('echo a#b; git clean -f')).to eq([['/repo', %w[worktree], []]])
     end
 
+    it 'follows nested pushd and popd' do
+      expect(targets('pushd /a; pushd /b; popd; git clean -f')).to eq([['/a', %w[worktree], []]])
+    end
+
     it 'goes back to the directory Claude runs in after popd' do
       expect(targets('pushd /p; popd; git clean -f')).to eq([['/repo', %w[worktree], []]])
     end
@@ -171,6 +178,8 @@ RSpec.describe Gitflash::Hook::CommandParser do
       'git --work-tree=/other --git-dir=/other/.git reset --hard' => '/other',
       'git --git-dir /other/.git clean -f' => '/other',
       'GIT_DIR=/o/.git git clean -f' => '/o',
+      'env GIT_DIR=/o/.git git clean -f' => '/o',
+      'sudo GIT_WORK_TREE=/w git clean -f' => '/w',
       'GIT_WORK_TREE=/w GIT_DIR=/x/.git git clean -f' => '/w',
       'git -C /a --work-tree ../b clean -f' => '/b'
     }.each do |command, dir|
@@ -187,7 +196,10 @@ RSpec.describe Gitflash::Hook::CommandParser do
       })
     end
 
-    let(:aliases) { { 'nuke' => 'reset --hard', 'wipe' => '!git clean -fd', 'st' => 'status' } }
+    let(:aliases) do
+      { 'nuke' => 'reset --hard', 'wipe' => '!git clean -fd', 'st' => 'status', 'u' => 'nuke',
+        'loop1' => 'loop2', 'loop2' => 'loop1' }
+    end
 
     def scopes(command)
       targets(command).map { |target| target[1] }
@@ -198,6 +210,11 @@ RSpec.describe Gitflash::Hook::CommandParser do
       expect(scopes('git nuke')).to eq([%w[branches head worktree]])
       expect(scopes('git wipe')).to eq([%w[worktree]])
       expect(scopes('git st')).to eq([])
+    end
+
+    it 'follows an alias of an alias, and stops on a loop' do
+      expect(scopes('git u')).to eq([%w[branches head worktree]])
+      expect(scopes('git loop1')).to eq([])
     end
 
     it 'never lets an alias replace a built-in command, as git does' do
