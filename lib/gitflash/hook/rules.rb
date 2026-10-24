@@ -34,7 +34,7 @@ module Gitflash
 
       def path_arg?(args, dir)
         args.reject { |arg| arg.start_with?('-') }.any? do |arg|
-          File.exist?(File.expand_path(arg, dir))
+          File.exist?(CommandParser.expand(arg, dir))
         end
       end
 
@@ -86,7 +86,7 @@ module Gitflash
         return nil unless args.first == 'remove' && any?(args, %w[-f --force])
 
         path = args[1..].reject { |arg| arg.start_with?('-') }.first
-        path && { scope: %w[worktree], dir: File.expand_path(path, dir) }
+        path && { scope: %w[worktree], dir: CommandParser.expand(path, dir) }
       end
 
       RULES = {

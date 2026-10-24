@@ -30,6 +30,11 @@ module Gitflash
           'saves a snapshot first, or run `gitflash snapshot` before retrying.'
       end
 
+      def failure(error)
+        "gitflash could not check this command (#{error.message}), so it cannot tell whether " \
+          'it discards work git cannot restore. Run `gitflash snapshot` first if it might.'
+      end
+
       def commands(targets)
         targets.map { |target| "`#{target.command}`" }.join(', ')
       end

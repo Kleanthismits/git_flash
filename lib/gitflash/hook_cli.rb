@@ -33,17 +33,29 @@ module Gitflash
       branch NAME, worktree add) as agent work, so `gitflash clean --agent` can find them. A branch
       is only marked when it is new (its reflog says it was created a moment ago) and unmarked.
 
-      Not meant to be run by hand: in a terminal it only prints a note. Errors never block the
-      command: they are printed to stderr and the hook exits with 0.
+      Not meant to be run by hand: in a terminal it only prints a note. Errors are printed to
+      stderr and the hook exits with 0. In snapshot mode the command then runs; in ask mode the
+      user is asked and in deny mode the command is blocked, so an error never turns the
+      protection off.
     TEXT
     option :mode, type: :string, default: 'snapshot', enum: Hook::Claude::MODES
     def claude
       return puts(TERMINAL_NOTE) if $stdin.tty?
 
-      output = Hook::Claude.new(mode: options[:mode]).call($stdin.read)
+      output = hook_output(options[:mode], $stdin.read)
       puts JSON.generate(output) if output
     rescue StandardError => e
       warn "gitflash hook: #{e.message}"
+    end
+
+    no_commands do
+      # The hook's output; on an error, what Hook::Failure decides for the mode
+      def hook_output(mode, input)
+        Hook::Claude.new(mode: mode).call(input)
+      rescue StandardError => e
+        warn "gitflash hook: #{e.message}"
+        Hook::Failure.output(mode, e, input)
+      end
     end
 
     desc 'install', 'Register the gitflash hook in Claude Code settings'
