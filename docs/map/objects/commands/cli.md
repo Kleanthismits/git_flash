@@ -4,13 +4,13 @@ cluster: commands
 universe: live
 status: verified
 entity: lib/gitflash/cli.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus the error envelope fix (#46)
 ---
 
 # CLI
 
-Thor entry point. Code: `Cli`, plus `HookCli` for the `hook` subcommand.
+Thor entry point. Code: `Cli`, plus `HookCli` for the `hook` subcommand. `Cli.start` overrides Thor's: a `Thor::Error` (bad option, unknown command) is an `invalid_usage` error with exit 2, printed by `UsageReport` (JSON envelope with `--json`).
 
 ## Why this shape
 
@@ -48,4 +48,4 @@ Thin: declares flags and commands, delegates to [[command-runner]]. Heavy logic 
 
 ## See
 
-- Source: `lib/gitflash/cli.rb`
+- Source: `lib/gitflash/cli.rb`, `lib/gitflash/usage_report.rb`

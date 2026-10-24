@@ -9,6 +9,18 @@ module Gitflash
 
     SCHEMA_PATH = File.expand_path('../../schema/v1.json', __dir__)
 
+    # Thor reports a bad option or argument as text with exit 1. It is a usage error, so it
+    # exits with 2, and with --json it is printed in the JSON envelope like every other error.
+    def self.start(given_args = ARGV, config = {})
+      config[:shell] ||= Thor::Base.shell.new
+      dispatch(nil, given_args.dup, nil, config)
+    rescue Thor::Error => e
+      UsageReport.new(given_args).print(e)
+      exit(2)
+    rescue Errno::EPIPE
+      nil
+    end
+
     def self.exit_on_failure?
       true
     end

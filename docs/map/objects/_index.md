@@ -21,7 +21,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `command-runner`: runs one command, maps errors to exit. verified. `lib/gitflash/command_runner.rb`
 
 ## commands
-- `cli`: Thor entry, global flags, hook subcommand. verified. `lib/gitflash/cli.rb`
+- `cli`: Thor entry, global flags, hook subcommand, usage errors. verified. `lib/gitflash/cli.rb`, `lib/gitflash/usage_report.rb`
 - `branches`: list, filter merged/gone/stale. verified. `lib/gitflash/commands/branches.rb`
 - `checkout`: switch branch, HEAD snapshot. verified. `lib/gitflash/commands/checkout.rb`
 - `pick`: cherry-pick from another branch, list, control flags. verified. `lib/gitflash/commands/{pick,pick_control,pick_outcome}.rb`

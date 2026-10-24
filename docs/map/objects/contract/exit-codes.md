@@ -4,8 +4,8 @@ cluster: contract
 universe: live
 status: verified
 entity: lib/gitflash/error.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus the error envelope fix (#46)
 ---
 
 # Exit codes
@@ -24,7 +24,7 @@ Agents branch on exit status and `error.code`, not message text. 2 means "fix th
 - Each error carries `code`, optional `plan`, `status` (`error.rb:8-22`).
 - Codes are in the schema enum (`schema/v1.json:315-342`). Snapshot-era additions: `unknown_snapshot` (`lib/gitflash/commands/undo.rb`), `wrong_worktree` (`undo.rb`), `invalid_settings` (`lib/gitflash/hook/settings.rb:49`), `invalid_config` (`lib/gitflash/config.rb`), `conflict` (`lib/gitflash/commands/pick_outcome.rb`, status `failed`, exit 1), `unknown_worktree` and `protected_worktree` (`lib/gitflash/commands/worktree_{command,remove,move}.rb`).
 - `gitflash hook claude` is the exception: it rescues everything and exits 0 (`lib/gitflash/hook_cli.rb:33-35`).
-- `CommandRunner` rescues only `Error` (`lib/gitflash/command_runner.rb:14-17`).
+- `CommandRunner` rescues `Error` and, as `failed` exit 1, any other `StandardError` (`lib/gitflash/command_runner.rb`). Thor parse errors are `invalid_usage` exit 2 through `Cli.start` / `UsageReport`.
 
 ## Connected to
 

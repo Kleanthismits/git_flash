@@ -4,8 +4,8 @@ cluster: snapshots
 universe: live
 status: verified
 entity: lib/gitflash/snapshots.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus the error envelope fix (#46)
 ---
 
 # Snapshot store
@@ -46,3 +46,7 @@ Nothing outside git's object store is written, so snapshots survive without a da
 ## See
 
 - Source: `lib/gitflash/snapshots.rb`
+
+## Damaged refs
+
+`Snapshots#list` reads `%(refname)` with each message; a ref whose message is not a JSON object with a valid `created_at` is skipped with a warning on stderr (`Snapshots#parse`), so one bad ref cannot break every command that lists or takes snapshots.

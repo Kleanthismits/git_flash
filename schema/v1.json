@@ -37,8 +37,10 @@
         "clean",
         "worktree clean",
         "pick",
-        "mark"
-      ]
+        "mark",
+        "gitflash"
+      ],
+      "description": "`gitflash` when the command line names no known command (an invalid_usage error)."
     },
     "ok": {
       "type": "boolean"

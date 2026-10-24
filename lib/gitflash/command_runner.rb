@@ -14,6 +14,16 @@ module Gitflash
     rescue Error => e
       ui.error(e)
       exit(e.exit_code)
+    rescue StandardError => e
+      report_unexpected(ui, name, e)
+    end
+
+    # Anything else still gets the envelope, so a script reading --json is never left with a
+    # stack trace
+    def report_unexpected(ui, name, error)
+      unexpected = Error.new("#{name} failed unexpectedly: #{error.message} (#{error.class})")
+      ui.error(unexpected)
+      exit(unexpected.exit_code)
     end
 
     def build_ui(name)
