@@ -2,6 +2,8 @@
 
 RSpec.describe Gitflash::Cli, :git_repo do
   before do
+    # An agent or script, also when rspec itself runs in a terminal
+    allow($stdin).to receive(:tty?).and_return(false)
     commit_file('a.txt')
     git('branch', 'one')
     git('branch', 'two')
@@ -13,7 +15,12 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
   def owners = Gitflash::Ownership.new.all
 
-  it 'marks the current branch as agent work by default' do
+  it 'marks the branch as human work by default when a person runs it in a terminal' do
+    allow($stdin).to receive(:tty?).and_return(true)
+    expect(mark('one').json['plan']).to eq('branches' => ['one'], 'owner' => 'human')
+  end
+
+  it 'marks the current branch as agent work by default without a terminal' do
     run = mark
     expect(run.status).to eq(0)
     expect(run.json['plan']).to eq('branches' => ['main'], 'owner' => 'agent')

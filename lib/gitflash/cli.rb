@@ -60,7 +60,8 @@ module Gitflash
 
     desc 'mark [BRANCH...]', descriptions.mark.short
     long_desc descriptions.mark.long
-    option :owner, type: :string, enum: Ownership::OWNERS, desc: 'agent (default) or human'
+    option :owner, type: :string, enum: Ownership::OWNERS,
+                   desc: 'agent or human (default: human in a terminal, agent otherwise)'
     option :clear, type: :boolean, default: false, desc: 'Remove the mark'
     def mark(*branches)
       run_command('mark', Commands::Mark, *branches)
