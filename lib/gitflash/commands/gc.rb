@@ -2,13 +2,14 @@
 
 module Gitflash
   module Commands
-    # Deletes snapshots older than --older-than DAYS (default 30). Git frees their objects at
-    # its next garbage collection.
+    # Deletes snapshots older than --older-than DAYS (default 30, at least 1). Git frees their
+    # objects at its next garbage collection. A whole number of days is required: 0 or a
+    # negative number would select every snapshot, including the one just taken.
     class Gc < Base
       DEFAULT_DAYS = 30
 
       def call
-        days = options[:older_than] || DEFAULT_DAYS
+        days = older_than_days
         old = older_than(days)
         plan = { older_than_days: days, snapshots: old.map(&:id) }
         return nothing(plan) if old.empty?
@@ -17,6 +18,17 @@ module Gitflash
       end
 
       private
+
+      def older_than_days
+        value = options[:older_than]
+        return DEFAULT_DAYS if value.nil?
+
+        days = Integer(value.to_s, 10, exception: false)
+        return days if days&.positive?
+
+        usage_error!('invalid_options',
+                     "--older-than needs a whole number of days, 1 or more, got '#{value}'")
+      end
 
       def delete(plan, text)
         return planned(plan, "Would delete #{text}") if ui.dry_run?

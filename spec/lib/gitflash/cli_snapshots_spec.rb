@@ -106,6 +106,16 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(deleted.size).to eq(1)
       expect(snapshot_ids).to eq([])
     end
+
+    it 'refuses a number of days that would select every snapshot' do
+      run_cli('snapshot')
+      %w[0 -1 0.5 1e3 abc].each do |days|
+        run = run_cli('gc', '--older-than', days, '--yes', '--json')
+        expect(run.status).to eq(2)
+        expect(run.json['error']).to include('code' => 'invalid_options')
+      end
+      expect(snapshot_ids.size).to eq(1)
+    end
   end
 
   describe 'hook claude' do
