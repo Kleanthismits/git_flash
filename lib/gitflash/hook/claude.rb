@@ -117,7 +117,11 @@ module Gitflash
         git('symbolic-ref', '--quiet', 'HEAD')&.delete_prefix(Repo::HEADS)
       end
 
+      # The branches to save; nil (all of them) when the command does not name its branches, as
+      # in `xargs git branch -D < list`
       def branches(target)
+        return nil if target.branches.empty?
+
         target.branches.filter_map do |name|
           name == :current ? current_branch : name
         end
