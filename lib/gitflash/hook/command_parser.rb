@@ -70,11 +70,18 @@ module Gitflash
 
       # Git commands inside `$(...)`, `<(...)` and backticks, which the shell runs first
       def substituted(command_line, dir, depth)
-        return [] if depth >= MAX_NESTING
-
         ShellText.substitutions(command_line).flat_map do |script|
-          git_commands(script, dir, depth + 1)
+          nested(script, dir, depth)
         end
+      end
+
+      # The git commands of a script inside this one. Past the nesting limit a script that
+      # mentions git counts as risky without being read, so deep nesting cannot hide a command.
+      def nested(script, dir, depth)
+        return git_commands(script, dir, depth + 1) if depth < MAX_NESTING
+        return [] unless script.match?(/\bgit\b/)
+
+        [GitCommand.new(dir: dir, command: script.strip, subcommand: Rules::UNREAD, args: [])]
       end
 
       # The git command of one segment, or the ones inside `bash -c "..."` and `eval "..."`
@@ -82,7 +89,7 @@ module Gitflash
         return [git_command(words, dir, segment)] if File.basename(words.first) == 'git'
 
         script = nested_script(words)
-        script && depth < MAX_NESTING ? git_commands(script, dir, depth + 1) : []
+        script ? nested(script, dir, depth) : []
       end
 
       # The script text passed to a shell (`bash -c`, `sh -lc`) or to `eval`

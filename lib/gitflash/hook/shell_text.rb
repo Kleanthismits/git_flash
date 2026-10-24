@@ -3,127 +3,137 @@
 module Gitflash
   module Hook
     # Reads a shell command line as text, without running it: where commands end, and which
-    # commands run inside `$(...)`, `<(...)` and backticks
+    # commands run inside `$(...)`, `<(...)` and backticks. Quotes are followed as the shell
+    # does: nothing runs inside single quotes, `$(...)` and backticks run inside double quotes,
+    # and a backslash keeps the next character (outside single quotes).
     module ShellText
       SEPARATORS = ";&|\n"
-      PAREN_DEPTH = { '(' => 1, ')' => -1 }.freeze
 
       module_function
 
-      # The command line split on unquoted ; & | and newlines, never inside `$(...)` or
-      # backticks. A backslash keeps the next character (outside single quotes), so `"a\"b"`
-      # stays one quoted word.
+      # The command line split on ; & | and newlines outside quotes and substitutions
       def segments(line)
-        parts = [+'']
-        nesting = Nesting.new
-        each_char(line) do |char, quote, escaped|
-          split = nesting.separator?(char, parts.last[-1], quote, escaped)
-          split ? parts << +'' : parts.last << char
-        end
-        parts.reject { |part| part.strip.empty? }
-      end
-
-      # How deep a line is inside `$(...)`, `<(...)`, `>(...)` and backticks, one character at a
-      # time
-      class Nesting
-        def initialize
-          @parens = 0
-          @backtick = false
-        end
-
-        # Reads the character and says whether it ends a command here
-        def separator?(char, previous, quote, escaped)
-          return false if escaped || quote == "'"
-
-          read(char, previous)
-          !quote && outside? && SEPARATORS.include?(char)
-        end
-
-        def read(char, previous)
-          if char == '`'
-            @backtick = !@backtick
-          elsif @parens.positive?
-            @parens += PAREN_DEPTH.fetch(char, 0)
-          elsif char == '(' && previous && '$<>'.include?(previous)
-            @parens = 1
-          end
-        end
-
-        def outside?
-          @parens.zero? && !@backtick
-        end
+        scan(line).first
       end
 
       # The scripts the shell runs to build the line: the text inside `$(...)`, `<(...)`,
-      # `>(...)` and backticks, outside single quotes. Nested ones are found when the caller
-      # reads each script in turn.
+      # `>(...)` and backticks. Nested ones are found when the caller reads each script in turn.
       def substitutions(line)
+        scan(line).last
+      end
+
+      # [segments, scripts] in one pass over the line
+      def scan(line)
+        parts = [+'']
         scripts = []
         index = 0
-        while index < line.length
-          index = skip_single_quoted(line, index)
-          script, index = substitution_at(line, index)
-          scripts << script if script
-        end
-        scripts
-      end
-
-      # Yields each character with the open quote (nil, "'" or '"') and whether a backslash
-      # escaped it
-      def each_char(line)
         quote = nil
-        escaped = false
-        line.each_char do |char|
-          yield char, quote, escaped
-          if escaped then escaped = false
-          elsif char == '\\' && quote != "'" then escaped = true
-          elsif quote then quote = nil if char == quote
-          elsif ["'", '"'].include?(char) then quote = char
-          end
+        index, quote = step(line, index, quote, parts, scripts) while index < line.length
+        [parts.reject { |part| part.strip.empty? }, scripts]
+      end
+
+      # Reads what starts at index and returns where to go on, with the quote then open
+      def step(line, index, quote, parts, scripts)
+        char = line[index]
+        return [index + 1, close_single(char, parts)] if quote == "'"
+        return take(line, index, index + 2, parts) + [quote] if char == '\\'
+
+        script = substitution(line, index, quote)
+        if script
+          scripts << line[script.first...script.last]
+          return take(line, index, script.last + 1, parts) + [quote]
+        end
+        plain(char, index, quote, parts)
+      end
+
+      def close_single(char, parts)
+        parts.last << char
+        char == "'" ? nil : "'"
+      end
+
+      def plain(char, index, quote, parts)
+        if !quote && SEPARATORS.include?(char)
+          parts << +''
+          return [index + 1, nil]
+        end
+        parts.last << char
+        [index + 1, next_quote(char, quote)]
+      end
+
+      def next_quote(char, quote)
+        return (char == '"' ? nil : quote) if quote
+        return char if ["'", '"'].include?(char)
+
+        nil
+      end
+
+      def take(line, from, to, parts)
+        parts.last << line[from...to].to_s
+        [to]
+      end
+
+      # [script start, closing index] of a substitution opening at index, or nil. `<(...)` and
+      # `>(...)` only open outside quotes; `$(...)` and backticks also inside double quotes.
+      def substitution(line, index, quote)
+        if line[index] == '`'
+          [index + 1, closing_backtick(line, index + 1)]
+        elsif line[index, 2] == '$(' || (quote.nil? && line[index, 2].match?(/\A[<>]\(/))
+          [index + 2, closing_paren(line, index + 2)]
         end
       end
 
-      def skip_single_quoted(line, index)
-        return index unless line[index] == "'" && !escaped_at?(line, index)
+      # The first backtick at or after index that no backslash escapes, or the end of the line
+      def closing_backtick(line, index)
+        while index < line.length
+          return index if line[index] == '`'
 
-        closing = line.index("'", index + 1)
-        closing ? closing + 1 : line.length
-      end
-
-      # [script, next index] for a substitution starting at index, or [nil, index + 1]
-      def substitution_at(line, index)
-        return [nil, index + 1] if escaped_at?(line, index)
-
-        closing = closing_of(line, index)
-        return [nil, index + 1] unless closing
-
-        start = line[index] == '`' ? index + 1 : index + 2
-        [line[start...closing], closing + 1]
-      end
-
-      # Where the substitution that opens at index ends, or nil when none opens there
-      def closing_of(line, index)
-        return line.index('`', index + 1) || line.length if line[index] == '`'
-
-        matching_paren(line, index + 1) if line[index, 2].match?(/\A[$<>]\(/)
-      end
-
-      # Index of the `)` that closes the `(` at index, or the end of the line
-      def matching_paren(line, index)
-        depth = 0
-        (index...line.length).each do |position|
-          next if escaped_at?(line, position)
-
-          depth += PAREN_DEPTH.fetch(line[position], 0)
-          return position if depth.zero?
+          index += line[index] == '\\' ? 2 : 1
         end
         line.length
       end
 
-      def escaped_at?(line, index)
-        backslashes = 0
-        backslashes += 1 while index - backslashes - 1 >= 0 && line[index - backslashes - 1] == '\\'
-        backslashes.odd?
+      # The `)` that closes a parenthesis opened before index, skipping quoted text and nested
+      # substitutions and subshells, or the end of the line
+      def closing_paren(line, index)
+        while index < line.length
+          return index if line[index] == ')'
+
+          index = after_in_parens(line, index)
+        end
+        line.length
+      end
+
+      def after_in_parens(line, index)
+        case line[index]
+        when '\\' then index + 2
+        when "'" then closing_single(line, index + 1) + 1
+        when '"' then closing_double(line, index + 1) + 1
+        when '`' then closing_backtick(line, index + 1) + 1
+        when '(' then closing_paren(line, index + 1) + 1
+        else index + 1
+        end
+      end
+
+      def closing_single(line, index)
+        line.index("'", index) || line.length
+      end
+
+      # The `"` that closes a double-quoted string opened before index
+      def closing_double(line, index)
+        while index < line.length
+          return index if line[index] == '"'
+
+          index = after_in_double(line, index)
+        end
+        line.length
+      end
+
+      def after_in_double(line, index)
+        return index + 2 if line[index] == '\\'
+        return closing_backtick(line, index + 1) + 1 if line[index] == '`'
+        return closing_paren(line, index + 2) + 1 if line[index, 2] == '$('
+
+        index + 1
       end
     end
   end
