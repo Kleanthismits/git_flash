@@ -92,7 +92,8 @@ module Gitflash
         end
       end
 
-      # [target, snapshot], or nil when the directory is not a git work tree
+      # [target, snapshot], or nil when the directory is not a git work tree or saving failed.
+      # A failure must not stop the ask decision, so it is warned about here and not raised.
       def save(target)
         return nil unless Dir.exist?(target.dir)
 
@@ -103,6 +104,9 @@ module Gitflash
                                             scope: target.scope, branches: branches(target))
           [target, snapshot]
         end
+      rescue StandardError => e
+        warn "gitflash hook: could not save a snapshot in #{target.dir} (#{e.message})"
+        nil
       end
 
       # Full ref shortened by removing refs/heads/ only; `--short` changes when a tag has the name

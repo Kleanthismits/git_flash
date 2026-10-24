@@ -25,6 +25,14 @@ module Gitflash
         @cwd = cwd
       end
 
+      # File.expand_path, except that `~user` for an unknown user is kept as a literal name
+      # instead of raising: an error here must not stop the hook from deciding
+      def self.expand(path, dir)
+        File.expand_path(path, dir)
+      rescue ArgumentError
+        File.join(File.expand_path(dir), path)
+      end
+
       # Git commands that can lose work, with what to save before them
       def targets(command_line)
         git_commands(command_line).filter_map do |git|
@@ -56,7 +64,7 @@ module Gitflash
           next [] if words.empty?
 
           if words.first == 'cd'
-            dir = File.expand_path(words[1] || Dir.home, dir)
+            dir = self.class.expand(words[1] || Dir.home, dir)
             next []
           end
           commands_in(words, dir, segment.strip, depth)
@@ -129,7 +137,7 @@ module Gitflash
       def skip_git_options(words, dir)
         index = 1
         while (option = words[index])&.start_with?('-')
-          dir = File.expand_path(words[index + 1].to_s, dir) if option == '-C'
+          dir = self.class.expand(words[index + 1].to_s, dir) if option == '-C'
           index += option == '-C' || OPTIONS_WITH_VALUE.include?(option) ? 2 : 1
         end
         [index, dir]

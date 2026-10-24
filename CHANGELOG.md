@@ -109,3 +109,9 @@ Second beta of the parallel agent work release: the `pick` branch list, a quiete
   - When a command touches several directories the hook tells Claude one `gitflash undo` command per snapshot; a failure to record branches never stops the snapshot; the record directory is refused unless it is a real directory only the user can use
   - A literal backslash in a path is shown doubled, so a path with a newline and a path with the characters backslash and n stay two different choices in the `wt remove` menu
   - The hook marks a branch the command deleted and created again (`git branch -D x && git switch -c x`) as agent work: the record keeps a branch's creation stamp, not only its name
+
+## [Unreleased]
+
+Fixes from a security review of the repository (issues #34 to #54).
+
+- The Claude hook no longer lets a command through when it fails in `ask` or `deny` mode: an error now asks the user or blocks the command, with the reason. A snapshot that fails no longer stops `ask` mode from asking, and `cd ~unknownuser` or `git -C ~unknownuser` no longer makes the hook fail (#34)

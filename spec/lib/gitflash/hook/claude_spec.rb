@@ -114,6 +114,40 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
     end
   end
 
+  describe 'a home directory of an unknown user (`~nosuchuser`)' do
+    let(:command) { 'cd ~gitflash-nosuchuser; git reset --hard' }
+
+    it 'still blocks in deny mode' do
+      output = described_class.new(mode: 'deny').call(input(command))
+      expect(output[:hookSpecificOutput]).to include(permissionDecision: 'deny')
+    end
+
+    it 'reads git checkout and git -C without raising' do
+      expect(described_class.new(mode: 'deny').call(input('git checkout ~gitflash-nosuchuser')))
+        .to be_nil
+      output = described_class.new(mode: 'deny')
+                              .call(input('git -C ~gitflash-nosuchuser reset --hard'))
+      expect(output[:hookSpecificOutput]).to include(permissionDecision: 'deny')
+    end
+  end
+
+  describe 'a snapshot that fails' do
+    let(:broken) do
+      store = instance_double(Gitflash::Snapshots)
+      allow(store).to receive(:create).and_raise('disk full')
+      -> { store }
+    end
+
+    it 'still asks in ask mode, and says nothing was saved' do
+      hook = described_class.new(mode: 'ask', snapshots: broken)
+      output = nil
+      expect { output = hook.call(input('git reset --hard')) }
+        .to output(/could not save a snapshot.*disk full/).to_stderr
+      expect(output[:hookSpecificOutput]).to include(permissionDecision: 'ask')
+      expect(context(output)).to include('could not save a snapshot')
+    end
+  end
+
   describe 'ask mode outside a git work tree' do
     it 'still asks, because asking must not depend on a snapshot being saved' do
       Dir.mktmpdir do |dir|

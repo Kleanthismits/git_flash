@@ -4,8 +4,8 @@ cluster: hooks
 universe: live
 status: verified
 entity: lib/gitflash/hook/claude.rb
-verified_on: 2026-10-04
-verified_at: 36940dc plus the tag-safe ref fix
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus the fail-closed fix (#34)
 ---
 
 # Claude hook
@@ -14,7 +14,7 @@ Claude Code hook for the Bash tool, for two events. Command: `gitflash hook clau
 
 ## Why this shape
 
-The agent keeps using plain git. The hook snapshots first and tells the agent how to undo. It must never block a command by accident, so every error is swallowed.
+The agent keeps using plain git. The hook snapshots first and tells the agent how to undo. In snapshot mode it must never block a command by accident, so errors are swallowed. In `ask` and `deny` mode the user chose protection, so an error asks or blocks instead of letting the command through (`Hook::Failure`).
 
 ## Shape
 
@@ -26,7 +26,9 @@ The agent keeps using plain git. The hook snapshots first and tells the agent ho
 - One snapshot per directory, merged across commands there (`claude.rb`); reason `agent hook: before ...` (`claude.rb`).
 - The `:current` branch is read from the full ref with `refs/heads/` removed (`claude.rb`), so a tag named like the branch cannot change the name saved.
 - Output is Claude Code's hook protocol (`hookSpecificOutput`, `additionalContext`, `permissionDecision`), not gitflash's envelope (`claude.rb`).
-- `HookCli#claude` rescues `StandardError`, warns, exits 0 (`lib/gitflash/hook_cli.rb`). It does not use [[command-runner]] or [[ui-output]].
+- `HookCli#claude` rescues `StandardError`, warns and exits 0 (`lib/gitflash/hook_cli.rb`). The output then comes from `Hook::Failure.output` (`lib/gitflash/hook/failure.rb`): nothing in snapshot mode or for PostToolUse input, otherwise `permissionDecision` `ask` / `deny` with `Messages.failure`. If that output cannot be written either (stdin or stdout fails), ask and deny mode exit 2, which Claude Code reads as a block; snapshot mode still exits 0. It does not use [[command-runner]] or [[ui-output]].
+- A snapshot that raises (unreadable file, `index.lock`, bad snapshot ref) is warned about in `save` and counts as unsaved, so `ask` still asks.
+- `CommandParser.expand` is `File.expand_path` that keeps `~unknownuser` as a literal name instead of raising; [[hook-rules]] use it too.
 
 ## Connected to
 
@@ -51,4 +53,4 @@ The agent keeps using plain git. The hook snapshots first and tells the agent ho
 
 ## See
 
-- Source: `lib/gitflash/hook/claude.rb`, `lib/gitflash/hook_cli.rb`
+- Source: `lib/gitflash/hook/claude.rb`, `lib/gitflash/hook/failure.rb`, `lib/gitflash/hook_cli.rb`

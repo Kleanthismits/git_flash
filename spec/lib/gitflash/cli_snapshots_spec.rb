@@ -153,6 +153,35 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run_cli('hook', 'claude'))
         .to have_attributes(status: 0, stdout: '', stderr: /gitflash hook/)
     end
+
+    it 'asks or blocks on an error in ask and deny mode, so the protection stays on' do
+      allow($stdin).to receive(:read).and_return('not json')
+      %w[ask deny].each do |mode|
+        run = run_cli('hook', 'claude', '--mode', mode)
+        expect(run.status).to eq(0)
+        output = JSON.parse(run.stdout)['hookSpecificOutput']
+        expect(output).to include('permissionDecision' => mode)
+        expect(output['permissionDecisionReason']).to include('could not check this command')
+      end
+    end
+
+    it 'exits 2 in ask and deny mode when no answer can be written, and 0 in snapshot mode' do
+      allow($stdin).to receive(:read).and_raise(IOError, 'closed stream')
+      expect(run_cli('hook', 'claude', '--mode', 'deny'))
+        .to have_attributes(status: 2, stdout: '', stderr: /closed stream/)
+      expect(run_cli('hook', 'claude', '--mode', 'ask')).to have_attributes(status: 2)
+      expect(run_cli('hook', 'claude')).to have_attributes(status: 0)
+    end
+
+    it 'never decides about a PostToolUse input that fails' do
+      input = JSON.generate(hook_event_name: 'PostToolUse', tool_name: 'Bash', cwd: Dir.pwd,
+                            tool_input: { command: 'git checkout -b x' })
+      allow($stdin).to receive(:read).and_return(input)
+      allow(Gitflash::Hook::BranchMarker).to receive(:new).and_return(double(call: nil))
+      allow_any_instance_of(Gitflash::Hook::Claude).to receive(:after_command).and_raise('boom')
+      expect(run_cli('hook', 'claude', '--mode', 'deny'))
+        .to have_attributes(status: 0, stdout: '', stderr: /boom/)
+    end
   end
 
   # A settings group running the gitflash hook under the given tool matcher
