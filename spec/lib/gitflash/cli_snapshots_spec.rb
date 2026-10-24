@@ -232,6 +232,38 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run_cli('hook', 'install', '--mode', 'ask', '--json').json['status']).to eq('noop')
     end
 
+    it 'keeps the installed mode when run again without --mode' do
+      run_cli('hook', 'install', '--mode', 'deny')
+      json = run_cli('hook', 'install', '--json').json
+      expect(json['status']).to eq('noop')
+      expect(json['result'])
+        .to include('mode' => 'deny', 'command' => 'gitflash hook claude --mode deny')
+    end
+
+    it 'adds PostToolUse to an older deny install without turning deny off' do
+      FileUtils.mkdir_p('.claude')
+      command = { 'type' => 'command', 'command' => 'gitflash hook claude --mode deny' }
+      pre = { 'matcher' => 'Bash', 'hooks' => [command] }
+      File.write(settings, JSON.generate('hooks' => { 'PreToolUse' => [pre] }))
+
+      expect(run_cli('hook', 'install', '--json').json['status']).to eq('done')
+      written = JSON.parse(File.read(settings))
+      expect(written.dig('hooks', 'PreToolUse', 0, 'hooks', 0, 'command'))
+        .to eq('gitflash hook claude --mode deny')
+    end
+
+    it 'refuses a weaker mode unless --downgrade is given, and reports the change' do
+      run_cli('hook', 'install', '--mode', 'deny')
+      refused = run_cli('hook', 'install', '--mode', 'snapshot', '--json')
+      expect(refused.status).to eq(2)
+      expect(refused.json.dig('error', 'message')).to include('deny mode', '--downgrade')
+
+      done = run_cli('hook', 'install', '--mode', 'ask', '--downgrade', '--json').json
+      expect(done['result']).to include('mode' => 'ask', 'previous_mode' => 'deny')
+      expect(run_cli('hook', 'install', '--mode', 'deny', '--json').json['result'])
+        .to include('mode' => 'deny', 'previous_mode' => 'ask')
+    end
+
     it 'adds the PostToolUse hook to an install that only has PreToolUse' do
       FileUtils.mkdir_p('.claude')
       pre = { 'matcher' => 'Bash',

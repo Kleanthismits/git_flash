@@ -75,13 +75,20 @@ module Gitflash
                        applies to sessions started there
       --scope user     ~/.claude/settings.json; applies to every session
 
+      --mode snapshot|ask|deny sets what the hook does (see `gitflash hook help claude`). Without
+      --mode an installed hook keeps its mode. A mode that protects less than the installed one
+      (deny, then ask, then snapshot) is refused unless you pass --downgrade.
+
       Claude Code reloads settings files, so running sessions pick the hook up without a restart.
       Check the result with `gitflash hook status`.
 
       Accepts the global --json and --dry-run options after the subcommand: gitflash hook install --json
     TEXT
     option :scope, type: :string, default: 'local', enum: Commands::HookInstall::SCOPES
-    option :mode, type: :string, default: 'snapshot', enum: Hook::Claude::MODES
+    option :mode, type: :string, enum: Hook::Claude::MODES,
+                  desc: 'snapshot, ask or deny (default: the installed mode, else snapshot)'
+    option :downgrade, type: :boolean,
+                       desc: 'Allow a --mode that protects less than the installed one'
     def install
       run_command('hook install', Commands::HookInstall, repo_required: options[:scope] != 'user')
     end

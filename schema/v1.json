@@ -1093,6 +1093,22 @@
         "marking_command": {
           "type": "string",
           "description": "The PostToolUse command that marks branches an agent creates as agent work."
+        },
+        "mode": {
+          "enum": [
+            "snapshot",
+            "ask",
+            "deny"
+          ],
+          "description": "The mode the PreToolUse hook runs in after this install."
+        },
+        "previous_mode": {
+          "enum": [
+            "snapshot",
+            "ask",
+            "deny"
+          ],
+          "description": "The mode the installed hook had, when this install changes it."
         }
       }
     },
