@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: lib/gitflash/commands/worktree_list.rb
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the ignored-files gate (#43)
+verified_at: 6b41e31 plus the ignored-files gate (#43) and the ambiguity check (#52)
 ---
 
 # Worktree commands
@@ -20,6 +20,7 @@ Agents use the absolute paths from `wt list --json` and never switch directory. 
 
 - `wt list`: read only, report `result: { worktrees: [...] }`, JSON command name `worktree list` (`lib/gitflash/commands/worktree_list.rb`).
 - `wt add BRANCH`: source is `existing` (local), `remote` (tracks `origin/BRANCH`) or `new` (from HEAD or `--from`). Path from `--path`, else [[config]] `worktree_dir`. A branch created here gets the owner mark (`--owner`, default `agent`; [[ownership]]). Additive: no confirm, no snapshot. Refuses a branch already checked out elsewhere and a non-empty directory.
+- Worktree arguments are a path or a branch (`WorktreeCommand#find!`); one that is a worktree's path and another worktree's branch is `invalid_usage` naming both paths, so a command never acts on the wrong one.
 - `wt remove [WORKTREE...]`: path or branch; menu in a terminal. Refusals (`protected_worktree`): main checkout, current worktree, locked or dirty without `--force`; rule lives in `Worktree#removal_blocker`. Confirms, snapshots each worktree (own HEAD and files), removes. A worktree with an untracked file over 50 MB (`Snapshot#skipped_files`) is not removed and reported under `failed`: undo could not bring that file back. Ignored files are never saved, so the plan lists them (`ignored_count`, first five in `ignored`) and the confirmation prompt and `--dry-run` text warn that they are lost for good. When any chosen worktree has ignored files the confirmation is `irreversible:` (`WorktreeRemove#loses_ignored?`): `--yes` is not enough, it needs `--confirm TOKEN` from `error.confirm_token` (see [[ui-output]]); without ignored files `--yes` works as before. `wt clean` inherits this. Reporting is the `RemovalReport` mixin. Undo: [[worktree-revival]].
 - `wt lock|unlock WORKTREE`: no confirm; second call is a `noop`; main checkout refused. `wt move WORKTREE PATH`: refuses main, current, locked without `--force`; no confirm (move back to reverse). `wt prune`: lists missing, unlocked worktrees, confirms, runs `git worktree prune`; no snapshot (only git's record of a missing directory goes; branches stay).
 - `wt clean`: same criteria flags as [[clean]] (`CleanCriteria`), selection by [[cleanup]]; matches that may not go (locked, dirty without `--force`) are listed in `plan.skipped`; branches stay; missing directories are for `prune`. Plan rows add `reasons`. Hook into `WorktreeRemove`: `build_plan`, `plan_row`.

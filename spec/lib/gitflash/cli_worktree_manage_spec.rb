@@ -143,6 +143,18 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
     def remove(*args) = run_cli('wt', 'remove', *args, '--json')
 
+    it 'refuses a name that is one worktree\'s path and another one\'s branch' do
+      inside = File.join(File.realpath(Dir.pwd), 'feat')
+      run_cli('wt', 'add', 'other', '--path', inside)
+      run = remove('feat', '--yes')
+      expect(run.status).to eq(2)
+      expect(run.json.dig('error', 'message')).to include('names more than one worktree', inside,
+                                                          wt_path('feat'))
+      expect(File.directory?(inside)).to be(true)
+      expect(File.directory?(wt_path('feat'))).to be(true)
+      expect(remove(wt_path('feat'), '--yes').status).to eq(0)
+    end
+
     it 'shows paths from the repository with control characters escaped in the prompt' do
       evil = wt_path("esc\e]52;c;ZXZpbA==\aend")
       run_cli('wt', 'add', 'evil', '--path', evil)
