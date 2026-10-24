@@ -36,7 +36,8 @@ module Gitflash
       Not meant to be run by hand: in a terminal it only prints a note. Errors are printed to
       stderr and the hook exits with 0. In snapshot mode the command then runs; in ask mode the
       user is asked and in deny mode the command is blocked, so an error never turns the
-      protection off.
+      protection off. If even that answer cannot be written, ask and deny mode exit with 2,
+      which makes Claude Code block the command.
     TEXT
     option :mode, type: :string, default: 'snapshot', enum: Hook::Claude::MODES
     def claude
@@ -46,6 +47,9 @@ module Gitflash
       puts JSON.generate(output) if output
     rescue StandardError => e
       warn "gitflash hook: #{e.message}"
+      # No decision could be written: exit 2 makes Claude Code block the command in ask and
+      # deny mode instead of running it unprotected
+      exit 2 unless options[:mode] == 'snapshot'
     end
 
     no_commands do

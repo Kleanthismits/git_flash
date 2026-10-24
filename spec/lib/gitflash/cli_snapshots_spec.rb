@@ -165,6 +165,14 @@ RSpec.describe Gitflash::Cli, :git_repo do
       end
     end
 
+    it 'exits 2 in ask and deny mode when no answer can be written, and 0 in snapshot mode' do
+      allow($stdin).to receive(:read).and_raise(IOError, 'closed stream')
+      expect(run_cli('hook', 'claude', '--mode', 'deny'))
+        .to have_attributes(status: 2, stdout: '', stderr: /closed stream/)
+      expect(run_cli('hook', 'claude', '--mode', 'ask')).to have_attributes(status: 2)
+      expect(run_cli('hook', 'claude')).to have_attributes(status: 0)
+    end
+
     it 'never decides about a PostToolUse input that fails' do
       input = JSON.generate(hook_event_name: 'PostToolUse', tool_name: 'Bash', cwd: Dir.pwd,
                             tool_input: { command: 'git checkout -b x' })
