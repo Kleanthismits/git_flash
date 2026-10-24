@@ -109,9 +109,8 @@ RSpec.describe Gitflash::Cli, :git_repo do
         .to eq('confirmation_required')
       expect(run_cli('gc', '--older-than', '1', '--confirm', 'nottoken', '--json').json['status'])
         .to eq('confirmation_required')
-      deleted = run_cli('gc', '--older-than', '1', '--confirm', token, '--json').json
-                                                                                .dig('result', 'deleted')
-      expect(deleted.size).to eq(1)
+      done = run_cli('gc', '--older-than', '1', '--confirm', token, '--json').json
+      expect(done.dig('result', 'deleted').size).to eq(1)
       expect(snapshot_ids).to eq([])
     end
 
