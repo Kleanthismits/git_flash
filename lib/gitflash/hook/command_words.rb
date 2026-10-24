@@ -8,7 +8,7 @@ module Gitflash
     # environment assignments and wrappers like `sudo -u me`
     class CommandWords
       # Shell words that can come before a command: `if git ...`, `then git ...`, `! git ...`
-      KEYWORDS = %w[if then else elif do while until !].freeze
+      KEYWORDS = %w[if then else elif do while until ! {].freeze
       REDIRECTION = /\A\d*(?:[<>]{1,2}|&>)/
       # A redirection whose target is the next word (`>`, `2>>`), not part of it (`>out`)
       BARE_REDIRECTION = /#{REDIRECTION}\z/
@@ -63,8 +63,10 @@ module Gitflash
         segment.split
       end
 
+      # Subshell brackets stuck to a word: `(cd x` and `y)`. Braces are words of their own in
+      # the shell (`{ git ...; }`), and `{}` is a placeholder for find and xargs
       def unwrap(word)
-        word.delete_prefix('(').delete_prefix('{').delete_suffix(')').delete_suffix('}')
+        word.delete_prefix('(').delete_suffix(')')
       end
     end
   end

@@ -13,7 +13,21 @@ module Gitflash
     class CommandParser
       # dir: where to take the snapshot; branches: names, or :current for the checked-out one
       # guessed: the shell decides the directory (`cd "$REPO"`), so dir is only a fallback
-      Target = Data.define(:dir, :command, :scope, :branches, :guessed)
+      Target = Data.define(:dir, :command, :scope, :branches, :guessed) do
+        # One target for all the commands of a group that run in dir
+        def self.merge(dir, group)
+          new(dir: dir, command: group.map(&:command).join(' && '),
+              scope: group.flat_map(&:scope).uniq, branches: merged_branches(group),
+              guessed: group.any?(&:guessed))
+        end
+
+        # A target that saves branches without naming them saves every branch, so the merge
+        # does too: naming the others' branches would drop the ones it could not name
+        def self.merged_branches(group)
+          all = group.any? { |target| target.scope.include?('branches') && target.branches.empty? }
+          all ? [] : group.flat_map(&:branches).uniq
+        end
+      end
 
       SHELLS = %w[bash sh zsh dash ksh].freeze
       MAX_NESTING = 3

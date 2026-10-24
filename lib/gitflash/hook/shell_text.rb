@@ -37,13 +37,28 @@ module Gitflash
         char = line[index]
         return [index + 1, close_single(char, parts)] if quote == "'"
         return take(line, index, index + 2, parts) + [quote] if char == '\\'
+        return [comment_end(line, index), nil] if quote.nil? && comment?(line, index)
 
+        substituted(line, index, quote, parts, scripts) || plain(char, index, quote, parts)
+      end
+
+      # Takes a substitution that opens at index, or returns nil
+      def substituted(line, index, quote, parts, scripts)
         script = substitution(line, index, quote)
-        if script
-          scripts << line[script.first...script.last]
-          return take(line, index, script.last + 1, parts) + [quote]
-        end
-        plain(char, index, quote, parts)
+        return nil unless script
+
+        scripts << line[script.first...script.last]
+        take(line, index, script.last + 1, parts) + [quote]
+      end
+
+      # A `#` that starts a word outside quotes starts a comment, which runs to the end of the
+      # line; an apostrophe in it (`# don't`) must not open a quote
+      def comment?(line, index)
+        line[index] == '#' && (index.zero? || line[index - 1].match?(/[\s;&|()]/))
+      end
+
+      def comment_end(line, index)
+        line.index("\n", index) || line.length
       end
 
       def close_single(char, parts)
@@ -76,64 +91,10 @@ module Gitflash
       # `>(...)` only open outside quotes; `$(...)` and backticks also inside double quotes.
       def substitution(line, index, quote)
         if line[index] == '`'
-          [index + 1, closing_backtick(line, index + 1)]
+          [index + 1, ShellQuotes.closing_backtick(line, index + 1)]
         elsif line[index, 2] == '$(' || (quote.nil? && line[index, 2].match?(/\A[<>]\(/))
-          [index + 2, closing_paren(line, index + 2)]
+          [index + 2, ShellQuotes.closing_paren(line, index + 2)]
         end
-      end
-
-      # The first backtick at or after index that no backslash escapes, or the end of the line
-      def closing_backtick(line, index)
-        while index < line.length
-          return index if line[index] == '`'
-
-          index += line[index] == '\\' ? 2 : 1
-        end
-        line.length
-      end
-
-      # The `)` that closes a parenthesis opened before index, skipping quoted text and nested
-      # substitutions and subshells, or the end of the line
-      def closing_paren(line, index)
-        while index < line.length
-          return index if line[index] == ')'
-
-          index = after_in_parens(line, index)
-        end
-        line.length
-      end
-
-      def after_in_parens(line, index)
-        case line[index]
-        when '\\' then index + 2
-        when "'" then closing_single(line, index + 1) + 1
-        when '"' then closing_double(line, index + 1) + 1
-        when '`' then closing_backtick(line, index + 1) + 1
-        when '(' then closing_paren(line, index + 1) + 1
-        else index + 1
-        end
-      end
-
-      def closing_single(line, index)
-        line.index("'", index) || line.length
-      end
-
-      # The `"` that closes a double-quoted string opened before index
-      def closing_double(line, index)
-        while index < line.length
-          return index if line[index] == '"'
-
-          index = after_in_double(line, index)
-        end
-        line.length
-      end
-
-      def after_in_double(line, index)
-        return index + 2 if line[index] == '\\'
-        return closing_backtick(line, index + 1) + 1 if line[index] == '`'
-        return closing_paren(line, index + 2) + 1 if line[index, 2] == '$('
-
-        index + 1
       end
     end
   end

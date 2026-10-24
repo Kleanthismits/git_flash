@@ -30,6 +30,7 @@ RSpec.describe Gitflash::Hook::CommandParser do
     'eval "git branch -D old"' => [['/repo', %w[branches], %w[old]]],
     'if true; then git reset --hard; fi' => [['/repo', %w[branches head worktree], [:current]]],
     'for b in x; do git branch -D old; done' => [['/repo', %w[branches], %w[old]]],
+    'for b in x y; do git branch -D "$b"; done' => [['/repo', %w[branches], []]],
     'while git stash pop; do :; done' => [['/repo', %w[worktree stashes], []]],
     '! git clean -f' => [['/repo', %w[worktree], []]],
     'echo $(git clean -f)' => [['/repo', %w[worktree], []]],
@@ -129,6 +130,20 @@ RSpec.describe Gitflash::Hook::CommandParser do
       it "reports `#{command}`" do
         expect(targets(command)).to eq([expected])
       end
+    end
+
+    it 'reads a brace group, xargs -i and an empty find -exec' do
+      expect(targets('{ git clean -f; }')).to eq([['/repo', %w[worktree], []]])
+      expect(targets('xargs -i git branch -D {}')).to eq([['/repo', %w[branches], []]])
+      expect(targets('find . -exec \\; && git clean -f')).to eq([['/repo', %w[worktree], []]])
+      expect(targets('find . -exec git branch -D {} \\;')).to eq([['/repo', %w[branches], []]])
+    end
+
+    it 'skips shell comments, so an apostrophe in one hides nothing' do
+      expect(targets("# Don't forget\ngit clean -f")).to eq([['/repo', %w[worktree], []]])
+      expect(targets("git clean -f # don't")).to eq([['/repo', %w[worktree], []]])
+      expect(targets("# git clean -f\nls")).to eq([])
+      expect(targets('echo a#b; git clean -f')).to eq([['/repo', %w[worktree], []]])
     end
 
     it 'goes back to the directory Claude runs in after popd' do

@@ -13,8 +13,8 @@ module Gitflash
         'nohup' => [], 'nice' => %w[-n --adjustment], 'ionice' => %w[-c -n -p -P -u],
         'stdbuf' => %w[-i -o -e], 'chronic' => [], 'caffeinate' => %w[-t -w],
         'timeout' => %w[-k -s --kill-after --signal],
-        'xargs' => %w[-I -i -n -P -L -l -d -E -e -s -a --arg-file --delimiter --max-args
-                      --max-procs --max-lines --replace]
+        # -i, -l and -e take only an attached value (`-i{}`), so they are not listed
+        'xargs' => %w[-I -n -P -L -d -E -s -a --arg-file --delimiter --max-args --max-procs]
       }.freeze
       # Wrappers whose first word after the options is not the command (`timeout 5 git ...`)
       LEADING_ARGUMENT = %w[timeout].freeze
@@ -60,7 +60,8 @@ module Gitflash
         return nil unless start
 
         command = words[(start + 1)..].take_while { |word| !FIND_END.include?(word) }
-        command.reject { |word| word == '{}' }
+                                      .reject { |word| word == '{}' }
+        command.empty? ? nil : command
       end
     end
   end

@@ -86,13 +86,7 @@ module Gitflash
 
       # One snapshot per directory, covering every command run there
       def merge_by_dir(targets)
-        targets.group_by(&:dir).map do |dir, group|
-          CommandParser::Target.new(
-            dir: dir, command: group.map(&:command).join(' && '),
-            scope: group.flat_map(&:scope).uniq, branches: group.flat_map(&:branches).uniq,
-            guessed: group.any?(&:guessed)
-          )
-        end
+        targets.group_by(&:dir).map { |dir, group| CommandParser::Target.merge(dir, group) }
       end
 
       # [target, snapshot], or nil when the directory is not a git work tree or saving failed.
