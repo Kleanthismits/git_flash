@@ -73,14 +73,35 @@ RSpec.describe Gitflash::Config do
   end
 
   it 'substitutes the placeholders as plain text, even when a branch name has a percent sign' do
-    write_repo("worktree_dir: /tmp/wt/%<repo>s/%<branch>s\n")
+    write_user("worktree_dir: /tmp/wt/%<repo>s/%<branch>s\n")
     expect(config.worktree_path(root: root, branch: '100%<branch>s'))
       .to eq('/tmp/wt/proj/100%<branch>s')
   end
 
   it 'honours a custom worktree_dir' do
-    write_repo("worktree_dir: /tmp/wt/%<branch>s\n")
+    write_user("worktree_dir: /tmp/wt/%<branch>s\n")
     expect(config.worktree_path(root: root, branch: 'a')).to eq('/tmp/wt/a')
+  end
+
+  describe 'worktree_dir in the repository file' do
+    it 'may place worktrees next to the main checkout' do
+      write_repo("worktree_dir: ../wt-%<repo>s/%<branch>s\n")
+      expect(config.worktree_path(root: root, branch: 'a')).to eq(File.join(dir, 'wt-proj', 'a'))
+    end
+
+    ['/tmp/wt/%<branch>s', '~/wt/%<branch>s', '~other/%<branch>s', '../../wt/%<branch>s',
+     '../x/../../wt'].each do |template|
+      it "may not point elsewhere: #{template}" do
+        write_repo("worktree_dir: '#{template}'\n")
+        expect { config }.to raise_error(Gitflash::UsageError, /'worktree_dir' must be a relative/)
+      end
+    end
+
+    it 'loses to the user file' do
+      write_repo("worktree_dir: ../repo-wt/%<branch>s\n")
+      write_user("worktree_dir: /tmp/mine/%<branch>s\n")
+      expect(config.worktree_path(root: root, branch: 'a')).to eq('/tmp/mine/a')
+    end
   end
 
   {

@@ -71,8 +71,10 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(owner_of('feat/x')).to eq('agent')
     end
 
-    it 'puts the worktree where worktree_dir in .gitflash.yml says' do
-      File.write('.gitflash.yml', "worktree_dir: #{outside}/%<repo>s-%<branch>s\n")
+    it 'puts the worktree where worktree_dir in the user settings says' do
+      FileUtils.mkdir_p(File.join(outside, '.config'))
+      File.write(File.join(outside, '.config', 'gitflash.yml'),
+                 "worktree_dir: #{outside}/%<repo>s-%<branch>s\n")
       path = result_of(run_cli('wt', 'add', 'topic', '--json'))['path']
       expect(path).to eq(File.join(outside, "#{File.basename(Dir.pwd)}-topic"))
       expect(File.directory?(path)).to be(true)

@@ -4,31 +4,35 @@ require 'yaml'
 
 module Gitflash
   # Settings from `.gitflash.yml` in the main checkout and `~/.config/gitflash.yml`.
-  # Precedence: repository file, then user file, then built-in defaults.
+  # Precedence: repository file, then user file, then built-in defaults; for `worktree_dir` the
+  # user file wins, since it decides where on the user's disk checkouts are written.
   # Command-line flags are applied by the commands themselves and win over all of these.
   # An unknown key or a value of the wrong type raises a UsageError, so a typo never goes unnoticed.
   Config = Data.define(:protected_patterns, :stale_days, :worktree_dir) do
     # `root` is the main checkout; `home` is where the user file lives. The repository file wins
     # key by key, except `protected`: both files add patterns, so a repository can protect more
-    # branches but never remove what the user protects.
+    # branches but never remove what the user protects; and `worktree_dir`, where the user file
+    # wins. A cloned repository's file may only place worktrees next to the main checkout.
     def self.load(root:, home: Dir.home)
-      layers = [File.join(home, ConfigKeys::USER_FILE), File.join(root, ConfigKeys::REPO_FILE)]
-               .map { |path| read(path) }
-      values = layers.reduce(ConfigKeys::DEFAULTS) { |merged, layer| merged.merge(layer) }
-      new(protected_patterns: layers.flat_map { |layer| layer.fetch('protected', []) }.uniq,
-          stale_days: values['stale_days'], worktree_dir: values['worktree_dir'])
+      user = read(File.join(home, ConfigKeys::USER_FILE))
+      repo = read(File.join(root, ConfigKeys::REPO_FILE), repository: true)
+      values = ConfigKeys::DEFAULTS.merge(user).merge(repo)
+      new(protected_patterns: (user.fetch('protected', []) + repo.fetch('protected', [])).uniq,
+          stale_days: values['stale_days'],
+          worktree_dir: user['worktree_dir'] || values['worktree_dir'])
     end
 
     def self.defaults
       new(protected_patterns: [], stale_days: 30, worktree_dir: ConfigKeys::DEFAULT_WORKTREE_DIR)
     end
 
-    def self.read(path)
+    def self.read(path, repository: false)
       return {} unless File.file?(path)
 
       reject_duplicate_keys!(path)
       data = YAML.safe_load_file(path) || {}
       validate!(data, path)
+      check_repository_dir!(data['worktree_dir'], path) if repository
       data
     rescue Psych::Exception, SystemCallError, IOError => e
       raise invalid(path, "cannot be read (#{e.message.lines.first.strip})")
@@ -76,6 +80,16 @@ module Gitflash
       end
     end
     private_class_method :check_types!
+
+    # A repository's file comes with the clone, so its worktree_dir must stay next to the main
+    # checkout: relative, no `~`, and not climbing above the main checkout's parent
+    def self.check_repository_dir!(template, path)
+      return if template.nil? || ConfigKeys.contained?(template)
+
+      raise invalid(path, "'worktree_dir' must be a relative path that stays next to the " \
+                          'repository (set other places in ~/.config/gitflash.yml)')
+    end
+    private_class_method :check_repository_dir!
 
     def self.invalid(path, problem)
       UsageError.new("#{path} #{problem}", code: 'invalid_config')
