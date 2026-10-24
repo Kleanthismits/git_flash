@@ -63,7 +63,8 @@ module Gitflash
       # Only groups whose matcher covers the Bash tool count: a gitflash command under another
       # matcher (Edit, say) never runs for Bash commands.
       def entry(settings, event = 'PreToolUse')
-        groups = Array(settings.dig('hooks', event))
+        hooks = settings['hooks']
+        groups = hooks.is_a?(Hash) ? Array(hooks[event]) : []
         bash = groups.select { |group| bash_matcher?(group['matcher']) }
         bash.flat_map { |group| Array(group['hooks']) }
             .find { |hook| hook['command'].to_s.match?(PATTERN) }

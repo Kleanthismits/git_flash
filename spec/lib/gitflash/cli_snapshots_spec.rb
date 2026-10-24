@@ -290,6 +290,33 @@ RSpec.describe Gitflash::Cli, :git_repo do
         .to include('mode' => 'deny', 'previous_mode' => 'ask')
     end
 
+    it 'writes the file in one step and keeps its permissions' do
+      FileUtils.mkdir_p('.claude')
+      File.write(settings, '{}')
+      File.chmod(0o600, settings)
+      run_cli('hook', 'install')
+      expect(File.stat(settings).mode & 0o777).to eq(0o600)
+      expect(Dir.children('.claude')).to eq(['settings.local.json'])
+    end
+
+    it 'leaves the settings as they were when writing fails' do
+      FileUtils.mkdir_p('.claude')
+      File.write(settings, '{"keep": true}')
+      allow(File).to receive(:rename).and_raise(Errno::ENOSPC)
+      run = run_cli('hook', 'install', '--json')
+      expect(run.json['error']).to include('code' => 'invalid_settings')
+      expect(File.read(settings)).to eq('{"keep": true}')
+      expect(Dir.children('.claude')).to eq(['settings.local.json'])
+    end
+
+    it 'refuses hooks it cannot add to, without writing' do
+      FileUtils.mkdir_p('.claude')
+      File.write(settings, '{"hooks": {"PreToolUse": {}}}')
+      run = run_cli('hook', 'install', '--json')
+      expect(run.json['error']).to include('code' => 'invalid_settings')
+      expect(File.read(settings)).to eq('{"hooks": {"PreToolUse": {}}}')
+    end
+
     it 'adds the PostToolUse hook to an install that only has PreToolUse' do
       FileUtils.mkdir_p('.claude')
       pre = { 'matcher' => 'Bash',
@@ -387,6 +414,7 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
         expect(run_cli('hook', 'install', '--scope', 'user', '--json').json['status']).to eq('done')
         expect(JSON.parse(File.read(real)).dig('hooks', 'PreToolUse')).not_to be_nil
+        expect(File.symlink?(File.join(home, '.claude', 'settings.json'))).to be(true)
       end
     end
 

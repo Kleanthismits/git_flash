@@ -2,6 +2,7 @@
 
 require 'fileutils'
 require 'shellwords'
+require 'tempfile'
 
 module Gitflash
   module Commands
@@ -97,8 +98,7 @@ module Gitflash
       def install(data, entry, marking, plan)
         entry ? entry['command'] = plan[:command] : add_entry(data, 'PreToolUse', plan[:command])
         add_entry(data, Hook::Claude::POST_EVENT, MARKING_COMMAND) unless marking
-        FileUtils.mkdir_p(File.dirname(plan[:file]))
-        File.write(plan[:file], "#{JSON.pretty_generate(data)}\n")
+        write_atomically(plan[:file], "#{JSON.pretty_generate(data)}\n")
         ui.report(status: 'done', plan: plan, result: plan,
                   text: "Installed the gitflash hook in #{plan[:file]} (#{mode_text(plan)}).\n" \
                         "It applies to #{plan[:applies_to]}, including running ones.")
@@ -125,9 +125,39 @@ module Gitflash
                   text: "Already installed in #{plan[:file]}.\nIt applies to #{plan[:applies_to]}.")
       end
 
+      # Writes a temporary file next to the settings and renames it into place, so a crash never
+      # leaves half a file: Claude Code ignores a settings file it cannot parse, and with it the
+      # user's own permission rules. A linked user settings file (dotfiles) is written where the
+      # link points, keeping the link; the file keeps its permissions.
+      def write_atomically(path, text)
+        path = File.realpath(path) if File.symlink?(path)
+        FileUtils.mkdir_p(File.dirname(path))
+        file = Tempfile.create(['.gitflash-settings', '.json'], File.dirname(path))
+        replace(file, path, text)
+      rescue SystemCallError, IOError => e
+        raise Error.new("Could not write #{path}: #{e.message}", code: 'invalid_settings')
+      end
+
+      def replace(file, path, text)
+        file.write(text)
+        file.flush
+        file.fsync
+        file.close
+        File.chmod(File.stat(path).mode & 0o7777, file.path) if File.exist?(path)
+        File.rename(file.path, path)
+      ensure
+        FileUtils.rm_f(file.path) if file && File.exist?(file.path)
+      end
+
       def add_entry(data, event, command)
         hooks = (data['hooks'] ||= {})
-        (hooks[event] ||= []) << {
+        groups = hooks.is_a?(Hash) ? (hooks[event] ||= []) : nil
+        unless groups.is_a?(Array)
+          raise Error.new('The settings file has a `hooks` value gitflash cannot add to ' \
+                          "(#{event} must be a list)", code: 'invalid_settings')
+        end
+
+        groups << {
           'matcher' => 'Bash',
           'hooks' => [{ 'type' => 'command', 'command' => command, 'timeout' => 30 }]
         }
