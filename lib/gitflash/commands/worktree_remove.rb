@@ -6,7 +6,8 @@ module Gitflash
     # The main checkout, the worktree gitflash runs in, locked and dirty worktrees are refused
     # unless --force is given (the main checkout and the current one never can be removed).
     # Each removal saves a snapshot of the worktree first; `gitflash undo ID` brings the
-    # directory, its branch and its uncommitted files back.
+    # directory, its branch and its uncommitted files back. Ignored files cannot be saved, so a
+    # removal that deletes some needs --confirm TOKEN instead of --yes.
     class WorktreeRemove < WorktreeCommand
       include RemovalReport
 
@@ -56,13 +57,21 @@ module Gitflash
       def remove(chosen)
         plan = build_plan(chosen)
         return planned(plan, "Would remove:\n#{preview(chosen, plan)}") if dry_run?
-        return cancelled(plan) unless ui.confirm?(summary(chosen, plan), plan: plan)
+
+        # Ignored files are never saved, so losing them needs --confirm TOKEN, not --yes
+        confirmed = ui.confirm?(summary(chosen, plan), plan: plan,
+                                                       irreversible: loses_ignored?(plan))
+        return cancelled(plan) unless confirmed
 
         outcomes = chosen.map { |worktree| remove_one(worktree) }
         report_results(plan, outcomes)
       end
 
       def dry_run? = ui.dry_run?
+
+      def loses_ignored?(plan)
+        plan[:worktrees].any? { |row| row[:ignored_count].positive? }
+      end
 
       def preview(chosen, plan) = "#{bullets(chosen)}#{ignored_warning(plan)}"
 

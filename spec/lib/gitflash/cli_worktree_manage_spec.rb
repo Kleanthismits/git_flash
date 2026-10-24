@@ -255,6 +255,15 @@ RSpec.describe Gitflash::Cli, :git_repo do
                                                       '.env')
       expect(run_cli('wt', 'remove', 'feat',
                      '--dry-run').stdout).to include('will be lost for good')
+
+      # Losing ignored files cannot be undone, so --yes is not enough
+      token = run.json.dig('error', 'confirm_token')
+      expect(run.json.dig('error', 'message')).to include("--confirm #{token}")
+      expect(remove('feat', '--yes').json['status']).to eq('confirmation_required')
+      expect(remove('feat', '--confirm', token).status).to eq(0)
+    end
+
+    it 'still takes --yes when the worktree has no ignored files' do
       expect(remove('feat', '--yes').status).to eq(0)
     end
 
