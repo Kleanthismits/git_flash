@@ -42,8 +42,7 @@ RSpec.describe Gitflash::Hook::CommandParser do
     'echo `printf \\` && git clean -f`' => [['/repo', %w[worktree], []]],
     'echo $(printf ")" && git clean -f)' => [['/repo', %w[worktree], []]],
     "echo $(printf ')' && git clean -f)" => [['/repo', %w[worktree], []]],
-    'echo $(echo $(echo $(echo $(git clean -f))))' => [['/repo', %w[branches head worktree],
-                                                        [:current]]]
+    'echo $(echo $(echo $(echo $(git clean -f))))' => [['/repo', %w[branches head worktree], []]]
   }.each do |command, expected|
     it "reports `#{command}`" do
       expect(targets(command)).to eq(expected)

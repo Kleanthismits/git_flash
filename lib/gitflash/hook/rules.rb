@@ -13,7 +13,8 @@ module Gitflash
       module_function
 
       def for(subcommand, args, dir)
-        return { scope: FULL, branches: [:current] } if subcommand == UNREAD
+        # No branch names: the snapshot keeps every branch
+        return { scope: FULL } if subcommand == UNREAD
 
         rule = RULES[subcommand]
         rule&.call(args, dir)
