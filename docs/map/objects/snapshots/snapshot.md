@@ -4,8 +4,8 @@ cluster: snapshots
 universe: live
 status: verified
 entity: lib/gitflash/snapshot.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus snapshot_exclude (#49)
 ---
 
 # Snapshot
@@ -46,3 +46,4 @@ Parts are saved separately (`scope`) so a command saves only what it can change:
 ## See
 
 - Source: `lib/gitflash/snapshot.rb`
+- `excluded_files`: untracked files left out because `snapshot_exclude` matches them; old snapshots read it as `[]`. `unsaved_files` is `skipped_files + excluded_files`.

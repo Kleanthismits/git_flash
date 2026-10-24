@@ -8,7 +8,8 @@ module Gitflash
   # user file wins, since it decides where on the user's disk checkouts are written.
   # Command-line flags are applied by the commands themselves and win over all of these.
   # An unknown key or a value of the wrong type raises a UsageError, so a typo never goes unnoticed.
-  Config = Data.define(:protected_patterns, :stale_days, :worktree_dir, :worktree_dir_from_repo) do
+  Config = Data.define(:protected_patterns, :stale_days, :worktree_dir, :worktree_dir_from_repo,
+                       :snapshot_exclude) do
     # `root` is the main checkout; `home` is where the user file lives. The repository file wins
     # key by key, except `protected`: both files add patterns, so a repository can protect more
     # branches but never remove what the user protects; and `worktree_dir`, where the user file
@@ -17,9 +18,15 @@ module Gitflash
       user = read(File.join(home, ConfigKeys::USER_FILE))
       repo = read(File.join(root, ConfigKeys::REPO_FILE), repository: true)
       values = ConfigKeys::DEFAULTS.merge(user).merge(repo)
-      new(protected_patterns: (user.fetch('protected', []) + repo.fetch('protected', [])).uniq,
-          stale_days: values['stale_days'], **worktree_dir_of(user, repo))
+      new(protected_patterns: both([user, repo], 'protected'), stale_days: values['stale_days'],
+          snapshot_exclude: both([user, repo], 'snapshot_exclude'), **worktree_dir_of(user, repo))
     end
+
+    # Lists that both files add to
+    def self.both(layers, key)
+      layers.flat_map { |layer| layer.fetch(key, []) }.uniq
+    end
+    private_class_method :both
 
     # The user file wins for worktree_dir; a value from the repository is checked again where
     # it leads (see #check_contained!)
@@ -33,7 +40,7 @@ module Gitflash
 
     def self.defaults
       new(protected_patterns: [], stale_days: 30, worktree_dir: ConfigKeys::DEFAULT_WORKTREE_DIR,
-          worktree_dir_from_repo: false)
+          worktree_dir_from_repo: false, snapshot_exclude: [])
     end
 
     def self.read(path, repository: false)
@@ -109,6 +116,15 @@ module Gitflash
     # True when the branch name matches a configured pattern (shell-style `*` and `?`)
     def protected?(name)
       protected_patterns.any? { |pattern| File.fnmatch?(pattern, name) }
+    end
+
+    # True when an untracked file must stay out of snapshots: the pattern matches its path or
+    # its name (`*.pem`, `.env*`, `secrets/*`)
+    def snapshot_excluded?(path)
+      flags = File::FNM_PATHNAME | File::FNM_DOTMATCH
+      snapshot_exclude.any? do |pattern|
+        File.fnmatch?(pattern, path, flags) || File.fnmatch?(pattern, File.basename(path), flags)
+      end
     end
 
     # Directory for a new worktree. `%<repo>s` and `%<branch>s` are replaced as plain text; a

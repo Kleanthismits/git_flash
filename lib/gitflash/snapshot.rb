@@ -12,9 +12,10 @@ module Gitflash
   # worktree       commit whose tree is the working tree including untracked files (not
   #                ignored ones), nil when the tree was clean
   # skipped_files  untracked files left out because they were too large
+  # excluded_files untracked files left out because `snapshot_exclude` matches them
   Snapshot = Data.define(
     :id, :created_at, :reason, :scope, :worktree_path, :head, :branches, :stashes,
-    :index, :worktree, :skipped_files
+    :index, :worktree, :skipped_files, :excluded_files
   ) do
     def self.from_h(hash)
       new(
@@ -22,8 +23,14 @@ module Gitflash
         scope: hash['scope'], worktree_path: hash['worktree_path'],
         head: { branch: hash.dig('head', 'branch'), sha: hash.dig('head', 'sha') },
         branches: hash['branches'] || {}, stashes: hash['stashes'] || [],
-        index: hash['index'], worktree: hash['worktree'], skipped_files: hash['skipped_files'] || []
+        index: hash['index'], worktree: hash['worktree'],
+        skipped_files: hash['skipped_files'] || [], excluded_files: hash['excluded_files'] || []
       )
+    end
+
+    # Untracked files this snapshot cannot bring back
+    def unsaved_files
+      skipped_files + excluded_files
     end
 
     def scope?(part)

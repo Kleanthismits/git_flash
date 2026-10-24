@@ -67,7 +67,10 @@ Settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml` 
 protected: ["release/*"]   # branch patterns clean and delete never touch; both files add up
 stale_days: 30             # used by --stale without a number
 worktree_dir: "../%<repo>s.worktrees/%<branch>s"   # only these two placeholders, up to 512 characters
+snapshot_exclude: ["*.pem", ".env*", "credentials*"]   # untracked files snapshots never copy; both files add up
 ```
+
+Snapshots copy every untracked file that is not ignored (up to 50 MB) into git objects under `refs/gitflash/snapshots/`. A stray secret that is not in `.gitignore` is copied too, and a `git push --mirror` or a `refs/*` refspec would publish it. Ignore such files, or list them in `snapshot_exclude`; files left out this way cannot be restored by `gitflash undo`.
 
 ### Undo
 

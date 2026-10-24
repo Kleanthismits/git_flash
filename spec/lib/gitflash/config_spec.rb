@@ -78,6 +78,15 @@ RSpec.describe Gitflash::Config do
       .to eq('/tmp/wt/proj/100%<branch>s')
   end
 
+  it 'adds snapshot_exclude from both files and matches paths and names' do
+    write_user("snapshot_exclude: ['*.pem']\n")
+    write_repo("snapshot_exclude: ['.env*']\n")
+    expect(config.snapshot_exclude).to eq(['*.pem', '.env*'])
+    expect(config.snapshot_excluded?('keys/id.pem')).to be(true)
+    expect(config.snapshot_excluded?('app/.env.local')).to be(true)
+    expect(config.snapshot_excluded?('README.md')).to be(false)
+  end
+
   it 'honours a custom worktree_dir' do
     write_user("worktree_dir: /tmp/wt/%<branch>s\n")
     expect(config.worktree_path(root: root, branch: 'a')).to eq('/tmp/wt/a')

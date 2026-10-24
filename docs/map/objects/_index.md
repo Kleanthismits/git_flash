@@ -38,7 +38,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `worktree-revival`: undo of a removed worktree. verified. `lib/gitflash/{worktree_revival,git/in_directory}.rb`
 - `snapshot`: saved-state record. verified. `lib/gitflash/snapshot.rb`
 - `snapshot-store`: create/list/delete under `refs/gitflash/snapshots/`. verified. `lib/gitflash/snapshots.rb`, `lib/gitflash/snapshot_check.rb`
-- `state-capture`: read state, write git objects. verified. `lib/gitflash/state_capture.rb`
+- `state-capture`: read state, write git objects. verified. `lib/gitflash/state_capture.rb`, `lib/gitflash/untracked_files.rb`
 - `restore`: plan and apply a restore. verified. `lib/gitflash/restore.rb`
 
 ## hooks

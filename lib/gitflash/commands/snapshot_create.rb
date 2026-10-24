@@ -20,10 +20,12 @@ module Gitflash
       end
 
       def text(snapshot)
-        text = "Saved snapshot #{snapshot.id}"
-        return text if snapshot.skipped_files.empty?
-
-        "#{text}\nSkipped large untracked files: #{snapshot.skipped_files.join(', ')}"
+        lines = ["Saved snapshot #{snapshot.id}"]
+        lines << "Skipped large untracked files: #{snapshot.skipped_files.join(', ')}" if
+          snapshot.skipped_files.any?
+        lines << "Left out by snapshot_exclude: #{snapshot.excluded_files.join(', ')}" if
+          snapshot.excluded_files.any?
+        lines.join("\n")
       end
     end
   end

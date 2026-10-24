@@ -7,7 +7,8 @@ module Gitflash
     USER_FILE = File.join('.config', 'gitflash.yml')
     DEFAULT_WORKTREE_DIR = '../%<repo>s.worktrees/%<branch>s'
     DEFAULTS = {
-      'protected' => [], 'stale_days' => 30, 'worktree_dir' => DEFAULT_WORKTREE_DIR
+      'protected' => [], 'stale_days' => 30, 'worktree_dir' => DEFAULT_WORKTREE_DIR,
+      'snapshot_exclude' => []
     }.freeze
     PLACEHOLDERS = ['%<repo>s', '%<branch>s'].freeze
     MAX_TEMPLATE_LENGTH = 512
@@ -16,7 +17,9 @@ module Gitflash
                       'a list of branch name patterns'],
       'stale_days' => [->(v) { v.is_a?(Integer) && v.positive? }, 'a positive whole number'],
       'worktree_dir' => [->(v) { template?(v) },
-                         'a path of up to 512 characters that uses only %<repo>s and %<branch>s']
+                         'a path of up to 512 characters that uses only %<repo>s and %<branch>s'],
+      'snapshot_exclude' => [->(v) { v.is_a?(Array) && v.all?(String) },
+                             'a list of file name patterns']
     }.freeze
 
     # Whether a template resolves inside the parent of the main checkout, for any repository and

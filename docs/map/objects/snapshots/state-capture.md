@@ -4,8 +4,8 @@ cluster: snapshots
 universe: live
 status: verified
 entity: lib/gitflash/state_capture.rb
-verified_on: 2026-10-05
-verified_at: 0b7b8d9 plus review fixes
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus snapshot_exclude (#49)
 ---
 
 # State capture
@@ -49,3 +49,7 @@ Work tree is captured through a temporary copy of the index, so the real index i
 ## See
 
 - Source: `lib/gitflash/state_capture.rb`
+
+## Excluded files
+
+Untracked files that `snapshot_exclude` ([[config]]) matches are left out before sizes are read and listed in `excluded_files` on the snapshot (`StateCapture#add_untracked`, `exclude`, loaded from the main checkout's settings). Sizes are split by `UntrackedFiles.split_by_size` (`lib/gitflash/untracked_files.rb`). `Snapshot#unsaved_files` (skipped plus excluded) is what [[worktree-commands]] `wt remove` refuses to delete.
