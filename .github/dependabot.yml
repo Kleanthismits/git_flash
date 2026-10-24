@@ -1,0 +1,7 @@
+version: 2
+updates:
+  # Actions are pinned to commit SHAs; Dependabot proposes new SHAs with the version comment
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
