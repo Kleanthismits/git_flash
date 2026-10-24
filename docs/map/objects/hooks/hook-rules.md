@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: lib/gitflash/hook/rules.rb
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the fail-closed fix (#34)
+verified_at: 6b41e31 plus the fixes for #34 and #35
 ---
 
 # Hook rules and parser
@@ -22,9 +22,9 @@ Only git commands that lose work git cannot restore matter: uncommitted or untra
 - Short options may be bundled: `short_flags` joins their letters, so `git checkout -fq main`, `git switch -fq main` and `git clean -fdq` are seen (`rules.rb`).
 - `checkout` also counts an argument that names an existing file as a discard (`git checkout src/app.rb`), because telling a path from a branch needs git; this can add an extra snapshot, which is harmless (`rules.rb`).
 - Examples: `reset` always saves branches+head+worktree for the current branch (`rules.rb`); `clean` only when forced and not dry-run (`rules.rb`); `branch` only for delete/move/force flags (`rules.rb`).
-- Parser: splits on unquoted `; & |` and newlines (`command_parser.rb`), strips `sudo`, `env`, `VAR=x` (`command_parser.rb`, `60-69`), follows `cd` and `git -C` (`command_parser.rb`). Paths go through `CommandParser.expand`, which keeps `~unknownuser` as a literal name instead of raising; `checkout`'s path test and `worktree remove` use it too, so an odd path never stops the hook from deciding.
+- Parser: splits on unquoted `; & |` and newlines (`command_parser.rb`), strips `sudo`, `env`, `VAR=x` (`command_parser.rb`, `60-69`), follows `cd` and `git -C` (`command_parser.rb`). Paths go through `Hook::Paths.expand` (`lib/gitflash/hook/paths.rb`), which keeps `~unknownuser` as a literal name instead of raising; `checkout`'s path test and `worktree remove` use it too, so an odd path never stops the hook from deciding. A `cd` or `-C` path the shell decides when it runs (`$VAR`, `$(...)`, backticks, `cd -`; `Paths.unresolved?`) falls back to the hook's `cwd`, so the snapshot lands in the directory Claude runs in instead of a directory that does not exist.
 - Commands inside `bash -c`, `sh -c`, `zsh -c` (also `-lc`) and `eval` are parsed too, up to three levels deep (`CommandParser#nested_script`). Bundled branch flags (`git branch -qD x`) and `git clean -i` count as destructive.
-- **Known misses:** `echo $(git reset --hard)`, backticks, `xargs git branch -D`, `--git-dir` / `--work-tree` (the repository git really uses), a `cd` that fails, and subshell scope (`(cd x; ...)`). The directory is inferred from the text. Also true for `deny` mode.
+- **Known misses:** `echo $(git reset --hard)`, backticks, `xargs git branch -D`, `--git-dir` / `--work-tree` (the repository git really uses), a `cd` that fails, a `cd "$VAR"` that leaves Claude's repository (the snapshot lands in Claude's directory), and subshell scope (`(cd x; ...)`). The directory is inferred from the text. Also true for `deny` mode.
 
 - Creation rules are separate: `Hook::Creations` says which commands create a branch (see [[hook-marking]]); `CommandParser#creations` reuses the same `cd` and `-C` walk through `git_commands`.
 
@@ -48,4 +48,4 @@ Only git commands that lose work git cannot restore matter: uncommitted or untra
 
 ## See
 
-- Source: `lib/gitflash/hook/rules.rb`, `lib/gitflash/hook/command_parser.rb`
+- Source: `lib/gitflash/hook/rules.rb`, `lib/gitflash/hook/command_parser.rb`, `lib/gitflash/hook/paths.rb`

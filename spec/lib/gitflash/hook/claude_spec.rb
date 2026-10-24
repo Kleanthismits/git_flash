@@ -44,12 +44,9 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
     expect(Gitflash::Snapshots.new.list).to eq([])
   end
 
-  it 'does nothing for safe commands, other tools and non-repositories' do
+  it 'does nothing for safe commands and other tools' do
     expect(described_class.new.call(input('git status'))).to be_nil
     expect(described_class.new.call(input('git reset --hard', tool: 'Edit'))).to be_nil
-    Dir.mktmpdir do |dir|
-      expect(described_class.new.call(input('git reset --hard', cwd: dir))).to be_nil
-    end
   end
 
   describe 'PostToolUse' do
@@ -157,9 +154,31 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
       end
     end
 
-    it 'stays silent in snapshot mode when there is nothing to snapshot' do
+    it 'tells the agent in snapshot mode that nothing was saved, without asking' do
       Dir.mktmpdir do |dir|
-        expect(described_class.new.call(input('git reset --hard', cwd: dir))).to be_nil
+        output = described_class.new.call(input('git reset --hard', cwd: dir))
+        expect(output[:hookSpecificOutput]).not_to have_key(:permissionDecision)
+        expect(context(output)).to include('could not save a snapshot', dir)
+      end
+    end
+  end
+
+  describe 'a directory the shell decides when it runs' do
+    ['cd "$(git rev-parse --show-toplevel)" && git clean -fd', 'cd "$REPO" && git clean -fd',
+     'cd `pwd` && git clean -fd', 'cd - && git clean -fd',
+     'git -C "$REPO" clean -fd'].each do |command|
+      it "snapshots the directory Claude runs in for #{command}" do
+        output = described_class.new.call(input(command))
+        expect(Gitflash::Snapshots.new.list.size).to eq(1)
+        expect(context(output)).to include('gitflash undo')
+      end
+    end
+
+    it 'names the commands it could not snapshot next to the ones it did' do
+      Dir.mktmpdir do |dir|
+        output = described_class.new.call(input("git clean -fd; git -C #{dir} clean -fd"))
+        expect(context(output)).to include('gitflash undo', 'could not save a snapshot before ' \
+                                                            "`git -C #{dir} clean -fd`")
       end
     end
   end

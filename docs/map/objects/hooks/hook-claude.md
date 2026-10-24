@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: lib/gitflash/hook/claude.rb
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the fail-closed fix (#34)
+verified_at: 6b41e31 plus the fixes for #34 and #35
 ---
 
 # Claude hook
@@ -28,7 +28,8 @@ The agent keeps using plain git. The hook snapshots first and tells the agent ho
 - Output is Claude Code's hook protocol (`hookSpecificOutput`, `additionalContext`, `permissionDecision`), not gitflash's envelope (`claude.rb`).
 - `HookCli#claude` rescues `StandardError`, warns and exits 0 (`lib/gitflash/hook_cli.rb`). The output then comes from `Hook::Failure.output` (`lib/gitflash/hook/failure.rb`): nothing in snapshot mode or for PostToolUse input, otherwise `permissionDecision` `ask` / `deny` with `Messages.failure`. If that output cannot be written either (stdin or stdout fails), ask and deny mode exit 2, which Claude Code reads as a block; snapshot mode still exits 0. It does not use [[command-runner]] or [[ui-output]].
 - A snapshot that raises (unreadable file, `index.lock`, bad snapshot ref) is warned about in `save` and counts as unsaved, so `ask` still asks.
-- `CommandParser.expand` is `File.expand_path` that keeps `~unknownuser` as a literal name instead of raising; [[hook-rules]] use it too.
+- Paths are read by `Hook::Paths` (see [[hook-rules]]): `~unknownuser` never raises, and a shell-decided `cd` / `-C` path falls back to the hook's `cwd`.
+- Every risky command that runs where no snapshot could be saved is named to the agent with `Messages.unsaved` (with the directory), in every mode and next to the `gitflash undo` advice for the ones that were saved. Before, snapshot mode stayed silent.
 
 ## Connected to
 

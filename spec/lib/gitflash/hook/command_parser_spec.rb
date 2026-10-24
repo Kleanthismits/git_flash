@@ -44,6 +44,13 @@ RSpec.describe Gitflash::Hook::CommandParser do
     end
   end
 
+  it 'falls back to the directory Claude runs in when the shell decides the path' do
+    expect(targets('cd "$(git rev-parse --show-toplevel)" && git reset --hard').first.first)
+      .to eq('/repo')
+    expect(targets('cd sub; git -C "$X" clean -f; cd -; git clean -f').map(&:first))
+      .to eq(%w[/repo /repo])
+  end
+
   it 'follows cd and git -C' do
     expect(targets('cd sub && git clean -f; git -C /other reset --hard')).to eq(
       [['/repo/sub', %w[worktree], []], ['/other', %w[branches head worktree], [:current]]]
