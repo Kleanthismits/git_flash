@@ -20,8 +20,20 @@ module Gitflash
       end
 
       def unsaved(targets)
-        "gitflash could not save a snapshot before #{commands(targets)} (the directory is not a " \
-          'git work tree or does not exist), so nothing can be restored with `gitflash undo`.'
+        dirs = targets.map(&:dir).uniq.join(', ')
+        "gitflash could not save a snapshot before #{commands(targets)} in #{dirs} (not a git " \
+          'work tree, does not exist, or the snapshot failed), so nothing it discards there can ' \
+          'be restored with `gitflash undo`. Run `gitflash snapshot` in that repository first ' \
+          'if the work matters.'
+      end
+
+      # The directory of these commands is decided by the shell (`cd "$REPO"`, `git -C "$X"`),
+      # so the snapshot was taken where Claude runs and may not cover what they change
+      def guessed(targets)
+        "The shell decides where #{commands(targets)} runs, so gitflash could only guess the " \
+          "directory (#{targets.map(&:dir).uniq.join(', ')}). If the command changes another " \
+          'repository, nothing it discards there can be restored; run `gitflash snapshot` in ' \
+          'that repository first if the work matters.'
       end
 
       def denial(targets)

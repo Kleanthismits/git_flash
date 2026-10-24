@@ -14,7 +14,8 @@ module Gitflash
     # snapshot is harmless; a missed one is not.
     class CommandParser
       # dir: where to take the snapshot; branches: names, or :current for the checked-out one
-      Target = Data.define(:dir, :command, :scope, :branches)
+      # guessed: the shell decides the directory (`cd "$REPO"`), so dir is only a fallback
+      Target = Data.define(:dir, :command, :scope, :branches, :guessed)
 
       PREFIXES = %w[sudo command exec time nohup env].freeze
       SHELLS = %w[bash sh zsh dash ksh].freeze
@@ -25,22 +26,15 @@ module Gitflash
         @cwd = cwd
       end
 
-      # File.expand_path, except that `~user` for an unknown user is kept as a literal name
-      # instead of raising: an error here must not stop the hook from deciding
-      def self.expand(path, dir)
-        File.expand_path(path, dir)
-      rescue ArgumentError
-        File.join(File.expand_path(dir), path)
-      end
-
       # Git commands that can lose work, with what to save before them
       def targets(command_line)
         git_commands(command_line).filter_map do |git|
           rule = Rules.for(git.subcommand, git.args, git.dir)
           next unless rule
 
-          Target.new(dir: rule.fetch(:dir, git.dir), command: git.command, scope: rule[:scope],
-                     branches: rule[:branches] || [])
+          dir = rule.fetch(:dir, git.dir)
+          Target.new(dir: dir.to_s, command: git.command, scope: rule[:scope],
+                     branches: rule[:branches] || [], guessed: Paths.guessed?(dir))
         end
       end
 
@@ -64,7 +58,7 @@ module Gitflash
           next [] if words.empty?
 
           if words.first == 'cd'
-            dir = self.class.expand(words[1] || Dir.home, dir)
+            dir = change_dir(words[1] || Dir.home, dir)
             next []
           end
           commands_in(words, dir, segment.strip, depth)
@@ -86,6 +80,13 @@ module Gitflash
 
         index = words.index { |word| word.match?(/\A-[a-z]*c[a-z]*\z/) }
         index && words[index + 1]
+      end
+
+      # The directory after `cd PATH` or `git -C PATH`. A path the shell decides when it runs
+      # (`cd "$(git rev-parse --show-toplevel)"`, `cd "$REPO"`, `cd -`) falls back to the
+      # directory Claude runs in: a snapshot there is better than none.
+      def change_dir(path, dir)
+        Paths.change_dir(path, dir, @cwd)
       end
 
       # Splits on unquoted ; & | and newlines
@@ -137,7 +138,7 @@ module Gitflash
       def skip_git_options(words, dir)
         index = 1
         while (option = words[index])&.start_with?('-')
-          dir = self.class.expand(words[index + 1].to_s, dir) if option == '-C'
+          dir = change_dir(words[index + 1].to_s, dir) if option == '-C'
           index += option == '-C' || OPTIONS_WITH_VALUE.include?(option) ? 2 : 1
         end
         [index, dir]

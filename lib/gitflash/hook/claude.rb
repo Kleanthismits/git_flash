@@ -41,9 +41,11 @@ module Gitflash
         return nil if targets.empty?
         return deny(targets) if @mode == 'deny'
 
-        saved = merge_by_dir(targets).filter_map { |target| save(target) }
-        # Asking is the user's protection: it must not depend on a snapshot having been saved
-        saved.empty? && @mode != 'ask' ? nil : output(saved, targets)
+        merged = merge_by_dir(targets)
+        saved = merged.filter_map { |target| save(target) }
+        # Asking is the user's protection: it must not depend on a snapshot having been saved.
+        # A command that runs where nothing could be saved is always reported to the agent.
+        output(saved, merged - saved.map(&:first))
       end
 
       # Recording is a side feature: when it fails, snapshots and the ask or deny decision still run
@@ -87,7 +89,8 @@ module Gitflash
         targets.group_by(&:dir).map do |dir, group|
           CommandParser::Target.new(
             dir: dir, command: group.map(&:command).join(' && '),
-            scope: group.flat_map(&:scope).uniq, branches: group.flat_map(&:branches).uniq
+            scope: group.flat_map(&:scope).uniq, branches: group.flat_map(&:branches).uniq,
+            guessed: group.any?(&:guessed)
           )
         end
       end
@@ -120,8 +123,11 @@ module Gitflash
         end
       end
 
-      def output(saved, targets)
-        context = saved.empty? ? Messages.unsaved(targets) : Messages.saved(saved)
+      def output(saved, unsaved)
+        guessed = (saved.map(&:first) + unsaved).select(&:guessed)
+        context = [(Messages.saved(saved) unless saved.empty?),
+                   (Messages.unsaved(unsaved) unless unsaved.empty?),
+                   (Messages.guessed(guessed) unless guessed.empty?)].compact.join(' ')
         specific = { hookEventName: EVENT, additionalContext: context }
         if @mode == 'ask'
           specific[:permissionDecision] = 'ask'
