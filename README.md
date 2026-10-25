@@ -57,7 +57,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 
 `gitflash wt add feature` creates a worktree (default `../<repo>.worktrees/feature`) and marks a new branch as agent work. For a branch made with plain git, run `gitflash mark` on it (no argument marks the current branch). `gitflash wt list --json` gives every worktree's absolute path, branch, dirty state, ahead/behind, merge status, lock state and owner, so an agent never has to switch directories.
 
-`gitflash wt remove` and `gitflash wt clean` save a snapshot first, and `gitflash undo` adds the worktree back with its branch and uncommitted files. Ignored files (`.env`, `node_modules`) are not saved: the plan lists them before they are deleted, and removing a worktree that has some needs `--confirm TOKEN` (from the plan's error) instead of `--yes`. A worktree with an untracked file over 50 MB is not removed.
+`gitflash wt remove` and `gitflash wt clean` save a snapshot first, and `gitflash undo` adds the worktree back with its branch and uncommitted files. Ignored files (`.env`, `node_modules`) are not saved: the plan lists them before they are deleted, and removing a worktree that has some needs `--confirm TOKEN` (the token the refusal names) instead of `--yes`. A worktree with an untracked file over 50 MB is not removed.
 
 `gitflash pick other-branch --list` lists the commits missing here (a commit whose patch is already here is marked `=`). `gitflash pick other-branch SHA... --yes` applies them oldest first with `-x`. On a conflict it stops and lists the files; resolve them and run `gitflash pick --continue`, or `--skip` / `--abort`.
 
