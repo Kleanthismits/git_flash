@@ -92,7 +92,8 @@ clean:
 
     Never selected: the current and default branch, main, master, develop, development, trunk,
     release/*, `protected` branches from .gitflash.yml, and branches checked out in any
-    worktree. Without origin/HEAD the default branch is guessed, and the plan warns about it. Unmerged branches are kept unless
+    worktree. With an origin remote but no origin/HEAD the default branch is guessed, and
+    the plan warns about it. Unmerged branches are kept unless
     --force is given. Every chosen branch lists why it was chosen.
 
     Asks for confirmation; pass --yes to skip it (required without a terminal), or --dry-run.

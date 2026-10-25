@@ -121,6 +121,16 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run.json.dig('error', 'message')).to include('Note: origin/HEAD is not set')
     end
 
+    it 'warns in the plan of a clean with nothing to delete too' do
+      git('branch', '-D', 'done')
+      expect(plan_of(clean)['warning']).to include('origin/HEAD is not set')
+    end
+
+    it 'does not warn when the only remote is not origin' do
+      git('remote', 'rename', 'origin', 'upstream')
+      expect(plan_of(clean)).not_to have_key('warning')
+    end
+
     it 'does not warn when origin/HEAD is set or there is no remote' do
       git('update-ref', 'refs/remotes/origin/main', 'HEAD')
       git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main')

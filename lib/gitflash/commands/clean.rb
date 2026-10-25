@@ -49,14 +49,14 @@ module Gitflash
                    end
       end
 
-      # A remote but no origin/HEAD: the default branch came from a local main or master
+      # An origin remote but no origin/HEAD: the default branch came from a local main or master
       def default_branch_guessed?
         _out, _err, set = Git::BashCommand.capture('git', 'symbolic-ref', '--quiet',
                                                    "#{Repo::REMOTE_HEAD}HEAD")
         return false if set
 
         remotes, _err, = Git::BashCommand.capture('git', 'remote')
-        !remotes.strip.empty?
+        remotes.split.include?('origin')
       end
 
       def skipped_row(candidate)
@@ -65,6 +65,7 @@ module Gitflash
 
       def nothing_to_clean
         plan = { branches: [], force: force?, reasons: {}, skipped: @skipped }
+        plan[:warning] = warning if warning
         ui.report(status: 'noop', plan: plan, result: { deleted: [], failed: [] },
                   text: @skipped.empty? ? 'Nothing to clean' : skipped_text)
       end

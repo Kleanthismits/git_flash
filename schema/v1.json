@@ -1618,7 +1618,7 @@
       "properties": {
         "warning": {
           "type": "string",
-          "description": "Set when the repository has a remote but no origin/HEAD: the default branch, and so what counts as merged, was guessed."
+          "description": "Set when the repository has an origin remote but no origin/HEAD: the default branch, and so what counts as merged, was guessed."
         },
         "branches": {
           "type": "array",
