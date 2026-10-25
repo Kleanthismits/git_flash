@@ -110,9 +110,20 @@ Second beta of the parallel agent work release: the `pick` branch list, a quiete
   - A literal backslash in a path is shown doubled, so a path with a newline and a path with the characters backslash and n stay two different choices in the `wt remove` menu
   - The hook marks a branch the command deleted and created again (`git branch -D x && git switch -c x`) as agent work: the record keeps a branch's creation stamp, not only its name
 
-## [Unreleased]
+## [0.7.0.beta3] - 2026-10-25
 
-Fixes from a security review of the repository (issues #34 to #54).
+Third beta of the parallel agent work release: the fixes of a security review of the repository (issues #34 to #54), each reviewed before merging. Install with `gem install gitflash --pre`. Needs git 2.36 or newer.
+
+Some behaviour changes, so check scripts and agent instructions that call gitflash:
+
+- `gc`, and `wt remove` / `wt clean` of a worktree with ignored files, are no longer confirmed by `--yes`: pass `--confirm TOKEN` with the token the refusal names
+- `gc --older-than` takes a whole number of days, 1 or more
+- `mark` without `--owner` marks the branch as `human` when stdin is a terminal
+- `clean` and `delete` also protect `develop`, `development`, `trunk` and `release/*`
+- A repository's `worktree_dir` must stay next to the repository; set other places in `~/.config/gitflash.yml`
+- Usage errors exit with 2 and, with `--json`, print the JSON envelope
+
+The changes:
 
 - The Claude hook no longer lets a command through when it fails in `ask` or `deny` mode: an error now asks the user or blocks the command, with the reason. A snapshot that fails no longer stops `ask` mode from asking, and `cd ~unknownuser` or `git -C ~unknownuser` no longer makes the hook fail (#34)
 - The Claude hook snapshots the directory Claude runs in when a `cd` or `git -C` path is decided by the shell (`cd "$(git rev-parse --show-toplevel)"`, `cd "$REPO"`, `cd -`); before, it looked for a directory with that literal name and saved nothing. It says that directory was a guess and may not be the repository the command changes, and it tells the agent about every risky command it could not snapshot, in snapshot mode too, instead of staying silent (#35)
