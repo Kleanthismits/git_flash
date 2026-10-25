@@ -153,8 +153,11 @@ mark:
     created. The mark is the git config key `branch.<name>.gitflash-owner` and disappears with
     the branch.
 
-    Without BRANCH the current branch is marked. The owner is `agent` unless --owner human is
-    given; --clear removes the mark. A branch without a mark counts as human work.
+    Without BRANCH the current branch is marked. Without --owner the owner is `human` when you
+    run it in a terminal and `agent` when stdin is not a terminal (agents, CI), so a person
+    never marks their own branch as one `clean --agent` deletes; a script run from a terminal
+    should pass --owner agent; --clear removes the mark. A
+    branch without a mark counts as human work.
 
     `gitflash wt add` marks the branches it creates. Use `gitflash mark` for branches made with
     plain git, for example at the start of an agent session: `gitflash mark`.

@@ -2,8 +2,10 @@
 
 module Gitflash
   module Commands
-    # Marks branches as agent or human work (`--owner`, default agent) or removes the mark
-    # (`--clear`), so `gitflash clean --agent` knows which branches an agent created.
+    # Marks branches as agent or human work (`--owner`) or removes the mark (`--clear`), so
+    # `gitflash clean --agent` knows which branches an agent created. Without --owner a person
+    # in a terminal marks the branch as theirs (human) and an agent or script as agent work:
+    # `agent` is the side `clean --agent` deletes, so a person never claims it by accident.
     # Without branch names the current branch is marked. Needs no confirmation: only a git
     # config key changes, and `--clear` or another `mark` reverses it.
     class Mark < Base
@@ -32,10 +34,14 @@ module Gitflash
           usage_error!('invalid_options', 'Use either --owner or --clear, not both') if given
           return nil
         end
-        return 'agent' if given.nil?
+        return default_owner if given.nil?
         return given if Ownership::OWNERS.include?(given)
 
         usage_error!('invalid_options', "Unknown owner '#{given}' (use agent or human)")
+      end
+
+      def default_owner
+        $stdin.tty? ? 'human' : 'agent'
       end
 
       def verb

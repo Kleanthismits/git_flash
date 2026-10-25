@@ -4,8 +4,8 @@ cluster: commands
 universe: live
 status: verified
 entity: lib/gitflash/commands/mark.rb
-verified_on: 2026-10-05
-verified_at: cb85dd2
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus the terminal default (#50)
 ---
 
 # Mark command
@@ -18,7 +18,7 @@ Set or clear the agent / human owner of branches. Code: `Commands::Mark`.
 
 ## Shape
 
-- `mark [BRANCH...] [--owner agent|human] [--clear]`. No names: the current branch (`invalid_usage` on a detached HEAD). Owner defaults to `agent`. `--owner` with `--clear` is `invalid_options`; `--owner` values outside the enum are rejected by Thor itself (exit 1, plain text).
+- `mark [BRANCH...] [--owner agent|human] [--clear]`. No names: the current branch (`invalid_usage` on a detached HEAD). Without `--owner` the owner is `human` when stdin is a terminal (a person) and `agent` otherwise (an agent or script) (`Mark#default_owner`): `agent` is what `clean --agent` deletes, so a person never claims a branch for it by accident. `--owner` with `--clear` is `invalid_options`; `--owner` values outside the enum are rejected by Thor itself (exit 1, plain text).
 - Every name must exist (`unknown_branch`); nothing is written when one is unknown.
 - No confirm, no snapshot: only a git config key changes and the command reverses it. `--dry-run` supported.
 - Result rows carry `owner` and `previous`; status `noop` when nothing changes (`lib/gitflash/commands/mark.rb`).
