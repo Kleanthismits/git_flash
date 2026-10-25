@@ -4,8 +4,8 @@ cluster: snapshots
 universe: live
 status: verified
 entity: lib/gitflash/snapshots.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus the error envelope fix (#46)
 ---
 
 # Snapshot store
@@ -18,10 +18,10 @@ Nothing outside git's object store is written, so snapshots survive without a da
 
 ## Shape
 
-- One commit per snapshot under `refs/gitflash/snapshots/<id>` (`snapshots.rb:15`, `66`). Message = metadata JSON, tree = empty, parents = every referenced commit so git keeps them (`snapshots.rb:63-68`).
+- One commit per snapshot under `refs/gitflash/snapshots/<id>` (`snapshots.rb:15`, `81`). Message = metadata JSON, tree = empty, parents = every referenced commit so git keeps them (`snapshots.rb:78-83`).
 - `create` returns the latest snapshot when state is unchanged (`snapshots.rb:26-32`).
-- `list` newest first by ref name (`snapshots.rb:35-39`). Ids are `YYYYMMDDTHHMMSSffffff-xxxx` (`snapshots.rb:57-61`).
-- `delete` = `update-ref -d`; objects are freed by git's own gc later (`snapshots.rb:45-47`, `lib/gitflash/commands/gc.rb:5-6`).
+- `list` newest first by ref name, skipping unreadable refs (`snapshots.rb:36-54`). Ids are `YYYYMMDDTHHMMSSffffff-xxxx` (`snapshots.rb:72-76`).
+- `delete` = `update-ref -d`; objects are freed by git's own gc later (`snapshots.rb:60-62`, `lib/gitflash/commands/gc.rb:5-8`).
 - Uses `exec`, so a git failure raises and blocks the change that wanted a snapshot.
 
 ## Connected to
@@ -46,3 +46,7 @@ Nothing outside git's object store is written, so snapshots survive without a da
 ## See
 
 - Source: `lib/gitflash/snapshots.rb`
+
+## Damaged refs
+
+`Snapshots#list` reads `%(refname)` with each message; a ref whose message is not a JSON object with a valid `created_at` is skipped with a warning on stderr (`Snapshots#parse`), so one bad ref cannot break every command that lists or takes snapshots.

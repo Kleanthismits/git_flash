@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: schema/v1.json
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the --confirm token (#42)
+verified_at: 6b41e31 plus the --confirm token (#42) and the error envelope fix (#46)
 ---
 
 # JSON schema
@@ -53,3 +53,4 @@ One envelope for all commands, so agents parse one shape. Roadmap standard 4: co
 ## See
 
 - Source: `schema/v1.json`
+- `command` enum also has `gitflash`, used only for an `invalid_usage` error whose command line names no known command.

@@ -31,11 +31,26 @@ module Gitflash
       store(Snapshot.new(**identity, reason: reason, **state))
     end
 
-    # Snapshots, newest first
+    # Snapshots, newest first. A ref whose message is not a snapshot is skipped with a warning,
+    # so one damaged ref cannot stop every command that lists or takes snapshots.
     def list
-      git('for-each-ref', '--sort=-refname', '--format=%(contents:subject)', REF_PREFIX)
+      git('for-each-ref', '--sort=-refname', '--format=%(refname)%00%(contents:subject)',
+          REF_PREFIX)
         .each_line(chomp: true).reject(&:empty?)
-        .map { |line| Snapshot.from_h(JSON.parse(line)) }
+        .filter_map { |line| parse(*line.split("\0", 2)) }
+    end
+
+    def parse(ref, message)
+      data = JSON.parse(message.to_s)
+      raise TypeError, 'not an object' unless data.is_a?(Hash)
+
+      snapshot = Snapshot.from_h(data)
+      Time.iso8601(snapshot.created_at.to_s)
+      snapshot
+    rescue JSON::ParserError, TypeError, ArgumentError => e
+      warn "gitflash: skipping #{TerminalText.line(ref)}, which is not a readable snapshot " \
+           "(#{e.message.lines.first&.strip})"
+      nil
     end
 
     def find(id)

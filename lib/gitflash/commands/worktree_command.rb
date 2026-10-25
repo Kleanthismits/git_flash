@@ -12,9 +12,16 @@ module Gitflash
 
       # The worktree named by a path or a branch; raises `unknown_worktree` when none matches
       def find!(target, list = worktrees.list)
-        path = File.expand_path(target)
+        path = expand(target)
         list.find { |worktree| worktree.path == path || worktree.branch == target } ||
           usage_error!('unknown_worktree', "Unknown worktree: #{target}")
+      end
+
+      # File.expand_path, but `~name` for an unknown user is a usage error, not a crash
+      def expand(path)
+        File.expand_path(path)
+      rescue ArgumentError => e
+        usage_error!('invalid_options', "Cannot read the path #{path}: #{e.message}")
       end
 
       def refuse_main!(worktree, action)

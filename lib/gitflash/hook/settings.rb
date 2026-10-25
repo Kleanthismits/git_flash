@@ -44,9 +44,19 @@ module Gitflash
       def read(path)
         return {} unless File.exist?(path)
 
-        JSON.parse(File.read(path))
+        check_shape!(path, JSON.parse(File.read(path)))
       rescue JSON::ParserError => e
         raise Error.new("#{path} is not valid JSON: #{e.message}", code: 'invalid_settings')
+      rescue SystemCallError => e
+        raise Error.new("#{path} cannot be read: #{e.message}", code: 'invalid_settings')
+      end
+
+      def check_shape!(path, data)
+        # A missing `hooks` key is a file without hooks yet; a present one must be an object
+        return data if data.is_a?(Hash) && (!data.key?('hooks') || data['hooks'].is_a?(Hash))
+
+        raise Error.new("#{path} does not hold a JSON object with a `hooks` object",
+                        code: 'invalid_settings')
       end
 
       # The gitflash hook entry for an event (PreToolUse by default) in parsed settings, or nil.
