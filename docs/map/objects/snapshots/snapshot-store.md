@@ -18,10 +18,10 @@ Nothing outside git's object store is written, so snapshots survive without a da
 
 ## Shape
 
-- One commit per snapshot under `refs/gitflash/snapshots/<id>` (`snapshots.rb:15`, `81`). Message = metadata JSON, tree = empty, parents = every referenced commit so git keeps them (`snapshots.rb:78-83`).
+- One commit per snapshot under `refs/gitflash/snapshots/<id>` (`snapshots.rb:15`, `89`). Message = metadata JSON, tree = empty, parents = every referenced commit so git keeps them (`snapshots.rb:86-91`).
 - `create` returns the latest snapshot when state is unchanged (`snapshots.rb:26-32`).
-- `list` newest first by ref name, skipping unreadable refs (`snapshots.rb:36-54`). Ids are `YYYYMMDDTHHMMSSffffff-xxxx` (`snapshots.rb:72-76`).
-- `delete` = `update-ref -d`; objects are freed by git's own gc later (`snapshots.rb:60-62`, `lib/gitflash/commands/gc.rb:5-8`).
+- `list` newest first by `created_at`, skipping unreadable or untrusted refs (`snapshots.rb:38-62`; see below). Ids are `YYYYMMDDTHHMMSSffffff-xxxx` (`snapshots.rb:80-84`).
+- `delete` = `update-ref -d`; objects are freed by git's own gc later (`snapshots.rb:68-70`, `lib/gitflash/commands/gc.rb:5-8`).
 - Uses `exec`, so a git failure raises and blocks the change that wanted a snapshot.
 
 ## Connected to
