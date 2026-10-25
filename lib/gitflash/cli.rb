@@ -96,15 +96,14 @@ module Gitflash
     end
 
     desc 'gc', 'Delete old snapshots'
-    option :older_than, type: :string, banner: 'DAYS',
-                        desc: 'Delete snapshots older than DAYS days, at least 1 (default 30)'
     long_desc <<~TEXT
       Deletes snapshots older than --older-than DAYS (default 30). gitflash undo cannot bring a
       deleted snapshot back, so --yes is not enough: without a terminal gc returns the plan and a
       confirm_token; re-run with --confirm TOKEN to delete exactly those snapshots. In a terminal
       you type the token. Pass --dry-run to see the plan.
     TEXT
-    option :older_than, type: :numeric, banner: 'DAYS',
+    option :older_than, type: :string, banner: 'DAYS',
+                        desc: 'Delete snapshots older than DAYS days, at least 1 (default 30)'
     def gc
       run_command('gc', Commands::Gc)
     end
