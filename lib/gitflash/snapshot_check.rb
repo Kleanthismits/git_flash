@@ -13,13 +13,35 @@ module Gitflash
 
     # Why the snapshot read from ref cannot be trusted, or nil
     def problem(ref, snapshot)
+      shape_problem(snapshot) || field_problem(ref, snapshot)
+    end
+
+    # Fields of the wrong type, which the other checks could not even read
+    def shape_problem(snapshot)
+      return 'branches is not an object' unless snapshot.branches.is_a?(Hash)
+      return 'stashes is not a list' unless snapshot.stashes.is_a?(Array)
+      return 'scope is not a list of names' unless snapshot.scope.is_a?(Array) &&
+                                                   snapshot.scope.all?(String)
+
+      nil
+    end
+
+    def field_problem(ref, snapshot)
       expected = Snapshots::REF_PREFIX + snapshot.id.to_s
       return 'its name does not match its id' unless ref == expected
       return 'a commit id is not a full hex SHA' unless snapshot.object_ids.all? { |id| sha?(id) }
-      return 'a branch name is not valid' unless branch_names(snapshot).all?(BRANCH)
+      return 'a branch name is not valid' unless branch_names(snapshot).all? { |n| branch?(n) }
       return 'worktree_path is not an absolute path' unless path?(snapshot.worktree_path)
 
       nil
+    end
+
+    # BRANCH, and each slash-separated part non-empty, not starting with `.` and not ending in
+    # `.lock`; `@` alone is not a branch name either
+    def branch?(name)
+      name.match?(BRANCH) && name != '@' && name.split('/', -1).all? do |part|
+        !part.empty? && !part.start_with?('.') && !part.end_with?('.lock')
+      end
     end
 
     def sha?(id)

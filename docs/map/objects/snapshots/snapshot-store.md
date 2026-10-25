@@ -51,6 +51,6 @@ Nothing outside git's object store is written, so snapshots survive without a da
 
 `Snapshots#list` reads `%(refname)` with each message; a ref whose message is not a JSON object with a valid `created_at` is skipped with a warning on stderr (`Snapshots#parse`), so one bad ref cannot break every command that lists or takes snapshots.
 
-A snapshot is also skipped when `SnapshotCheck.problem` (`lib/gitflash/snapshot_check.rb`) finds a field it cannot trust: a ref name that is not `REF_PREFIX + id`, a commit id that is not a full hex SHA, a branch name git would refuse (leading `-`, `..`, control characters and the like), or a `worktree_path` that is not absolute. These fields go into git commands and paths in [[restore]] and [[worktree-revival]].
+A snapshot is also skipped when `SnapshotCheck.problem` (`lib/gitflash/snapshot_check.rb`) finds a field it cannot trust: a ref name that is not `REF_PREFIX + id`, a commit id that is not a full hex SHA, fields of the wrong type (`branches` not an object, `stashes` or `scope` not a list), a branch name git would refuse (leading `-`, `..`, control characters, `@` alone, a part that is empty, starts with `.` or ends in `.lock`), or a `worktree_path` that is not absolute. These fields go into git commands and paths in [[restore]] and [[worktree-revival]].
 
 The list is ordered by `created_at` inside each snapshot (then id), not by ref name, so a ref named to sort first cannot become `undo`'s default.

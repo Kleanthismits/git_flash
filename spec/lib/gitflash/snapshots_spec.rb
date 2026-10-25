@@ -159,6 +159,17 @@ RSpec.describe Gitflash::Snapshots, :git_repo do
         .to_stderr
     end
 
+    it 'skips fields of the wrong type and branch names git refuses, without raising' do
+      plant('e', id: 'e', branches: [])
+      plant('f', id: 'f', stashes: 'x')
+      %w[feature/.hidden a.lock/b @ a//b].each_with_index do |name, index|
+        plant("g#{index}", id: "g#{index}", branches: { name => good.branches['main'] })
+      end
+      expect { expect(snapshots.list.map(&:id)).to eq([good.id]) }
+        .to output(/branches is not an object.*stashes is not a list.*branch name is not valid/m)
+        .to_stderr
+    end
+
     it 'orders by the time inside the snapshot, not by the ref name' do
       plant('99999999T999999999999-zzzz', id: '99999999T999999999999-zzzz',
                                           created_at: '2000-01-01T00:00:00.000000Z')

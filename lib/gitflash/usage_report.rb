@@ -5,6 +5,9 @@ module Gitflash
   # outside an enum, a missing argument) as gitflash's own errors are printed: in the JSON
   # envelope with --json, else as text on stderr.
   class UsageReport
+    TRUE_VALUES = %w[true TRUE t T].freeze
+    FALSE_VALUES = %w[false FALSE f F].freeze
+
     # The command names the JSON envelope knows (schema/v1.json)
     def self.commands
       @commands ||= JSON.parse(File.read(Cli::SCHEMA_PATH)).dig('properties', 'command', 'enum')
@@ -23,9 +26,16 @@ module Gitflash
 
     private
 
-    # Thor takes `--json` and `--json=true` alike
+    # Whether the command line asks for JSON, read as Thor reads a boolean: `--json`,
+    # `--json=t` and the like, `--json false`; the last one given wins
     def json?
-      @args.intersect?(%w[--json --json=true])
+      @args.each_with_index.reduce(false) do |json, (arg, index)|
+        if arg == '--json' then !FALSE_VALUES.include?(@args[index + 1])
+        elsif arg.start_with?('--json=') then TRUE_VALUES.include?(arg.delete_prefix('--json='))
+        elsif arg == '--no-json' then false
+        else json
+        end
+      end
     end
 
     # The command as the envelope names it: `wt` and `worktree` subcommands as
