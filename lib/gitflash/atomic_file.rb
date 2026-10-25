@@ -11,10 +11,19 @@ module Gitflash
     module_function
 
     def write(path, text)
-      path = File.realpath(path) if File.symlink?(path)
+      path = link_target(path) if File.symlink?(path)
       FileUtils.mkdir_p(File.dirname(path))
       file = Tempfile.create(['.gitflash', File.extname(path)], File.dirname(path))
       replace(file, path, text)
+    end
+
+    # Where a link points, also when that file does not exist yet: the link's directory and the
+    # target's directory are resolved, the file name is kept
+    def link_target(path)
+      target = File.expand_path(File.readlink(path), File.dirname(path))
+      return File.realpath(target) if File.exist?(target)
+
+      File.join(File.realpath(File.dirname(target)), File.basename(target))
     end
 
     def replace(file, path, text)

@@ -53,10 +53,16 @@ module Gitflash
 
       def check_shape!(path, data)
         # A missing `hooks` key is a file without hooks yet; a present one must be an object
-        return data if data.is_a?(Hash) && (!data.key?('hooks') || data['hooks'].is_a?(Hash))
+        # whose events are lists of objects, as Claude Code reads them
+        return data if data.is_a?(Hash) && (!data.key?('hooks') || hooks_shape?(data['hooks']))
 
-        raise Error.new("#{path} does not hold a JSON object with a `hooks` object",
-                        code: 'invalid_settings')
+        raise Error.new("#{path} does not hold a JSON object whose `hooks` maps each event to " \
+                        'a list of objects', code: 'invalid_settings')
+      end
+
+      def hooks_shape?(hooks)
+        hooks.is_a?(Hash) &&
+          hooks.values.all? { |groups| groups.is_a?(Array) && groups.all?(Hash) }
       end
 
       # The gitflash hook entry for an event (PreToolUse by default) in parsed settings, or nil.

@@ -311,10 +311,13 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
     it 'refuses hooks it cannot add to, without writing' do
       FileUtils.mkdir_p('.claude')
-      File.write(settings, '{"hooks": {"PreToolUse": {}}}')
-      run = run_cli('hook', 'install', '--json')
-      expect(run.json['error']).to include('code' => 'invalid_settings')
-      expect(File.read(settings)).to eq('{"hooks": {"PreToolUse": {}}}')
+      ['{"hooks": {"PreToolUse": {}}}', '{"hooks": {"PreToolUse": {"matcher": "Bash"}}}',
+       '{"hooks": {"PreToolUse": null}}', '{"hooks": {"PreToolUse": ["x"]}}'].each do |content|
+        File.write(settings, content)
+        run = run_cli('hook', 'install', '--json')
+        expect(run.json['error']).to include('code' => 'invalid_settings')
+        expect(File.read(settings)).to eq(content)
+      end
     end
 
     it 'adds the PostToolUse hook to an install that only has PreToolUse' do
@@ -402,6 +405,19 @@ RSpec.describe Gitflash::Cli, :git_repo do
       error = run_cli('hook', 'install', '--scope', 'project', '--json').json['error']
       expect(error).to include('code' => 'invalid_settings')
       expect(Dir.children(real)).to be_empty
+    end
+
+    it 'writes the user settings through a link whose target does not exist yet' do
+      Dir.mktmpdir do |home|
+        real = File.join(home, 'dotfiles', 'settings.json')
+        FileUtils.mkdir_p([File.dirname(real), File.join(home, '.claude')])
+        File.symlink(real, File.join(home, '.claude', 'settings.json'))
+        allow(Dir).to receive(:home).and_return(home)
+
+        expect(run_cli('hook', 'install', '--scope', 'user', '--json').json['status']).to eq('done')
+        expect(JSON.parse(File.read(real)).dig('hooks', 'PreToolUse')).not_to be_nil
+        expect(File.symlink?(File.join(home, '.claude', 'settings.json'))).to be(true)
+      end
     end
 
     it 'still writes the user settings when that file is a link (dotfiles)' do

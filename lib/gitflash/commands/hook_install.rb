@@ -132,14 +132,10 @@ module Gitflash
         raise Error.new("Could not write #{path}: #{e.message}", code: 'invalid_settings')
       end
 
+      # Settings#read has checked that `hooks` and each of its events have the shape Claude Code
+      # reads, so a missing event is the only one to create
       def add_entry(data, event, command)
-        hooks = (data['hooks'] ||= {})
-        groups = hooks.is_a?(Hash) ? (hooks[event] ||= []) : nil
-        unless groups.is_a?(Array)
-          raise Error.new('The settings file has a `hooks` value gitflash cannot add to ' \
-                          "(#{event} must be a list)", code: 'invalid_settings')
-        end
-
+        groups = ((data['hooks'] ||= {})[event] ||= [])
         hook = { 'type' => 'command', 'command' => command, 'timeout' => 30 }
         groups << { 'matcher' => 'Bash', 'hooks' => [hook] }
       end
