@@ -35,7 +35,21 @@ module Gitflash
     # A pattern that can match a branch name: characters git refuses in branch names, such as a
     # space at either end, would make it match nothing without any warning
     def self.branch_pattern?(value)
-      value.is_a?(String) && !value.empty? && !value.match?(/[\x00-\x20\x7F~^:\\]/)
+      return false unless value.is_a?(String) && !value.empty?
+      return false if value.match?(/[\x00-\x20\x7F~^:\\]/)
+
+      # `..` is never in a branch name; inside `{..,a}` it is only one of the alternatives
+      alternatives(value).any? { |pattern| !pattern.include?('..') }
+    end
+
+    # The patterns `{a,b}` stands for, innermost braces first, as File::FNM_EXTGLOB reads them
+    def self.alternatives(pattern)
+      match = pattern.match(/\{([^{}]*)\}/)
+      return [pattern] unless match
+
+      match[1].split(',', -1).flat_map do |choice|
+        alternatives(match.pre_match + choice + match.post_match)
+      end
     end
 
     # A path template: the two placeholders are the only `%` directives, so a width such as
