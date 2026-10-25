@@ -8,7 +8,7 @@ module Gitflash
   # user file wins, since it decides where on the user's disk checkouts are written.
   # Command-line flags are applied by the commands themselves and win over all of these.
   # An unknown key or a value of the wrong type raises a UsageError, so a typo never goes unnoticed.
-  Config = Data.define(:protected_patterns, :stale_days, :worktree_dir) do
+  Config = Data.define(:protected_patterns, :stale_days, :worktree_dir, :worktree_dir_from_repo) do
     # `root` is the main checkout; `home` is where the user file lives. The repository file wins
     # key by key, except `protected`: both files add patterns, so a repository can protect more
     # branches but never remove what the user protects; and `worktree_dir`, where the user file
@@ -18,12 +18,22 @@ module Gitflash
       repo = read(File.join(root, ConfigKeys::REPO_FILE), repository: true)
       values = ConfigKeys::DEFAULTS.merge(user).merge(repo)
       new(protected_patterns: (user.fetch('protected', []) + repo.fetch('protected', [])).uniq,
-          stale_days: values['stale_days'],
-          worktree_dir: user['worktree_dir'] || values['worktree_dir'])
+          stale_days: values['stale_days'], **worktree_dir_of(user, repo))
     end
 
+    # The user file wins for worktree_dir; a value from the repository is checked again where
+    # it leads (see #check_contained!)
+    def self.worktree_dir_of(user, repo)
+      from_repo = !user.key?('worktree_dir') && repo.key?('worktree_dir')
+      dir = from_repo ? repo['worktree_dir'] : user.fetch('worktree_dir', ConfigKeys::DEFAULT_WORKTREE_DIR)
+      { worktree_dir: dir,
+        worktree_dir_from_repo: from_repo }
+    end
+    private_class_method :worktree_dir_of
+
     def self.defaults
-      new(protected_patterns: [], stale_days: 30, worktree_dir: ConfigKeys::DEFAULT_WORKTREE_DIR)
+      new(protected_patterns: [], stale_days: 30, worktree_dir: ConfigKeys::DEFAULT_WORKTREE_DIR,
+          worktree_dir_from_repo: false)
     end
 
     def self.read(path, repository: false)
@@ -106,7 +116,26 @@ module Gitflash
     # folders.
     def worktree_path(root:, branch:)
       path = worktree_dir.gsub('%<repo>s') { File.basename(root) }.gsub('%<branch>s') { branch }
-      File.expand_path(path, root)
+      path = File.expand_path(path, root)
+      check_contained!(path, root) if worktree_dir_from_repo
+      path
+    end
+
+    private
+
+    # A repository's worktree_dir passed a check on the text alone; a symbolic link in the
+    # repository (`wt-link -> /elsewhere`) could still lead out, so the real location of the
+    # deepest existing directory on the way must stay next to the main checkout too
+    def check_contained!(path, root)
+      parent = File.realpath(File.dirname(root))
+      existing = path
+      existing = File.dirname(existing) until File.exist?(existing)
+      real = File.join(File.realpath(existing), path.delete_prefix(existing))
+      return if real.start_with?("#{parent}/")
+
+      raise UsageError.new("worktree_dir in #{ConfigKeys::REPO_FILE} leads to #{real}, outside " \
+                           "#{parent}; set worktree_dir in ~/.config/gitflash.yml to use it",
+                           code: 'invalid_config')
     end
   end
 end

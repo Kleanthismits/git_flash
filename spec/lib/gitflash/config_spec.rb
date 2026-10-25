@@ -97,6 +97,23 @@ RSpec.describe Gitflash::Config do
       end
     end
 
+    it 'may not lead out through a symbolic link in the repository' do
+      outside = File.join(dir, 'outside')
+      FileUtils.mkdir_p(outside)
+      File.symlink(outside, File.join(root, 'wt-link'))
+      write_repo("worktree_dir: wt-link/%<branch>s\n")
+      expect { config.worktree_path(root: root, branch: 'a') }.not_to raise_error
+
+      elsewhere = Dir.mktmpdir('gitflash-elsewhere')
+      File.symlink(elsewhere, File.join(root, 'far-link'))
+      write_repo("worktree_dir: far-link/%<branch>s\n")
+      reloaded = described_class.load(root: root, home: home)
+      expect { reloaded.worktree_path(root: root, branch: 'a') }
+        .to raise_error(Gitflash::UsageError, /leads to .*outside/)
+    ensure
+      FileUtils.remove_entry(elsewhere) if elsewhere
+    end
+
     it 'loses to the user file' do
       write_repo("worktree_dir: ../repo-wt/%<branch>s\n")
       write_user("worktree_dir: /tmp/mine/%<branch>s\n")
