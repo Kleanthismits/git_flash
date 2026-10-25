@@ -5,7 +5,7 @@ universe: live
 status: verified
 entity: lib/gitflash/hook/rules.rb
 verified_on: 2026-10-24
-verified_at: 6b41e31 plus the fixes for #34 to #38
+verified_at: 6b41e31 plus the fixes for #34 to #38 and #41
 ---
 
 # Hook rules and parser
@@ -18,7 +18,7 @@ Only git commands that lose work git cannot restore matter: uncommitted or untra
 
 ## Shape
 
-- `RULES` map: reset, checkout, restore, clean, switch, stash, branch, update-ref, rebase, merge/cherry-pick/revert/am (abort only), worktree (`lib/gitflash/hook/rules.rb`), plus `HistoryRules::RULES` (`lib/gitflash/hook/history_rules.rb`): `rm -f` (not `--cached`), `checkout-index -f`, `read-tree -u --reset`, `reflog expire|delete`, `gc --prune=now|all`, `prune`, and `push . :branch` / `push . --delete branch` (a name the shell or xargs fills in, or `--delete` with no names, saves every branch). Each returns `{ scope, branches, dir }` or nil.
+- `RULES` map: reset, checkout, restore, clean, switch, stash, branch, update-ref, rebase, merge/cherry-pick/revert/am (abort only), worktree (`lib/gitflash/hook/rules.rb`), plus `HistoryRules::RULES` (`lib/gitflash/hook/history_rules.rb`): `rm -f` (not `--cached`), `checkout-index -f`, `read-tree -u --reset`, `reflog expire|delete`, `gc --prune=now|all`, `prune`, and `push . :branch` / `push . --delete branch` (a name the shell or xargs fills in, or `--delete` with no names, saves every branch). Each returns `{ scope, branches, dir, ignored }` or nil; `ignored: true` (from `clean -x` / `-X` and `worktree remove`) marks a command that also deletes ignored files, carried on `CommandParser::Target#ignored`.
 - `branch` deletions whose names the shell or xargs fills in (`$b`, `{}`) save every branch (empty `branches`). When targets of one directory are merged, an empty `branches` with the `branches` scope wins (`CommandParser::Target.merge`), so a named deletion cannot narrow an unnamed one.
 - `worktree remove` counts without `--force` too: git deletes the worktree's ignored files either way. `clean` without `-f` counts when `git config clean.requireForce` is false in that directory (`Rules.require_force?`, one git call, only when no force flag is given). `update-ref --stdin` saves every branch (the refs come from input).
 - Reflog and prune rules save the current state (`FULL`); commits that only the reflog pointed at are not saved by a snapshot.

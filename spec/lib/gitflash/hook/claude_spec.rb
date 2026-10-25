@@ -53,6 +53,32 @@ RSpec.describe Gitflash::Hook::Claude, :git_repo do
     expect(described_class.new.call(input('git clean -dn'))).to be_nil
   end
 
+  describe 'files no snapshot can bring back' do
+    before do
+      File.write('.gitignore', ".env\nbuild/\n")
+      File.write('.env', "SECRET=1\n")
+      FileUtils.mkdir_p('build')
+      File.write('build/out', "x\n")
+    end
+
+    it 'names the ignored files git clean -x deletes' do
+      note = context(described_class.new.call(input('git clean -fdx')))
+      expect(note).to include('gitflash undo', 'also deletes ignored files', '.env', 'build/')
+    end
+
+    it 'does not mention ignored files for git clean without -x' do
+      expect(context(described_class.new.call(input('git clean -fd'))))
+        .not_to include('ignored files')
+    end
+
+    it 'names untracked files the snapshot left out because of their size' do
+      stub_const('Gitflash::StateCapture::MAX_UNTRACKED_FILE_BYTES', 3)
+      File.write('big.bin', 'too big')
+      note = context(described_class.new.call(input('git clean -fd')))
+      expect(note).to include('left out untracked files over 50 MB', 'big.bin')
+    end
+  end
+
   it 'asks for approval in ask mode' do
     output = described_class.new(mode: 'ask').call(input('git clean -f'))
     expect(output[:hookSpecificOutput]).to include(permissionDecision: 'ask')

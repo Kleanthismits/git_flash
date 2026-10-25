@@ -11,14 +11,15 @@ module Gitflash
     # `cd DIR` and `git -C DIR`, and may report a command more often than needed. An extra
     # snapshot is harmless; a missed one is not.
     class CommandParser
-      # dir: where to take the snapshot; branches: names, or :current for the checked-out one
-      # guessed: the shell decides the directory (`cd "$REPO"`), so dir is only a fallback
-      Target = Data.define(:dir, :command, :scope, :branches, :guessed) do
+      # dir: where to take the snapshot; branches: names, or :current for the checked-out one;
+      # guessed: the shell decides the directory (`cd "$REPO"`), so dir is only a fallback;
+      # ignored: whether the command also deletes ignored files, which no snapshot saves
+      Target = Data.define(:dir, :command, :scope, :branches, :guessed, :ignored) do
         # One target for all the commands of a group that run in dir
         def self.merge(dir, group)
           new(dir: dir, command: group.map(&:command).join(' && '),
               scope: group.flat_map(&:scope).uniq, branches: merged_branches(group),
-              guessed: group.any?(&:guessed))
+              guessed: group.any?(&:guessed), ignored: group.any?(&:ignored))
         end
 
         # A target that saves branches without naming them saves every branch, so the merge
@@ -56,7 +57,8 @@ module Gitflash
 
           dir = rule.fetch(:dir, git.dir)
           Target.new(dir: dir.to_s, command: git.command, scope: rule[:scope],
-                     branches: rule[:branches] || [], guessed: Paths.guessed?(dir))
+                     branches: rule[:branches] || [], guessed: Paths.guessed?(dir),
+                     ignored: rule.fetch(:ignored, false))
         end
       end
 

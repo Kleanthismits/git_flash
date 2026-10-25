@@ -80,6 +80,15 @@ RSpec.describe Gitflash::Hook::CommandParser do
     end
   end
 
+  it 'flags the commands that also delete ignored files' do
+    ignored = ->(command) { parser.targets(command).map(&:ignored) }
+    expect(ignored.call('git clean -fdx')).to eq([true])
+    expect(ignored.call('git clean -fX')).to eq([true])
+    expect(ignored.call('git clean -fd')).to eq([false])
+    expect(ignored.call('git worktree remove ../wt')).to eq([true])
+    expect(ignored.call('git reset --hard')).to eq([false])
+  end
+
   it 'falls back to the directory Claude runs in when the shell decides the path' do
     expect(targets('cd "$(git rev-parse --show-toplevel)" && git reset --hard').first.first)
       .to eq('/repo')

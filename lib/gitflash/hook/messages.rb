@@ -6,6 +6,15 @@ module Gitflash
     module Messages
       module_function
 
+      # Everything the hook tells Claude about the commands it saved ([target, snapshot] pairs)
+      # and the ones it could not save
+      def context(saved, unsaved)
+        targets = saved.map(&:first) + unsaved
+        guessed = targets.select(&:guessed)
+        [(saved(saved) unless saved.empty?), (unsaved(unsaved) unless unsaved.empty?),
+         (guessed(guessed) unless guessed.empty?), Losses.note(saved, targets)].compact.join(' ')
+      end
+
       def saved(saved)
         notes = saved.map { |target, snap| "snapshot #{snap.id} before `#{target.command}`" }
         "gitflash saved #{notes.join('; ')}. If this discards work that was still needed, " \
