@@ -93,7 +93,7 @@ gitflash hook install
 
 Before Claude Code runs a command that can discard work git cannot restore (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...), the hook saves a snapshot and tells the agent how to undo it. Other commands pass through; the hook adds about 0.1 s to commands that do not mention git. `--mode ask` also asks you to approve such commands, `--mode deny` blocks them. If the hook itself fails, `ask` mode still asks and `deny` mode blocks the command.
 
-The same install adds a second hook that runs after a command: when the agent creates a branch with plain git (`git checkout -b`, `git switch -c`, `git branch NAME`, `git worktree add`), gitflash marks it as agent work, so `gitflash clean --agent` can find it. Only new, unmarked branches are marked, and `gitflash mark BRANCH --owner human` changes it. If you installed the hook with an earlier version, run `gitflash hook install` again to add it; `gitflash hook status` says whether branch marking is on.
+The same install adds a second hook that runs after a command: when the agent creates a branch with plain git (`git checkout -b`, `git switch -c`, `git branch NAME`, `git worktree add`), gitflash marks it as agent work, so `gitflash clean --agent` can find it. Only new, unmarked branches are marked, and `gitflash mark BRANCH --owner human` changes it. If you installed the hook with an earlier version, run `gitflash hook install` again to add it (the installed `--mode` is kept; a weaker mode needs `--downgrade`); `gitflash hook status` says whether branch marking is on.
 
 Where the hook goes, following Claude Code's own rules:
 

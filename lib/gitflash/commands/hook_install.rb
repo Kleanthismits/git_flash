@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'shellwords'
 
 module Gitflash
   module Commands
@@ -11,10 +12,14 @@ module Gitflash
       SCOPES = Hook::Settings::SCOPES
       MARKING_COMMAND = 'gitflash hook claude'
 
+      # From the weakest protection to the strongest
+      STRENGTH = %w[snapshot ask deny].freeze
+
       def call
         plan = build_plan
         data = settings.read(plan[:file])
         entry = settings.entry(data)
+        add_mode(plan, entry)
         marking = settings.entry(data, Hook::Claude::POST_EVENT)
         return already_installed(plan) if up_to_date?(entry, marking, plan)
         return planned(plan, "Would add the gitflash hook to #{plan[:file]}") if ui.dry_run?
@@ -32,8 +37,46 @@ module Gitflash
         scope = choice(:scope, SCOPES, 'local')
         file = settings.path(scope)
         refuse_symlink!(file) unless scope == 'user'
-        { scope: scope, file: file, command: hook_command,
-          marking_command: MARKING_COMMAND, applies_to: settings.applies_to(scope) }
+        { scope: scope, file: file, marking_command: MARKING_COMMAND,
+          applies_to: settings.applies_to(scope) }
+      end
+
+      # Without --mode the installed mode is kept, so running install again to add the
+      # PostToolUse hook never turns ask or deny off. A weaker --mode needs --downgrade.
+      def add_mode(plan, entry)
+        previous = entry && installed_mode(entry['command'])
+        mode = options[:mode] ? choice(:mode, Hook::Claude::MODES, 'snapshot') : previous
+        mode ||= 'snapshot'
+        refuse_downgrade!(previous, mode) if previous
+        plan[:mode] = mode
+        plan[:previous_mode] = previous if previous && previous != mode
+        plan[:command] = hook_command(mode)
+      end
+
+      # The mode the installed command runs in, read the way a shell splits it: `snapshot` when
+      # it has no --mode; a --mode gitflash does not know is refused, never read as snapshot,
+      # so a reinstall cannot quietly weaken it
+      def installed_mode(command)
+        words = Shellwords.split(command.to_s)
+        index = words.index { |word| word == '--mode' || word.start_with?('--mode=') }
+        return 'snapshot' unless index
+
+        mode = words[index] == '--mode' ? words[index + 1] : words[index].delete_prefix('--mode=')
+        return mode if Hook::Claude::MODES.include?(mode)
+
+        raise Error.new("The installed hook command `#{command}` has a mode gitflash cannot " \
+                        'read; fix or remove it, then install again', code: 'invalid_settings')
+      rescue ArgumentError
+        raise Error.new("The installed hook command `#{command}` cannot be parsed",
+                        code: 'invalid_settings')
+      end
+
+      def refuse_downgrade!(previous, mode)
+        return if options[:downgrade] || STRENGTH.index(mode).to_i >= STRENGTH.index(previous).to_i
+
+        usage_error!('invalid_options',
+                     "The installed hook runs in #{previous} mode; --mode #{mode} would protect " \
+                     'less. Pass --downgrade to change it anyway.')
       end
 
       # The repository decides what .claude holds, and a link there could point at the user's own
@@ -57,7 +100,7 @@ module Gitflash
         FileUtils.mkdir_p(File.dirname(plan[:file]))
         File.write(plan[:file], "#{JSON.pretty_generate(data)}\n")
         ui.report(status: 'done', plan: plan, result: plan,
-                  text: "Installed the gitflash hook in #{plan[:file]}.\n" \
+                  text: "Installed the gitflash hook in #{plan[:file]} (#{mode_text(plan)}).\n" \
                         "It applies to #{plan[:applies_to]}, including running ones.")
       end
 
@@ -68,9 +111,13 @@ module Gitflash
         usage_error!('invalid_options', "Unknown #{name} '#{value}' (use #{allowed.join(', ')})")
       end
 
-      def hook_command
-        mode = choice(:mode, Hook::Claude::MODES, 'snapshot')
+      def hook_command(mode)
         mode == 'snapshot' ? 'gitflash hook claude' : "gitflash hook claude --mode #{mode}"
+      end
+
+      def mode_text(plan)
+        changed = plan[:previous_mode] ? ", was #{plan[:previous_mode]}" : ''
+        "#{plan[:mode]} mode#{changed}"
       end
 
       def already_installed(plan)
