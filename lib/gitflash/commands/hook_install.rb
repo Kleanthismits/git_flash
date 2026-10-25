@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'shellwords'
 
 module Gitflash
   module Commands
@@ -52,8 +53,22 @@ module Gitflash
         plan[:command] = hook_command(mode)
       end
 
+      # The mode the installed command runs in, read the way a shell splits it: `snapshot` when
+      # it has no --mode; a --mode gitflash does not know is refused, never read as snapshot,
+      # so a reinstall cannot quietly weaken it
       def installed_mode(command)
-        command.to_s[/--mode[= ](\w+)/, 1] || 'snapshot'
+        words = Shellwords.split(command.to_s)
+        index = words.index { |word| word == '--mode' || word.start_with?('--mode=') }
+        return 'snapshot' unless index
+
+        mode = words[index] == '--mode' ? words[index + 1] : words[index].delete_prefix('--mode=')
+        return mode if Hook::Claude::MODES.include?(mode)
+
+        raise Error.new("The installed hook command `#{command}` has a mode gitflash cannot " \
+                        'read; fix or remove it, then install again', code: 'invalid_settings')
+      rescue ArgumentError
+        raise Error.new("The installed hook command `#{command}` cannot be parsed",
+                        code: 'invalid_settings')
       end
 
       def refuse_downgrade!(previous, mode)

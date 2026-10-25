@@ -240,6 +240,25 @@ RSpec.describe Gitflash::Cli, :git_repo do
         .to include('mode' => 'deny', 'command' => 'gitflash hook claude --mode deny')
     end
 
+    it 'reads the installed mode as a shell does, and refuses one it cannot read' do
+      FileUtils.mkdir_p('.claude')
+      {
+        'gitflash hook claude --mode  deny' => 'deny', 'gitflash hook claude --mode "ask"' => 'ask',
+        'gitflash hook claude --mode=deny' => 'deny'
+      }.each do |command, mode|
+        group = { 'matcher' => 'Bash', 'hooks' => [{ 'type' => 'command', 'command' => command }] }
+        File.write(settings, JSON.generate('hooks' => { 'PreToolUse' => [group] }))
+        expect(run_cli('hook', 'install', '--json').json.dig('result', 'mode')).to eq(mode)
+      end
+
+      group = { 'matcher' => 'Bash',
+                'hooks' => [{ 'type' => 'command',
+                              'command' => 'gitflash hook claude --mode bogus' }] }
+      File.write(settings, JSON.generate('hooks' => { 'PreToolUse' => [group] }))
+      run = run_cli('hook', 'install', '--json')
+      expect(run.json['error']).to include('code' => 'invalid_settings')
+    end
+
     it 'adds PostToolUse to an older deny install without turning deny off' do
       FileUtils.mkdir_p('.claude')
       command = { 'type' => 'command', 'command' => 'gitflash hook claude --mode deny' }
