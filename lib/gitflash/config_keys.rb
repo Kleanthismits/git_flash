@@ -19,6 +19,16 @@ module Gitflash
                          'a path of up to 512 characters that uses only %<repo>s and %<branch>s']
     }.freeze
 
+    # Whether a template resolves inside the parent of the main checkout, for any repository and
+    # branch name (branch names cannot hold `..`)
+    def self.contained?(template)
+      return false if template.start_with?('/', '~')
+
+      root = '/parent/repo'
+      path = template.gsub('%<repo>s', 'repo').gsub('%<branch>s', 'branch')
+      File.expand_path(path, root).start_with?("#{File.dirname(root)}/")
+    end
+
     # A path template: the two placeholders are the only `%` directives, so a width such as
     # `%<repo>999999999s` can never make Ruby build a huge string
     def self.template?(value)

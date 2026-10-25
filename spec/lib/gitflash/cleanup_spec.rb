@@ -29,8 +29,8 @@ RSpec.describe Gitflash::Cleanup do
     end
 
     it 'selects merged and gone by default, with reasons, and never protected branches' do
-      config_with = Gitflash::Config.new(protected_patterns: ['release/*'], stale_days: 30,
-                                         worktree_dir: 'x')
+      config_with = Gitflash::Config.defaults.with(protected_patterns: ['release/*'],
+                                                   worktree_dir: 'x')
       guard = Gitflash::Protection.new(config: config_with)
       result = described_class.branches(all, rules: rules(*described_class::DEFAULT_CRITERIA),
                                              protection: guard)

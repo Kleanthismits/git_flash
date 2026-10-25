@@ -73,14 +73,52 @@ RSpec.describe Gitflash::Config do
   end
 
   it 'substitutes the placeholders as plain text, even when a branch name has a percent sign' do
-    write_repo("worktree_dir: /tmp/wt/%<repo>s/%<branch>s\n")
+    write_user("worktree_dir: /tmp/wt/%<repo>s/%<branch>s\n")
     expect(config.worktree_path(root: root, branch: '100%<branch>s'))
       .to eq('/tmp/wt/proj/100%<branch>s')
   end
 
   it 'honours a custom worktree_dir' do
-    write_repo("worktree_dir: /tmp/wt/%<branch>s\n")
+    write_user("worktree_dir: /tmp/wt/%<branch>s\n")
     expect(config.worktree_path(root: root, branch: 'a')).to eq('/tmp/wt/a')
+  end
+
+  describe 'worktree_dir in the repository file' do
+    it 'may place worktrees next to the main checkout' do
+      write_repo("worktree_dir: ../wt-%<repo>s/%<branch>s\n")
+      expect(config.worktree_path(root: root, branch: 'a')).to eq(File.join(dir, 'wt-proj', 'a'))
+    end
+
+    ['/tmp/wt/%<branch>s', '~/wt/%<branch>s', '~other/%<branch>s', '../../wt/%<branch>s',
+     '../x/../../wt'].each do |template|
+      it "may not point elsewhere: #{template}" do
+        write_repo("worktree_dir: '#{template}'\n")
+        expect { config }.to raise_error(Gitflash::UsageError, /'worktree_dir' must be a relative/)
+      end
+    end
+
+    it 'may not lead out through a symbolic link in the repository' do
+      outside = File.join(dir, 'outside')
+      FileUtils.mkdir_p(outside)
+      File.symlink(outside, File.join(root, 'wt-link'))
+      write_repo("worktree_dir: wt-link/%<branch>s\n")
+      expect { config.worktree_path(root: root, branch: 'a') }.not_to raise_error
+
+      elsewhere = Dir.mktmpdir('gitflash-elsewhere')
+      File.symlink(elsewhere, File.join(root, 'far-link'))
+      write_repo("worktree_dir: far-link/%<branch>s\n")
+      reloaded = described_class.load(root: root, home: home)
+      expect { reloaded.worktree_path(root: root, branch: 'a') }
+        .to raise_error(Gitflash::UsageError, /leads to .*outside/)
+    ensure
+      FileUtils.remove_entry(elsewhere) if elsewhere
+    end
+
+    it 'loses to the user file' do
+      write_repo("worktree_dir: ../repo-wt/%<branch>s\n")
+      write_user("worktree_dir: /tmp/mine/%<branch>s\n")
+      expect(config.worktree_path(root: root, branch: 'a')).to eq('/tmp/mine/a')
+    end
   end
 
   {

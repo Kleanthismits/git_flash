@@ -61,7 +61,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 
 `gitflash pick other-branch --list` lists the commits missing here (a commit whose patch is already here is marked `=`). `gitflash pick other-branch SHA... --yes` applies them oldest first with `-x`. On a conflict it stops and lists the files; resolve them and run `gitflash pick --continue`, or `--skip` / `--abort`.
 
-Settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml` (the repository file wins):
+Settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml` (the repository file wins, except for `worktree_dir`, where your own file wins; a repository's `worktree_dir` must be a relative path that stays next to the repository):
 
 ```yaml
 protected: ["release/*"]   # branch patterns clean and delete never touch; both files add up
