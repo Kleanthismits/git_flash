@@ -575,6 +575,10 @@
             1,
             2
           ]
+        },
+        "confirm_token": {
+          "type": "string",
+          "description": "Only for a change gitflash undo cannot revert: re-run with --confirm TOKEN to make it. --yes is not enough. The token belongs to this plan."
         }
       }
     },

@@ -4,8 +4,8 @@ cluster: contract
 universe: live
 status: verified
 entity: lib/gitflash/ui.rb
-verified_on: 2026-10-03
-verified_at: dde88fd
+verified_on: 2026-10-24
+verified_at: 6b41e31 plus the --confirm token (#42)
 ---
 
 # UI output
@@ -23,7 +23,7 @@ Commands never print. They call `report` with a plan, result and optional `undo`
 - `envelope` turns `undo:` into `{ snapshot:, command: }` and drops nil keys (`ui.rb:77-90`).
 - `error` prints envelope or warns (`ui.rb:47-54`). It never adds `undo`.
 - `interactive?` = not JSON and stdin is a tty (`ui.rb:30-32`). JSON mode never prompts.
-- `confirm?` true on `--yes`; raises `ConfirmationRequired` with plan when not interactive (`ui.rb:66-73`).
+- `confirm?` true on `--yes`; raises `ConfirmationRequired` with plan when not interactive (`ui.rb`). With `irreversible: true` (a change `gitflash undo` cannot revert) `--yes` is not enough: it needs `--confirm TOKEN`, where `Ui.confirm_token(plan)` is the first 8 hex digits of SHA-256 over the plan's JSON, so a token never confirms a different plan. Without it, `ConfirmationRequired` carries `confirm_token`, which `Ui#error` adds to `error` in JSON; in a terminal the user types the token (`Prompt#ask`). Used by `gc`.
 
 ## Connected to
 

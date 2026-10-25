@@ -125,6 +125,7 @@ Without a terminal (for example in a script, CI or an AI coding agent), gitflash
 
 - A command that needs a list selection fails with exit code 2 and says which argument to pass.
 - A destructive action (`delete`, `reset --hard`) fails with exit code 2 and returns the plan unless you pass `--yes`.
+- A change `gitflash undo` cannot revert (`gc`, which deletes snapshots) is not covered by `--yes`: it fails with exit code 2 and returns the plan and a `confirm_token`. Re-run with `--confirm TOKEN` to make that exact change; in a terminal you type the token instead.
 
 With `--json`, every command prints one object in the same envelope, defined in [schema/v1.json](schema/v1.json) (also printed by `gitflash schema`):
 

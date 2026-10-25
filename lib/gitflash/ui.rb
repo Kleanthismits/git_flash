@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'digest'
 require 'json'
 
 module Gitflash
@@ -12,11 +13,12 @@ module Gitflash
     JSON_SCHEMA_VERSION = 1
     OK_STATUSES = %w[done planned noop cancelled].freeze
 
-    def initialize(command:, json: false, yes: false, dry_run: false)
+    def initialize(command:, json: false, yes: false, dry_run: false, confirm: nil)
       @command = command
       @json = json
       @yes = yes
       @dry_run = dry_run
+      @confirm = confirm
     end
 
     def json?
@@ -46,7 +48,9 @@ module Gitflash
 
     def error(error)
       if json?
-        details = { code: error.code, message: error.message, exit_code: error.exit_code }
+        details = { code: error.code, message: error.message, exit_code: error.exit_code,
+                    confirm_token: error.respond_to?(:confirm_token) ? error.confirm_token : nil }
+                  .compact
         $stdout.puts JSON.generate(envelope(status: error.status, plan: error.plan, error: details))
       else
         warn TerminalText.safe(error.message)
@@ -63,7 +67,12 @@ module Gitflash
 
     # True when the action may proceed: --yes was given or the user confirmed in a terminal.
     # Raises ConfirmationRequired, carrying the plan, when nobody can confirm.
-    def confirm?(summary, plan:)
+    #
+    # An irreversible action (one `gitflash undo` cannot revert) is not covered by --yes: it
+    # needs --confirm with a token made from its plan, or the token typed in a terminal. The
+    # token changes with the plan, so a confirmation never carries over to a different change.
+    def confirm?(summary, plan:, irreversible: false)
+      return confirm_irreversible?(summary, plan) if irreversible
       return true if @yes
 
       message = "#{summary}\nRe-run with --yes to confirm."
@@ -72,7 +81,26 @@ module Gitflash
       prompt.proceed_with_warning(TerminalText.safe(summary)) { true } == true
     end
 
+    # The token that confirms this plan with --confirm
+    def self.confirm_token(plan)
+      Digest::SHA256.hexdigest(JSON.generate(plan))[0, 8]
+    end
+
     private
+
+    def confirm_irreversible?(summary, plan)
+      token = self.class.confirm_token(plan)
+      return true if @confirm == token
+
+      summary = "#{summary}\ngitflash undo cannot revert this."
+      unless interactive?
+        message = "#{summary}\nRe-run with --confirm #{token} to confirm (--yes is not enough)."
+        raise ConfirmationRequired.new(message, plan: plan, confirm_token: token)
+      end
+
+      warn TerminalText.safe(summary)
+      prompt.ask("Type #{token} to confirm:").to_s.strip == token
+    end
 
     def envelope(status:, plan: nil, result: nil, error: nil, undo: nil)
       {
