@@ -98,7 +98,9 @@ worktree_remove:
 
     Each removal saves a snapshot first, including uncommitted and untracked files. Ignored
     files (build output, dependencies, .env) are not saved: the plan and the confirmation list
-    them, since removal deletes them for good. A worktree with an untracked file over 50 MB
+    them, since removal deletes them for good, and --yes is not enough to confirm that: pass
+    --confirm TOKEN with the token the refusal names (error.confirm_token in --json), or
+    type it in a terminal. A worktree with an untracked file over 50 MB
     is not removed, because the snapshot cannot hold it. `gitflash undo ID` brings the
     directory, its branch and the saved files back.
 
