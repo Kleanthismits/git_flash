@@ -122,9 +122,16 @@ module Gitflash
     # its name (`*.pem`, `.env*`, `secrets/*`)
     def snapshot_excluded?(path)
       flags = File::FNM_PATHNAME | File::FNM_DOTMATCH
-      snapshot_exclude.any? do |pattern|
-        File.fnmatch?(pattern, path, flags) || File.fnmatch?(pattern, File.basename(path), flags)
-      end
+      names = excluded_candidates(path)
+      snapshot_exclude.any? { |pattern| names.any? { |name| File.fnmatch?(pattern, name, flags) } }
+    end
+
+    # The path, its name, and every directory above it: a pattern that matches a directory
+    # (`secrets`, `secrets/*`) covers everything below it, as in .gitignore
+    def excluded_candidates(path)
+      parts = path.split('/')
+      dirs = (1...parts.size).map { |count| parts.first(count).join('/') }
+      [path, File.basename(path), *dirs]
     end
 
     # Directory for a new worktree. `%<repo>s` and `%<branch>s` are replaced as plain text; a

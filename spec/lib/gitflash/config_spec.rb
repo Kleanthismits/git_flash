@@ -87,6 +87,14 @@ RSpec.describe Gitflash::Config do
     expect(config.snapshot_excluded?('README.md')).to be(false)
   end
 
+  it 'lets a directory pattern in snapshot_exclude cover everything below it' do
+    write_user("snapshot_exclude: ['secrets/*', 'private']\n")
+    expect(config.snapshot_excluded?('secrets/token')).to be(true)
+    expect(config.snapshot_excluded?('secrets/team/token')).to be(true)
+    expect(config.snapshot_excluded?('private/a/b.txt')).to be(true)
+    expect(config.snapshot_excluded?('src/private.rb')).to be(false)
+  end
+
   it 'honours a custom worktree_dir' do
     write_user("worktree_dir: /tmp/wt/%<branch>s\n")
     expect(config.worktree_path(root: root, branch: 'a')).to eq('/tmp/wt/a')
