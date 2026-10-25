@@ -133,6 +133,50 @@ RSpec.describe Gitflash::Snapshots, :git_repo do
     end
   end
 
+  describe 'snapshots that cannot be trusted' do
+    let(:good) { snapshots.create(reason: 'real') }
+
+    # Writes a ref whose message is the good snapshot changed by `change`
+    def plant(name, **change)
+      data = good.to_h.merge(change).transform_keys(&:to_s)
+      commit = git('commit-tree', '-m', JSON.generate(data), git('write-tree').strip).strip
+      git('update-ref', "refs/gitflash/snapshots/#{name}", commit)
+    end
+
+    it 'skips a forged commit id, branch name or worktree path, and a ref named unlike its id' do
+      plant('a', id: 'a', branches: { 'main' => '--upload-pack=evil' })
+      plant('b', id: 'b', branches: { '-evil' => good.branches['main'] })
+      plant('c', id: 'c', worktree_path: 'relative/path')
+      plant('d', id: 'not-d')
+      warnings = [
+        'snapshots/a, which is not a readable snapshot (a commit id is not a full hex SHA)',
+        'snapshots/b, which is not a readable snapshot (a branch name is not valid)',
+        'snapshots/c, which is not a readable snapshot (worktree_path is not an absolute path)',
+        'snapshots/d, which is not a readable snapshot (its name does not match its id)'
+      ]
+      expect { expect(snapshots.list.map(&:id)).to eq([good.id]) }
+        .to output(Regexp.new(warnings.map { |line| Regexp.escape(line) }.join('.*'), Regexp::MULTILINE))
+        .to_stderr
+    end
+
+    it 'skips fields of the wrong type and branch names git refuses, without raising' do
+      plant('e', id: 'e', branches: [])
+      plant('f', id: 'f', stashes: 'x')
+      %w[feature/.hidden a.lock/b @ a//b].each_with_index do |name, index|
+        plant("g#{index}", id: "g#{index}", branches: { name => good.branches['main'] })
+      end
+      expect { expect(snapshots.list.map(&:id)).to eq([good.id]) }
+        .to output(/branches is not an object.*stashes is not a list.*branch name is not valid/m)
+        .to_stderr
+    end
+
+    it 'orders by the time inside the snapshot, not by the ref name' do
+      plant('99999999T999999999999-zzzz', id: '99999999T999999999999-zzzz',
+                                          created_at: '2000-01-01T00:00:00.000000Z')
+      expect(snapshots.list.first.id).to eq(good.id)
+    end
+  end
+
   describe '#list, #find and #delete' do
     it 'lists newest first, finds by id and deletes' do
       old = snapshots.create(reason: 'old')

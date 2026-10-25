@@ -24,6 +24,12 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run.json).to include('command' => 'mark', 'status' => 'error')
     end
 
+    it 'reads --json as Thor reads a boolean' do
+      expect(run_cli('mark', 'x', '--owner', 'bob', '--json=t').json['command']).to eq('mark')
+      run = run_cli('mark', 'x', '--owner', 'bob', '--json', 'false')
+      expect(run).to have_attributes(status: 2, stdout: '')
+    end
+
     it 'prints the message on stderr without --json' do
       run = run_cli('mark', 'x', '--owner', 'bob')
       expect(run).to have_attributes(status: 2, stdout: '')
