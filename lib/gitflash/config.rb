@@ -29,7 +29,7 @@ module Gitflash
     private_class_method :both
 
     # The user file wins for worktree_dir; a value from the repository is checked again where
-    # it leads (see #check_contained!)
+    # it leads (see ConfigKeys.check_contained!)
     def self.worktree_dir_of(user, repo)
       from_repo = !user.key?('worktree_dir') && repo.key?('worktree_dir')
       dir = from_repo ? repo['worktree_dir'] : user.fetch('worktree_dir', ConfigKeys::DEFAULT_WORKTREE_DIR)
@@ -133,25 +133,8 @@ module Gitflash
     def worktree_path(root:, branch:)
       path = worktree_dir.gsub('%<repo>s') { File.basename(root) }.gsub('%<branch>s') { branch }
       path = File.expand_path(path, root)
-      check_contained!(path, root) if worktree_dir_from_repo
+      ConfigKeys.check_contained!(path, root) if worktree_dir_from_repo
       path
-    end
-
-    private
-
-    # A repository's worktree_dir passed a check on the text alone; a symbolic link in the
-    # repository (`wt-link -> /elsewhere`) could still lead out, so the real location of the
-    # deepest existing directory on the way must stay next to the main checkout too
-    def check_contained!(path, root)
-      parent = File.realpath(File.dirname(root))
-      existing = path
-      existing = File.dirname(existing) until File.exist?(existing)
-      real = File.join(File.realpath(existing), path.delete_prefix(existing))
-      return if real.start_with?("#{parent}/")
-
-      raise UsageError.new("worktree_dir in #{ConfigKeys::REPO_FILE} leads to #{real}, outside " \
-                           "#{parent}; set worktree_dir in ~/.config/gitflash.yml to use it",
-                           code: 'invalid_config')
     end
   end
 end

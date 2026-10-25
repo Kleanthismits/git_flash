@@ -40,5 +40,20 @@ module Gitflash
 
       !PLACEHOLDERS.reduce(value) { |rest, placeholder| rest.gsub(placeholder, '') }.include?('%')
     end
+
+    # A repository's worktree_dir passed a check on the text alone; a symbolic link in the
+    # repository (`wt-link -> /elsewhere`) could still lead out, so the real location of the
+    # deepest existing directory on the way must stay next to the main checkout too
+    def self.check_contained!(path, root)
+      parent = File.realpath(File.dirname(root))
+      existing = path
+      existing = File.dirname(existing) until File.exist?(existing)
+      real = File.join(File.realpath(existing), path.delete_prefix(existing))
+      return if real.start_with?("#{parent}/")
+
+      raise UsageError.new("worktree_dir in #{REPO_FILE} leads to #{real}, outside " \
+                           "#{parent}; set worktree_dir in ~/.config/gitflash.yml to use it",
+                           code: 'invalid_config')
+    end
   end
 end
