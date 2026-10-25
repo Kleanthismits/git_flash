@@ -19,6 +19,11 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run_cli('nosuchcommand', '--json').json['command']).to eq('gitflash')
     end
 
+    it 'takes --json=true and a command prefix Thor resolves' do
+      run = run_cli('mar', 'x', '--owner', 'bob', '--json=true')
+      expect(run.json).to include('command' => 'mark', 'status' => 'error')
+    end
+
     it 'prints the message on stderr without --json' do
       run = run_cli('mark', 'x', '--owner', 'bob')
       expect(run).to have_attributes(status: 2, stdout: '')
@@ -48,6 +53,13 @@ RSpec.describe Gitflash::Cli, :git_repo do
       commit_file('b')
       expect(run_cli('snapshot', '--json').json['status']).to eq('done')
     end
+  end
+
+  it 'refuses settings whose hooks value is null' do
+    FileUtils.mkdir_p('.claude')
+    File.write('.claude/settings.local.json', '{"hooks": null}')
+    expect(run_cli('hook', 'status',
+                   '--json').json['error']).to include('code' => 'invalid_settings')
   end
 
   it 'refuses settings whose root is not an object' do

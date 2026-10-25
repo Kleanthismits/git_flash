@@ -52,7 +52,8 @@ module Gitflash
       end
 
       def check_shape!(path, data)
-        return data if data.is_a?(Hash) && (data['hooks'].nil? || data['hooks'].is_a?(Hash))
+        # A missing `hooks` key is a file without hooks yet; a present one must be an object
+        return data if data.is_a?(Hash) && (!data.key?('hooks') || data['hooks'].is_a?(Hash))
 
         raise Error.new("#{path} does not hold a JSON object with a `hooks` object",
                         code: 'invalid_settings')
