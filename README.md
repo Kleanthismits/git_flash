@@ -38,10 +38,10 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | --- | --- |
 | `gitflash branches` | List local branches with last commit, upstream status and merge status. Filter with `--merged`, `--gone` or `--stale DAYS` |
 | `gitflash checkout [BRANCH]` | Check out a branch, or pick one from a list |
-| `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current, default, `main` and `master` branches are protected. Unmerged branches are kept unless you pass `--force` |
+| `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current and default branch, `main`, `master`, `develop`, `development`, `trunk` and `release/*` are protected. Unmerged branches are kept unless you pass `--force` |
 | `gitflash reset [COMMIT]` | Reset to a commit, or pick one of the latest 100. Mixed by default; `--soft` keeps changes staged, `--hard` discards them after confirmation |
 | `gitflash mark [BRANCH...]` | Mark branches as agent (default) or human work, or `--clear` the mark. Without a branch it marks the current one. Use it for branches made with plain git so `clean --agent` can find them |
-| `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. Protected: current, default, `main`, `master`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
+| `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. Protected: current, default, `main`, `master`, `develop`, `development`, `trunk`, `release/*`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
 | `gitflash worktree` (`wt`) `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock`, `move` | Worktrees for parallel agent work, with absolute paths in `--json` (see below) |
 | `gitflash pick [SOURCE] [SHA...]` | Cherry-pick commits from another branch (pick SOURCE from a list when you omit it): `--list` shows what is missing here, `--continue`, `--skip` and `--abort` handle conflicts |
 | `gitflash undo [SNAPSHOT]` | Restore a snapshot, by default the latest one taken in this worktree: deleted branches, moved branches, HEAD, uncommitted and untracked files, dropped stashes |

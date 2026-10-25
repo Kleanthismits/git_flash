@@ -103,6 +103,43 @@ RSpec.describe Gitflash::Cli, :git_repo do
     expect(plan_of(clean('--dry-run'))['branches']).to eq(['done'])
   end
 
+  it 'never selects the usual long-lived branches, even merged ones' do
+    %w[develop development trunk release/2.0 done].each { |name| git('branch', name) }
+    expect(plan_of(clean('--dry-run'))['branches']).to eq(['done'])
+  end
+
+  describe 'without origin/HEAD' do
+    before do
+      git('branch', 'done')
+      git('remote', 'add', 'origin', File.join(outside, 'remote.git'))
+    end
+
+    it 'warns that the default branch was guessed, in the plan and the prompt text' do
+      run = clean
+      expect(plan_of(run)['warning']).to include('origin/HEAD is not set', 'main',
+                                                 'git remote set-head origin --auto')
+      expect(run.json.dig('error', 'message')).to include('Note: origin/HEAD is not set')
+    end
+
+    it 'warns in the plan of a clean with nothing to delete too' do
+      git('branch', '-D', 'done')
+      expect(plan_of(clean)['warning']).to include('origin/HEAD is not set')
+    end
+
+    it 'does not warn when the only remote is not origin' do
+      git('remote', 'rename', 'origin', 'upstream')
+      expect(plan_of(clean)).not_to have_key('warning')
+    end
+
+    it 'does not warn when origin/HEAD is set or there is no remote' do
+      git('update-ref', 'refs/remotes/origin/main', 'HEAD')
+      git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main')
+      expect(plan_of(clean)).not_to have_key('warning')
+      git('remote', 'remove', 'origin')
+      expect(plan_of(clean)).not_to have_key('warning')
+    end
+  end
+
   it 'combines criteria and lists every reason' do
     unmerged_branch('both', date: '2020-01-01T00:00:00Z')
     mark('both', 'agent')
