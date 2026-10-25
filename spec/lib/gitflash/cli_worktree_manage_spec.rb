@@ -22,6 +22,45 @@ RSpec.describe Gitflash::Cli, :git_repo do
     nil
   end
 
+  describe 'undo without an ID next to other worktrees' do
+    it 'restores the newest snapshot of this worktree, not a newer one taken elsewhere' do
+      git('branch', 'mine')
+      own = run_cli('delete', 'mine', '--yes', '--json').json.dig('undo', 'snapshot')
+      run_cli('wt', 'add', 'other', '--path', wt_path('other'))
+      Dir.chdir(wt_path('other')) do
+        File.write('scratch.txt', "agent b\n")
+        expect(run_cli('snapshot', '--json').json['status']).to eq('done')
+      end
+
+      plan = run_cli('undo', '--json').json['plan']
+      expect(plan).to include('snapshot' => own, 'reason' => a_string_including('delete'))
+    end
+
+    it 'restores a snapshot from before worktree_path was recorded' do
+      commit_file('b.txt')
+      File.write('b.txt', "edited\n")
+      snapshot = Gitflash::Snapshots.new.create(reason: 'old')
+      data = snapshot.to_h.except(:worktree_path).merge(id: '20000101T000000000000-0ld0')
+      commit = git('commit-tree', '-m', JSON.generate(data), git('write-tree').strip).strip
+      git('update-ref', 'refs/gitflash/snapshots/20000101T000000000000-0ld0', commit)
+      git('checkout', '--', 'b.txt')
+
+      run = run_cli('undo', '20000101T000000000000-0ld0', '--yes', '--json')
+      expect(run.status).to eq(0)
+      expect(File.read('b.txt')).to eq("edited\n")
+    end
+
+    it 'says how to restore a snapshot taken elsewhere when this worktree has none' do
+      run_cli('wt', 'add', 'other', '--path', wt_path('other'))
+      Dir.chdir(wt_path('other')) do
+        File.write('scratch.txt', "agent b\n")
+        run_cli('snapshot')
+      end
+      run = run_cli('undo')
+      expect(run.stdout).to include('No snapshots of this worktree', 'in the worktree a snapshot')
+    end
+  end
+
   describe 'worktree add' do
     it 'creates a new branch in a new directory and marks it as agent work' do
       run = run_cli('wt', 'add', 'feat/x', '--path', wt_path('x'), '--json')
