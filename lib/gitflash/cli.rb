@@ -93,8 +93,8 @@ module Gitflash
     end
 
     desc 'gc', 'Delete old snapshots'
-    option :older_than, type: :numeric, banner: 'DAYS',
-                        desc: 'Delete snapshots older than DAYS days (default 30)'
+    option :older_than, type: :string, banner: 'DAYS',
+                        desc: 'Delete snapshots older than DAYS days, at least 1 (default 30)'
     def gc
       run_command('gc', Commands::Gc)
     end

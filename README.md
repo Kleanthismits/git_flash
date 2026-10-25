@@ -47,7 +47,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash undo [SNAPSHOT]` | Restore a snapshot, the latest by default: deleted branches, moved branches, HEAD, uncommitted and untracked files, dropped stashes |
 | `gitflash snapshot` | Save the current state on request (`--scope`, `--message`) |
 | `gitflash snapshots` | List snapshots, newest first |
-| `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`) |
+| `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`, at least 1) |
 | `gitflash hook install` | Protect plain git commands run by Claude Code and mark the branches it creates (see below) |
 | `gitflash hook status` | Show whether the hook protects Claude Code sessions in the current directory |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
