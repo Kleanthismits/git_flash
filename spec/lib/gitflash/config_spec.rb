@@ -44,6 +44,17 @@ RSpec.describe Gitflash::Config do
     expect(config.protected?('feature/x')).to be(false)
   end
 
+  it 'accepts `..` when only one brace alternative holds it' do
+    write_repo("protected: ['release/{..,a}']\n")
+    expect(config.protected?('release/a')).to be(true)
+  end
+
+  it 'matches brace alternatives' do
+    write_repo("protected: ['release/{a,b}']\n")
+    expect(config.protected?('release/a')).to be(true)
+    expect(config.protected?('release/c')).to be(false)
+  end
+
   it 'protects nested branch names: * also matches across slashes' do
     write_repo("protected: ['release/*']\n")
     expect(config.protected?('release/1.0/rc')).to be(true)
@@ -143,6 +154,11 @@ RSpec.describe Gitflash::Config do
     "stale_days: soon\n" => /'stale_days' must be/,
     "stale_days: 0\n" => /'stale_days' must be/,
     "protected: main\n" => /'protected' must be/,
+    "protected: [' develop']\n" => /'protected' must be/,
+    "protected: ['develop ']\n" => /'protected' must be/,
+    "protected: ['']\n" => /'protected' must be/,
+    "protected: ['a:b']\n" => /'protected' must be/,
+    "protected: ['release..*']\n" => /'protected' must be/,
     "- a\n" => /must be a mapping/,
     "a: [\n" => /cannot be read/,
     "worktree_dir: '../%<repo>999999999s/x'\n" => /'worktree_dir' must be/,

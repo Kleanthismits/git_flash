@@ -64,7 +64,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 Settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml` (the repository file wins, except for `worktree_dir`, where your own file wins; a repository's `worktree_dir` must be a relative path that stays next to the repository):
 
 ```yaml
-protected: ["release/*"]   # branch patterns clean and delete never touch; both files add up
+protected: ["release/*", "hotfix/{a,b}"]   # branch patterns clean and delete never touch; both files add up
 stale_days: 30             # used by --stale without a number
 worktree_dir: "../%<repo>s.worktrees/%<branch>s"   # only these two placeholders, up to 512 characters
 snapshot_exclude: ["*.pem", ".env*", "secrets"]   # untracked files snapshots never copy (a directory covers all below it); both files add up

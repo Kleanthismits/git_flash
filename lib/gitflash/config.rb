@@ -113,9 +113,10 @@ module Gitflash
     end
     private_class_method :invalid
 
-    # True when the branch name matches a configured pattern (shell-style `*` and `?`)
+    # True when the branch name matches a configured pattern (shell-style `*`, `?`, `[abc]` and
+    # `{a,b}`)
     def protected?(name)
-      protected_patterns.any? { |pattern| File.fnmatch?(pattern, name) }
+      protected_patterns.any? { |pattern| File.fnmatch?(pattern, name, File::FNM_EXTGLOB) }
     end
 
     # True when an untracked file must stay out of snapshots: the pattern matches its path or
