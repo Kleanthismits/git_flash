@@ -2,7 +2,6 @@
 
 require 'fileutils'
 require 'shellwords'
-require 'tempfile'
 
 module Gitflash
   module Commands
@@ -125,28 +124,12 @@ module Gitflash
                   text: "Already installed in #{plan[:file]}.\nIt applies to #{plan[:applies_to]}.")
       end
 
-      # Writes a temporary file next to the settings and renames it into place, so a crash never
-      # leaves half a file: Claude Code ignores a settings file it cannot parse, and with it the
-      # user's own permission rules. A linked user settings file (dotfiles) is written where the
-      # link points, keeping the link; the file keeps its permissions.
+      # Claude Code ignores a settings file it cannot parse, and with it the user's own
+      # permission rules, so the file is replaced in one step (AtomicFile)
       def write_atomically(path, text)
-        path = File.realpath(path) if File.symlink?(path)
-        FileUtils.mkdir_p(File.dirname(path))
-        file = Tempfile.create(['.gitflash-settings', '.json'], File.dirname(path))
-        replace(file, path, text)
+        AtomicFile.write(path, text)
       rescue SystemCallError, IOError => e
         raise Error.new("Could not write #{path}: #{e.message}", code: 'invalid_settings')
-      end
-
-      def replace(file, path, text)
-        file.write(text)
-        file.flush
-        file.fsync
-        file.close
-        File.chmod(File.stat(path).mode & 0o7777, file.path) if File.exist?(path)
-        File.rename(file.path, path)
-      ensure
-        FileUtils.rm_f(file.path) if file && File.exist?(file.path)
       end
 
       def add_entry(data, event, command)
@@ -157,10 +140,8 @@ module Gitflash
                           "(#{event} must be a list)", code: 'invalid_settings')
         end
 
-        groups << {
-          'matcher' => 'Bash',
-          'hooks' => [{ 'type' => 'command', 'command' => command, 'timeout' => 30 }]
-        }
+        hook = { 'type' => 'command', 'command' => command, 'timeout' => 30 }
+        groups << { 'matcher' => 'Bash', 'hooks' => [hook] }
       end
     end
   end

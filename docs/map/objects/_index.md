@@ -45,4 +45,4 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `hook-claude`: Claude Code PreToolUse hook. verified. `lib/gitflash/hook/claude.rb`, `lib/gitflash/hook/failure.rb`, `lib/gitflash/hook/losses.rb`, `lib/gitflash/hook_cli.rb`
 - `hook-rules`: dangerous-command rules and parser. verified. `lib/gitflash/hook/{rules,history_rules,command_parser,paths,shell_text,shell_quotes,command_words,wrappers,git_invocation}.rb`
 - `hook-marking`: mark branches an agent creates (PostToolUse). verified. `lib/gitflash/hook/{branch_marker,creations}.rb`
-- `hook-install`: settings install and status. verified. `lib/gitflash/hook/settings.rb`, `lib/gitflash/commands/hook_{install,status}.rb`
+- `hook-install`: settings install and status. verified. `lib/gitflash/hook/settings.rb`, `lib/gitflash/commands/hook_{install,status}.rb`, `lib/gitflash/atomic_file.rb`
