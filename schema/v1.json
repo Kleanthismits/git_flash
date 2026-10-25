@@ -914,6 +914,13 @@
             "type": "string"
           },
           "description": "Untracked files not saved because they are larger than 50 MB."
+        },
+        "excluded_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Untracked files not saved because the snapshot_exclude setting matches them."
         }
       }
     },

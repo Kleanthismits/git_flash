@@ -88,7 +88,7 @@ module Gitflash
 
       def remove_one(worktree)
         snapshot = snapshot_for(worktree)
-        unsaved = snapshot.skipped_files
+        unsaved = snapshot.unsaved_files
         return refuse_unsaved(worktree, unsaved) if unsaved.any?
 
         result = Worktrees.new(repo: repo).remove(worktree.path, force: force?)
@@ -99,8 +99,8 @@ module Gitflash
       def refuse_unsaved(worktree, files)
         shown = files.first(3).join(', ')
         shown += ", and #{files.size - 3} more" if files.size > 3
-        message = "#{files.size} untracked file(s) over 50 MB cannot be saved by a snapshot " \
-                  "(#{shown}); move or delete them first"
+        message = "#{files.size} untracked file(s) cannot be saved by a snapshot (over 50 MB or " \
+                  "matched by snapshot_exclude: #{shown}); move or delete them first"
         Removal.new(worktree: worktree, result: Result.new(success: false, output: message),
                     snapshot: nil)
       end

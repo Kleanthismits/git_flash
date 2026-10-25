@@ -75,6 +75,22 @@ RSpec.describe Gitflash::Snapshots, :git_repo do
       expect(tree_files(snapshot.worktree)).to eq(%w[a stays])
     end
 
+    it 'leaves out untracked files that snapshot_exclude matches, by path or name' do
+      File.write('.gitflash.yml', "snapshot_exclude: ['*.pem', 'secrets/*']\n")
+      git('add', '.gitflash.yml')
+      git('commit', '-q', '-m', 'settings')
+      FileUtils.mkdir_p(%w[secrets keys])
+      File.write('secrets/token', 'x')
+      File.write('keys/id.pem', 'x')
+      File.write('notes.txt', 'keep')
+
+      snapshot = snapshots.create(reason: 'test')
+      expect(snapshot.excluded_files).to contain_exactly('secrets/token', 'keys/id.pem')
+      files = git('ls-tree', '-r', '--name-only', snapshot.worktree).split
+      expect(files).to include('notes.txt')
+      expect(files).not_to include('secrets/token', 'keys/id.pem')
+    end
+
     it 'saves stash entries' do
       File.write('a', "stashed\n")
       git('stash', '-q')

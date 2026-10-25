@@ -18,8 +18,11 @@ module Gitflash
       'GIT_AUTHOR_DATE' => '1970-01-01T00:00:00Z', 'GIT_COMMITTER_DATE' => '1970-01-01T00:00:00Z'
     }.freeze
 
-    def initialize(bash: Git::BashCommand)
+    # `exclude` says whether an untracked path must stay out of snapshots; by default the
+    # `snapshot_exclude` setting of the repository decides
+    def initialize(bash: Git::BashCommand, exclude: nil)
       @bash = bash
+      @exclude = exclude
     end
 
     # Snapshot fields except id, time and reason. `branch_names` nil records every branch.
@@ -30,7 +33,7 @@ module Gitflash
         head: { branch: current_branch, sha: head_sha },
         branches: scope.include?('branches') ? branch_tips(branch_names) : {},
         stashes: scope.include?('stashes') ? try('stash', 'list', '--format=%H').to_s.split : [],
-        index: nil, worktree: nil, skipped_files: []
+        index: nil, worktree: nil, skipped_files: [], excluded_files: []
       }
       state.merge!(worktree(head_sha)) if scope.include?('worktree') && dirty?
       state
@@ -80,11 +83,11 @@ module Gitflash
     def worktree(head_sha)
       parents = [head_sha].compact
       index_tree = try('write-tree') # nil while a merge conflict is unresolved
-      tree, skipped = worktree_tree
+      tree, skipped, excluded = worktree_tree
       {
         index: index_tree && content_commit(index_tree, parents, 'gitflash index'),
         worktree: content_commit(tree, parents, 'gitflash worktree'),
-        skipped_files: skipped
+        skipped_files: skipped, excluded_files: excluded
       }
     end
 
@@ -102,33 +105,27 @@ module Gitflash
         env = { 'GIT_INDEX_FILE' => file.path }
 
         git('-C', top, 'add', '--update', env: env)
-        skipped = add_untracked(top, env)
-        [git('write-tree', env: env), skipped]
+        skipped, excluded = add_untracked(top, env)
+        [git('write-tree', env: env), skipped, excluded]
       end
     end
 
-    # [path, size] pairs. A file removed since `ls-files` ran (a build writing temporary files)
-    # is left out, so `git add` is not given a path that is gone.
-    def file_sizes(top, paths)
-      paths.filter_map do |path|
-        [path, File.lstat(File.join(top, path)).size]
-      rescue Errno::ENOENT
-        nil
-      end
-    end
-
-    # Adds untracked files that are not ignored; returns the ones skipped for their size
+    # Adds untracked files that are not ignored; returns [skipped for their size, excluded by
+    # snapshot_exclude]
     def add_untracked(top, env)
       paths = git('-C', top, 'ls-files', '-z', '--others', '--exclude-standard')
               .split("\0").reject { |path| path.end_with?('/') }
-      sizes = file_sizes(top, paths)
-      small, large = sizes.partition { |_path, size| size <= MAX_UNTRACKED_FILE_BYTES }
-                          .map { |group| group.map(&:first) }
+      excluded, paths = paths.partition { |path| exclude.call(path) }
+      small, large = UntrackedFiles.split_by_size(top, paths, MAX_UNTRACKED_FILE_BYTES)
       # File names are literal paths, never pathspec magic such as `:(exclude)*`
       small.each_slice(ADD_BATCH_SIZE) do |batch|
         git('--literal-pathspecs', '-C', top, 'add', '--', *batch, env: env)
       end
-      large
+      [large, excluded]
+    end
+
+    def exclude
+      @exclude ||= Config.load(root: Repo.new(bash: @bash).main_root).method(:snapshot_excluded?)
     end
   end
 end

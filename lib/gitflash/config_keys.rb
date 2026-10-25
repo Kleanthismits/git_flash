@@ -7,7 +7,8 @@ module Gitflash
     USER_FILE = File.join('.config', 'gitflash.yml')
     DEFAULT_WORKTREE_DIR = '../%<repo>s.worktrees/%<branch>s'
     DEFAULTS = {
-      'protected' => [], 'stale_days' => 30, 'worktree_dir' => DEFAULT_WORKTREE_DIR
+      'protected' => [], 'stale_days' => 30, 'worktree_dir' => DEFAULT_WORKTREE_DIR,
+      'snapshot_exclude' => []
     }.freeze
     PLACEHOLDERS = ['%<repo>s', '%<branch>s'].freeze
     MAX_TEMPLATE_LENGTH = 512
@@ -16,7 +17,9 @@ module Gitflash
                       'a list of branch name patterns'],
       'stale_days' => [->(v) { v.is_a?(Integer) && v.positive? }, 'a positive whole number'],
       'worktree_dir' => [->(v) { template?(v) },
-                         'a path of up to 512 characters that uses only %<repo>s and %<branch>s']
+                         'a path of up to 512 characters that uses only %<repo>s and %<branch>s'],
+      'snapshot_exclude' => [->(v) { v.is_a?(Array) && v.all?(String) },
+                             'a list of file name patterns']
     }.freeze
 
     # Whether a template resolves inside the parent of the main checkout, for any repository and
@@ -36,6 +39,21 @@ module Gitflash
       return false if value.empty? || value.length > MAX_TEMPLATE_LENGTH
 
       !PLACEHOLDERS.reduce(value) { |rest, placeholder| rest.gsub(placeholder, '') }.include?('%')
+    end
+
+    # A repository's worktree_dir passed a check on the text alone; a symbolic link in the
+    # repository (`wt-link -> /elsewhere`) could still lead out, so the real location of the
+    # deepest existing directory on the way must stay next to the main checkout too
+    def self.check_contained!(path, root)
+      parent = File.realpath(File.dirname(root))
+      existing = path
+      existing = File.dirname(existing) until File.exist?(existing)
+      real = File.join(File.realpath(existing), path.delete_prefix(existing))
+      return if real.start_with?("#{parent}/")
+
+      raise UsageError.new("worktree_dir in #{REPO_FILE} leads to #{real}, outside " \
+                           "#{parent}; set worktree_dir in ~/.config/gitflash.yml to use it",
+                           code: 'invalid_config')
     end
   end
 end
