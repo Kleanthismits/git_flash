@@ -41,14 +41,14 @@ module Gitflash
 
       # The snapshot was taken in a worktree whose directory no longer exists
       def removed_worktree?(snapshot)
-        (snapshot.scope?('head') || snapshot.scope?('worktree')) &&
-          snapshot.worktree_path != repo.toplevel && !File.exist?(snapshot.worktree_path)
+        !own?(snapshot) && (snapshot.scope?('head') || snapshot.scope?('worktree')) &&
+          !File.exist?(snapshot.worktree_path)
       end
 
       # Branches are shared between worktrees; HEAD and files belong to one worktree
       def check_worktree!(snapshot)
         return unless snapshot.scope?('head') || snapshot.scope?('worktree')
-        return if snapshot.worktree_path == repo.toplevel
+        return if own?(snapshot)
 
         usage_error!('wrong_worktree', "Snapshot #{snapshot.id} was taken in " \
                                        "#{snapshot.worktree_path}; run gitflash undo there")
@@ -94,8 +94,9 @@ module Gitflash
 
       def no_snapshots
         ui.report(status: 'noop', result: { snapshot: nil },
-                  text: 'No snapshots of this worktree to undo (`gitflash snapshots` lists all; ' \
-                        'pass an ID to restore one taken elsewhere)')
+                  text: 'No snapshots of this worktree to undo. `gitflash snapshots` lists all: ' \
+                        'run `gitflash undo ID` in the worktree a snapshot was taken in (an ' \
+                        'ID from elsewhere works here only for a branches-only snapshot)')
       end
 
       def nothing_to_undo(plan)

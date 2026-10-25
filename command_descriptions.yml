@@ -59,7 +59,9 @@ undo:
 
     Without SNAPSHOT it restores the latest snapshot taken in this worktree. All worktrees of
     a repository share the snapshots, so the newest one may belong to another agent's
-    worktree; pass its ID to restore it. The plan shows the snapshot's reason.
+    worktree. To restore one of those, run `gitflash undo ID` in the worktree it was taken in;
+    here an ID from elsewhere works only for a snapshot that saved branches alone. The plan
+    shows the snapshot's reason.
 
     The current state is saved as a new snapshot first, so an undo can itself be undone.
     Asks for confirmation; pass --yes to skip it (required without a terminal) or
