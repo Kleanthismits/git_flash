@@ -97,8 +97,7 @@ module Gitflash
       def install(data, entry, marking, plan)
         entry ? entry['command'] = plan[:command] : add_entry(data, 'PreToolUse', plan[:command])
         add_entry(data, Hook::Claude::POST_EVENT, MARKING_COMMAND) unless marking
-        FileUtils.mkdir_p(File.dirname(plan[:file]))
-        File.write(plan[:file], "#{JSON.pretty_generate(data)}\n")
+        write_atomically(plan[:file], "#{JSON.pretty_generate(data)}\n")
         ui.report(status: 'done', plan: plan, result: plan,
                   text: "Installed the gitflash hook in #{plan[:file]} (#{mode_text(plan)}).\n" \
                         "It applies to #{plan[:applies_to]}, including running ones.")
@@ -125,12 +124,20 @@ module Gitflash
                   text: "Already installed in #{plan[:file]}.\nIt applies to #{plan[:applies_to]}.")
       end
 
+      # Claude Code ignores a settings file it cannot parse, and with it the user's own
+      # permission rules, so the file is replaced in one step (AtomicFile)
+      def write_atomically(path, text)
+        AtomicFile.write(path, text)
+      rescue SystemCallError, IOError => e
+        raise Error.new("Could not write #{path}: #{e.message}", code: 'invalid_settings')
+      end
+
+      # Settings#read has checked that `hooks` and each of its events have the shape Claude Code
+      # reads, so a missing event is the only one to create
       def add_entry(data, event, command)
-        hooks = (data['hooks'] ||= {})
-        (hooks[event] ||= []) << {
-          'matcher' => 'Bash',
-          'hooks' => [{ 'type' => 'command', 'command' => command, 'timeout' => 30 }]
-        }
+        groups = ((data['hooks'] ||= {})[event] ||= [])
+        hook = { 'type' => 'command', 'command' => command, 'timeout' => 30 }
+        groups << { 'matcher' => 'Bash', 'hooks' => [hook] }
       end
     end
   end
