@@ -148,7 +148,7 @@ module Gitflash
     long_desc <<~TEXT
       Serves gitflash to MCP clients (Claude Code, Claude Desktop, other agents) over stdio,
       for the git repository in the current directory only. Tools answer with the JSON envelope
-      of `gitflash schema`.
+      of `gitflash schema`; outside a git repository they answer with not_a_repository.
 
       Read-only tools: list_branches, list_worktrees, list_pickable_commits, list_snapshots.
       Tools that lose nothing: add_worktree, cherry_pick_commits, cherry_pick_control,
@@ -167,11 +167,7 @@ module Gitflash
     option :elicitation, type: :boolean, default: true,
                          desc: 'Ask the user through the client before destructive changes'
     def mcp
-      Repo.new.ensure_work_tree!
       Mcp::Server.new(elicitation: Mcp::Elicitation.new(enabled: options[:elicitation])).start
-    rescue Error => e
-      warn "gitflash mcp: #{e.message}"
-      exit(e.exit_code)
     end
 
     desc 'schema', 'Print the JSON Schema of the --json output'

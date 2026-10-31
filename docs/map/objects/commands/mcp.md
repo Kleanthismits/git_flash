@@ -18,7 +18,7 @@ Each tool runs the CLI with `--json` in a child process (`Runner`): stdout is th
 
 ## Shape
 
-- `Cli#mcp` checks for a work tree (`Repo#ensure_work_tree!`, error to stderr, exit 1), then `Mcp::Server#start` opens `MCP::Server::Transports::StdioTransport`. `lib/gitflash/mcp/server.rb` requires `mcp`; Zeitwerk only loads it when `Gitflash::Mcp::Server` is first used, so other commands never load the gem.
+- `Cli#mcp` starts outside a repository too (a [[plugin]] server starts in every session); tools then answer with `not_a_repository` from the child process. `Mcp::Server#start` opens `MCP::Server::Transports::StdioTransport`. `lib/gitflash/mcp/server.rb` requires `mcp`; Zeitwerk only loads it when `Gitflash::Mcp::Server` is first used, so other commands never load the gem.
 - `Tools::ALL`: name, kind (`read`, `additive`, `destructive`), description, input schema properties, `argv` lambda (tool arguments to command words). Kinds map to `readOnlyHint` / `destructiveHint` / `idempotentHint`; `openWorldHint` false (`Server::ANNOTATIONS`). `additionalProperties: false`; names, SHAs and paths have pattern `^[^-]` (`Tools::NAME`), checked by the gem before the tool runs, so no argument can become an option.
 - `Runner#call(argv)`: `Gem.ruby -I lib bin/gitflash ARGV --json`, in the server's directory, stdin empty (no terminal, so commands never prompt). No JSON on stdout gives a `failed` envelope with stderr.
 - Read and additive tools run the command once. `cherry_pick_*` pass `--yes` themselves. `mark_branches` defaults to `--owner agent`.

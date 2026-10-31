@@ -110,6 +110,19 @@ Where the hook goes, following Claude Code's own rules:
 
 Claude Code reloads settings files, so running sessions pick the hook up without a restart. Run `gitflash hook status` in the directory where you start Claude Code to check which files apply and whether the `gitflash` executable is found.
 
+### Claude Code plugin
+
+The plugin brings the hook, the MCP server and the skill to Claude Code in one install. It runs the `gitflash` command, so install the gem first (`gem install gitflash`, version 0.8.0 or newer), then in Claude Code:
+
+```
+/plugin marketplace add Kleanthismits/git_flash
+/plugin install gitflash@gitflash
+```
+
+On Claude Code 2.1.275 or later one line does both: `/plugin install gitflash --marketplace Kleanthismits/git_flash`.
+
+The plugin's hook runs in `snapshot` mode for every session. Do not also run `gitflash hook install`, or the hook runs twice; if you want `ask` or `deny` mode, use `gitflash hook install --mode ask` instead of the plugin, or disable the plugin's hooks. `gitflash hook status` only reads settings files, so it does not report the plugin's hook.
+
 ### Teach agents to use gitflash
 
 gitflash ships an [Agent Skill](skills/gitflash/SKILL.md): one `SKILL.md` that tells an agent when to use gitflash instead of plain git, how to read the `--json` envelope, the plan then `--yes` flow, `--confirm` tokens and how to recover work with `gitflash undo`. Install it once:

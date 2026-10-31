@@ -117,7 +117,7 @@ This is the core of the positioning.
   - For agents: `gitflash pick <source> --list --json` and `gitflash pick <source> <sha>... --yes --json`.
 - **Configuration.** `.gitflash.yml` in the repository and `~/.config/gitflash.yml` for protected branch patterns, the stale threshold and default flags.
 
-### Phase 4 — Agent integrations (0.8.0) — in progress
+### Phase 4 — Agent integrations (0.8.0) — implemented, not released
 
 All of them use the same JSON contract.
 
@@ -130,7 +130,7 @@ All of them use the same JSON contract.
    - Destructive tools (`destructive_hint: true`): `delete_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo`.
    - Confirmation that works in every client: a first call returns the plan and a short-lived token, a second call with the token runs it. When the client supports elicitation, the user is also asked through `create_form_elicitation`; the token flow still works when elicitation fails (the Cowork desktop app currently hangs on it, anthropics/claude-code#94806).
    - Every destructive call snapshots first, so `undo` is always available. Sampling and roots are not used (deprecated in the 2026-07-28 specification).
-3. **Claude Code plugin.** `.claude-plugin/plugin.json`, an `.mcp.json` that starts `gitflash mcp`, the skill, and the hook from phase 2. Installed with `/plugin marketplace add Kleanthismits/git_flash`.
+3. **Claude Code plugin** — implemented. `.claude-plugin/plugin.json` declares the skill (`skills/`), the MCP server (`gitflash mcp`) and the hook from phase 2 (PreToolUse and PostToolUse, snapshot mode) inline, so the repository root needs no `.mcp.json` or `hooks/`; `.claude-plugin/marketplace.json` lists it. Installed with `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`.
 
 ### Phase 5 — Distribution and codebase (alongside)
 

@@ -1,0 +1,17 @@
+{
+  "name": "gitflash",
+  "description": "The gitflash plugin for Claude Code.",
+  "owner": {
+    "name": "Kleanthis Mitsioulis",
+    "url": "https://github.com/Kleanthismits"
+  },
+  "plugins": [
+    {
+      "name": "gitflash",
+      "source": "./",
+      "description": "Snapshots before destructive git commands, undo, worktrees and branch cleanup for agents: hook, MCP server and skill. Needs the gitflash gem.",
+      "category": "development",
+      "tags": ["git", "undo", "worktrees", "mcp"]
+    }
+  ]
+}

@@ -26,7 +26,7 @@ Verified at dde88fd on 2026-10-03.
 | a settings key or file | [[config]], [[exit-codes]] |
 | which agent commands get snapshotted | [[hook-rules]], [[hook-claude]] |
 | which commands mark a branch, or what the PostToolUse hook does | [[hook-marking]], [[hook-claude]], [[hook-install]], [[ownership]] |
-| hook output or modes | [[hook-claude]], [[hook-install]] (command string and `PATTERN`) |
+| hook output or modes | [[hook-claude]], [[hook-install]] (command string and `PATTERN`), [[plugin]] (same entries) |
 | where the hook is installed | [[hook-install]], [[repo]] (`toplevel`, `main_root`) |
 | worktree fields or `wt` commands | [[worktrees]], [[worktree-commands]], [[json-schema]] |
 | what `wt remove` saves or how undo brings a worktree back | [[worktree-commands]], [[worktree-revival]], [[restore]], [[undo]], [[state-capture]] |
@@ -43,6 +43,7 @@ Nothing in `lib/` names these. They break silently.
 |---|---|---|
 | `gitflash.gemspec:26-29` file list | `lib/**/*`, `bin/gitflash`, `command_descriptions.yml`, `schema/v1.json`, `skills/gitflash/SKILL.md` | any is moved or renamed; gem ships without it |
 | `gitflash.gemspec:23` | executable `gitflash` | binary renamed |
+| `.claude-plugin/plugin.json` | `gitflash hook claude`, `gitflash mcp`, `skills/`, `Gitflash::VERSION` | any is renamed or moved, or the version is bumped without it (`spec/plugin_spec.rb` fails); see [[plugin]] |
 | `Mcp::Runner::BIN`, `LIB` (`lib/gitflash/mcp/runner.rb`) | `bin/gitflash`, `lib/` | either moved; every tool returns a `failed` envelope |
 | `Configuration::Descriptions` (`lib/gitflash/configuration.rb:15`) | `command_descriptions.yml` one level above `lib/` | file moved |
 | `Cli::SCHEMA_PATH` (`lib/gitflash/cli.rb:10`) | `schema/v1.json` | file moved |
