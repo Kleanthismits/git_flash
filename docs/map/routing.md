@@ -20,7 +20,7 @@ gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents 
 ## Universes
 
 - **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude (PreToolUse and PostToolUse)/install/status, clean, pick, mark, worktree list/add/remove/lock/unlock/move/prune/clean, skill show/install (`skills/gitflash/SKILL.md`), mcp (`lib/gitflash/mcp/`), `.gitflash.yml`, ownership marks (set by `wt add` and `mark`); `Repo`, `Ui`, snapshot classes, `schema/v1.json`
-- **ghost:** `docs/ROADMAP.md` phase 4 Claude Code plugin and MCP elicitation, phase 5. Not in `lib/`. Do not implement against.
+- **ghost:** `docs/ROADMAP.md` phase 4 Claude Code plugin, phase 5. Not in `lib/`. Do not implement against.
 - **leftover:** none found
 
 ## Route

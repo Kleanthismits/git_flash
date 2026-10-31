@@ -163,4 +163,5 @@ Upgrading from 0.6.0:
 - Add `skill show`, which prints the skill
 - JSON schema: new command `skill install` with the `skill_install` plan and result
 - Add `mcp`: an MCP server on stdio (official `mcp` gem, loaded only by this command) for the repository in the current directory. Read-only tools `list_branches`, `list_worktrees`, `list_pickable_commits`, `list_snapshots`; tools that lose nothing `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`, `mark_branches`, `save_snapshot`; destructive tools `delete_branches`, `clean_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo`. Every tool answers with the JSON envelope. A destructive tool's first call returns the plan and `error.confirm_token`; a second call with `confirm_token` (valid 5 minutes, bound to the arguments and the plan) makes the change
+- `mcp` asks the user to approve a destructive tool's plan through the client when it supports elicitation, runs the change when they approve and answers `cancelled` when they decline. Without an answer within 2 minutes, an error, or with `--no-elicitation`, the token flow is used
 - New runtime dependency: `mcp` (~> 1.8)

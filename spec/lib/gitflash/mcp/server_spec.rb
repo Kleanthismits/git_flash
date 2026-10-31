@@ -161,6 +161,43 @@ RSpec.describe Gitflash::Mcp::Server, :git_repo do
     end
   end
 
+  describe 'destructive tools when the client can ask the user' do
+    let(:elicitation) { instance_double(Gitflash::Mcp::Elicitation) }
+    let(:server) { described_class.new(elicitation: elicitation) }
+    let(:context) { Object.new }
+
+    it 'make an approved change at once' do
+      expect(elicitation).to receive(:ask)
+        .with(context, tool('delete_branches'), { 'branches' => ['feature'], 'force' => false })
+        .and_return(:accepted)
+      result = server.call(tool('delete_branches'), { branches: ['feature'] }, context)
+      expect(result['status']).to eq('done')
+      expect(branch_names).to eq(%w[main])
+    end
+
+    it 'cancel a declined change without a token' do
+      allow(elicitation).to receive(:ask).and_return(:declined)
+      result = server.call(tool('delete_branches'), { branches: ['feature'] }, context)
+      expect(result).to include('status' => 'cancelled', 'ok' => true)
+      expect(result).not_to have_key('error')
+      expect(branch_names).to eq(%w[feature main])
+    end
+
+    it 'fall back to the token when the user cannot be asked' do
+      allow(elicitation).to receive(:ask).and_return(nil)
+      result = server.call(tool('delete_branches'), { branches: ['feature'] }, context)
+      expect(result.dig('error', 'confirm_token')).to be_a(String)
+      expect(branch_names).to eq(%w[feature main])
+    end
+
+    it 'do not ask again when a token comes with the call' do
+      expect(elicitation).not_to receive(:ask)
+      result = server.call(tool('delete_branches'), { branches: ['feature'], confirm_token: '1.x' },
+                           context)
+      expect(result['status']).to eq('confirmation_required')
+    end
+  end
+
   describe 'other tools' do
     it 'run at once' do
       expect(server.call(tool('save_snapshot'), message: 'before')['status']).to eq('done')

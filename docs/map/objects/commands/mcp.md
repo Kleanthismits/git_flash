@@ -10,7 +10,7 @@ verified_at: 1471a5a plus the MCP server (phase 4)
 
 # MCP server
 
-`gitflash mcp`: an MCP server on stdio for the repository in its working directory. Code: `Mcp::Server`, `Mcp::Tools`, `Mcp::Runner`, `Mcp::Confirmation` (`lib/gitflash/mcp/`). Not the `MCP` constant, which is the `mcp` gem.
+`gitflash mcp`: an MCP server on stdio for the repository in its working directory. Code: `Mcp::Server`, `Mcp::Tools`, `Mcp::Runner`, `Mcp::Confirmation`, `Mcp::Elicitation` (`lib/gitflash/mcp/`). Not the `MCP` constant, which is the `mcp` gem.
 
 ## Why this shape
 
@@ -22,10 +22,11 @@ Each tool runs the CLI with `--json` in a child process (`Runner`): stdout is th
 - `Tools::ALL`: name, kind (`read`, `additive`, `destructive`), description, input schema properties, `argv` lambda (tool arguments to command words). Kinds map to `readOnlyHint` / `destructiveHint` / `idempotentHint`; `openWorldHint` false (`Server::ANNOTATIONS`). `additionalProperties: false`; names, SHAs and paths have pattern `^[^-]` (`Tools::NAME`), checked by the gem before the tool runs, so no argument can become an option.
 - `Runner#call(argv)`: `Gem.ruby -I lib bin/gitflash ARGV --json`, in the server's directory, stdin empty (no terminal, so commands never prompt). No JSON on stdout gives a `failed` envelope with stderr.
 - Read and additive tools run the command once. `cherry_pick_*` pass `--yes` themselves. `mark_branches` defaults to `--owner agent`.
-- Destructive tools (`Server#destructive`): run with `--dry-run`. Status other than `planned` (noop, refusal, error) is returned as it is. Without a valid token: the preview becomes status `confirmation_required`, `ok` false, `error.code` `confirmation_required`, `error.confirm_token` = new MCP token. With one: run with `--yes`; if the command still asks for its own irreversible token ([[change-flow]], `wt remove` with ignored files) and its plan equals the confirmed plan, run again with `--confirm` that token.
+- Destructive tools (`Server#destructive`): run with `--dry-run`. Status other than `planned` (noop, refusal, error) is returned as it is. A valid token runs the change. Without a token, `Elicitation#ask` (`Server#approve`): approved runs the change, declined returns the preview with status `cancelled` and no token. A token that does not fit is never followed by a question. When the user cannot be asked: the preview becomes status `confirmation_required`, `ok` false, `error.code` `confirmation_required`, `error.confirm_token` = new MCP token. With one: run with `--yes`; if the command still asks for its own irreversible token ([[change-flow]], `wt remove` with ignored files) and its plan equals the confirmed plan, run again with `--confirm` that token.
 - `Confirmation`: token `EXPIRES.HMAC-SHA256(secret, [tool, sorted arguments without confirm_token, plan, EXPIRES])`. Secret is 32 random bytes per server process. `TTL` 300 s. So a token is bound to the tool, its arguments, the plan the repository gives now, and this process.
+- `Elicitation`: only when the client declared `elicitation` and the server runs without `--no-elicitation` (`Cli#mcp`). One form, boolean `confirm` (`SCHEMA`); accept with `confirm: true` is the only yes; decline, cancel and accept without the box are a no; an error, an unknown answer or no answer in `TIMEOUT` (120 s, `Timeout.timeout` around the stdio transport's blocking read) is nil, so the token flow follows. The message shows the plan as pretty JSON through `TerminalText.safe`, cut at 4000 characters.
 - Tool response: text content = the envelope as JSON, `structuredContent` = the envelope, `isError` for status `error` / `failed` only.
-- Tool blocks declare `server_context:`, so the gem does not put it into the arguments (it would change the token's arguments).
+- Tool blocks declare `server_context:` and pass it to `Server#call` as `context`: the gem then keeps it out of the arguments (it would change the token's arguments), and elicitation goes through it.
 
 ## Connected to
 
@@ -35,7 +36,7 @@ Each tool runs the CLI with `--json` in a child process (`Runner`): stdout is th
 
 ## If you change this
 
-- **Hits:** a command's flags or positional arguments (its `argv` lambda); a command whose dry-run plan is not stable between two runs (the token never matches); envelope fields; `README.md` tool table, `skills/gitflash/SKILL.md` MCP note; `spec/lib/gitflash/mcp/server_spec.rb`.
+- **Hits:** a command's flags or positional arguments (its `argv` lambda); a command whose dry-run plan is not stable between two runs (the token never matches); envelope fields; `README.md` tool table, `skills/gitflash/SKILL.md` MCP note; `spec/lib/gitflash/mcp/{server,elicitation}_spec.rb`.
 - **Does not hit:** snapshots and git access directly; all of that happens in the child process.
 - **Outside-in:** MCP clients read tool names, input schemas and annotations. Renaming a tool or argument breaks client configs and agent prompts silently.
 
@@ -48,4 +49,4 @@ Each tool runs the CLI with `--json` in a child process (`Runner`): stdout is th
 
 ## See
 
-- Source: `lib/gitflash/mcp/{server,tools,runner,confirmation}.rb`, `lib/gitflash/cli.rb` (`mcp`)
+- Source: `lib/gitflash/mcp/{server,tools,runner,confirmation,elicitation}.rb`, `lib/gitflash/cli.rb` (`mcp`)

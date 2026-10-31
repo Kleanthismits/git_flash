@@ -158,11 +158,17 @@ module Gitflash
       call with confirm_token (valid 5 minutes, for that plan only) makes the change, after a
       snapshot.
 
+      When the client supports elicitation, a destructive tool first asks you to approve its plan
+      in the client, and runs at once when you do. Without an answer within 2 minutes, or with
+      --no-elicitation (for clients that never answer), it falls back to the token.
+
       Register it in Claude Code with: claude mcp add gitflash -- gitflash mcp
     TEXT
+    option :elicitation, type: :boolean, default: true,
+                         desc: 'Ask the user through the client before destructive changes'
     def mcp
       Repo.new.ensure_work_tree!
-      Mcp::Server.new.start
+      Mcp::Server.new(elicitation: Mcp::Elicitation.new(enabled: options[:elicitation])).start
     rescue Error => e
       warn "gitflash mcp: #{e.message}"
       exit(e.exit_code)

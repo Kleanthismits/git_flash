@@ -142,7 +142,9 @@ Every tool answers with the same JSON envelope as `--json`, as structured conten
 | Lose nothing | `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`, `mark_branches`, `save_snapshot` |
 | Destructive | `delete_branches`, `clean_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo` |
 
-A destructive tool changes nothing on its first call: it returns the plan with status `confirmation_required` and `error.confirm_token`. Calling it again with the same arguments and `confirm_token` makes exactly that change, after a snapshot. The token is valid for 5 minutes, only for that plan (if the repository changed so the plan differs, a new plan and token come back) and only for the running server. The tools are marked with MCP's `readOnlyHint` and `destructiveHint`, so clients can also ask you before a call. Names and paths that start with a dash are refused.
+When the client supports MCP elicitation, a destructive tool first shows you its plan in the client and asks you to approve it; it runs when you tick the box, and answers `cancelled` when you decline. If the client cannot ask, gives no answer within 2 minutes, or the server runs with `gitflash mcp --no-elicitation` (for clients that never answer), the token flow below is used.
+
+Without that approval, a destructive tool changes nothing on its first call: it returns the plan with status `confirmation_required` and `error.confirm_token`. Calling it again with the same arguments and `confirm_token` makes exactly that change, after a snapshot. The token is valid for 5 minutes, only for that plan (if the repository changed so the plan differs, a new plan and token come back) and only for the running server. The tools are marked with MCP's `readOnlyHint` and `destructiveHint`, so clients can also ask you before a call. Names and paths that start with a dash are refused.
 
 ### Scripts
 
