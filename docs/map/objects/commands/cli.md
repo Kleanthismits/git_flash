@@ -25,6 +25,7 @@ Thin: declares flags and commands, delegates to [[command-runner]]. Heavy logic 
 - `pick` command: class chosen by `Pick.command_for` (see [[pick]]).
 - `clean` command (help text in `command_descriptions.yml`).
 - `skill` subcommand = `SkillCli`: `show`, `install`, see [[skill]].
+- `mcp` command: work tree check, then [[mcp]] server on stdio.
 - `worktree` subcommand (alias `wt`) = `WorktreeCli`, see [[worktree-commands]].
 - `schema` (`cli.rb:85`) and `version` (`cli.rb:92`) print outside the envelope.
 - `exit_on_failure?` true (`cli.rb:12`). Binary: `bin/gitflash`.

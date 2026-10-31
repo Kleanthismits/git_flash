@@ -51,6 +51,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash hook install` | Protect plain git commands run by Claude Code and mark the branches it creates (see below) |
 | `gitflash hook status` | Show whether the hook protects Claude Code sessions in the current directory |
 | `gitflash skill install` | Copy the gitflash Agent Skill into an agent's skills directory (see below); `gitflash skill show` prints it |
+| `gitflash mcp` | Run an MCP server for the current repository on stdio (see below) |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
 
@@ -124,6 +125,24 @@ gitflash skill install
 | `--path DIR` | `DIR/gitflash/SKILL.md` | Any agent that reads skills from `DIR` |
 
 Run it again after upgrading gitflash. When the installed file differs from the shipped one (for example because you edited it), replacing it needs `--confirm TOKEN` instead of `--yes`, since `gitflash undo` cannot bring your edits back.
+
+### MCP server
+
+`gitflash mcp` serves gitflash to MCP clients (Claude Code, Claude Desktop, other agents) over stdio, for the repository in the directory it starts in. Register it in Claude Code from inside the repository:
+
+```bash
+claude mcp add gitflash -- gitflash mcp
+```
+
+Every tool answers with the same JSON envelope as `--json`, as structured content.
+
+| Kind | Tools |
+| --- | --- |
+| Read-only | `list_branches`, `list_worktrees`, `list_pickable_commits`, `list_snapshots` |
+| Lose nothing | `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`, `mark_branches`, `save_snapshot` |
+| Destructive | `delete_branches`, `clean_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo` |
+
+A destructive tool changes nothing on its first call: it returns the plan with status `confirmation_required` and `error.confirm_token`. Calling it again with the same arguments and `confirm_token` makes exactly that change, after a snapshot. The token is valid for 5 minutes, only for that plan (if the repository changed so the plan differs, a new plan and token come back) and only for the running server. The tools are marked with MCP's `readOnlyHint` and `destructiveHint`, so clients can also ask you before a call. Names and paths that start with a dash are refused.
 
 ### Scripts
 

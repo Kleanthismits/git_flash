@@ -15,6 +15,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = Gem::Requirement.new('>= 3.3')
 
   # Runtime dependencies
+  spec.add_dependency 'mcp', '~> 1.8'
   spec.add_dependency 'thor', '>= 1.4', '< 2'
   spec.add_dependency 'tty-prompt', '~> 0.23'
   spec.add_dependency 'zeitwerk', '~> 2.6'

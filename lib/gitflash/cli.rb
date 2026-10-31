@@ -144,6 +144,30 @@ module Gitflash
     subcommand 'worktree', WorktreeCli
     map 'wt' => :worktree
 
+    desc 'mcp', 'Run an MCP server on stdio for the repository in the current directory'
+    long_desc <<~TEXT
+      Serves gitflash to MCP clients (Claude Code, Claude Desktop, other agents) over stdio,
+      for the git repository in the current directory only. Tools answer with the JSON envelope
+      of `gitflash schema`.
+
+      Read-only tools: list_branches, list_worktrees, list_pickable_commits, list_snapshots.
+      Tools that lose nothing: add_worktree, cherry_pick_commits, cherry_pick_control,
+      mark_branches, save_snapshot.
+      Destructive tools: delete_branches, clean_branches, reset_branch, remove_worktrees,
+      move_worktree, undo. Their first call returns the plan and error.confirm_token; a second
+      call with confirm_token (valid 5 minutes, for that plan only) makes the change, after a
+      snapshot.
+
+      Register it in Claude Code with: claude mcp add gitflash -- gitflash mcp
+    TEXT
+    def mcp
+      Repo.new.ensure_work_tree!
+      Mcp::Server.new.start
+    rescue Error => e
+      warn "gitflash mcp: #{e.message}"
+      exit(e.exit_code)
+    end
+
     desc 'schema', 'Print the JSON Schema of the --json output'
     def schema
       puts File.read(SCHEMA_PATH)

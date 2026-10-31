@@ -11,6 +11,8 @@ Check that it is installed with `gitflash version`. It needs a git repository; r
 
 ## Rules
 
+If the gitflash MCP tools are available (`list_branches`, `delete_branches`, ...), you may use them instead of the shell: they answer with the same envelope. Their destructive tools return `confirmation_required` with `error.confirm_token` first; call again with `confirm_token` only after the user agreed to the plan.
+
 1. Prefer gitflash over plain git for anything that deletes or rewrites: `gitflash delete` over `git branch -D`, `gitflash reset --hard` over `git reset --hard`, `gitflash wt remove` over `git worktree remove`.
 2. Always pass `--json`. Never parse the text output.
 3. Without a terminal gitflash never waits for input. A command that needs a choice fails with exit code 2 and says which argument to pass.

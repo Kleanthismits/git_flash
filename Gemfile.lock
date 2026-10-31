@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     gitflash (0.7.0)
+      mcp (~> 1.8)
       thor (>= 1.4, < 2)
       tty-prompt (~> 0.23)
       zeitwerk (~> 2.6)
@@ -23,6 +24,8 @@ GEM
       simpleidn (~> 0.2)
     language_server-protocol (3.17.0.6)
     lint_roller (1.1.0)
+    mcp (1.8.2)
+      json_schemer (>= 2.4)
     method_source (1.1.0)
     parallel (2.2.0)
     parser (3.3.12.0)
