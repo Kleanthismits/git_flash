@@ -155,3 +155,10 @@ Upgrading from 0.6.0:
 
 - Run `gitflash hook install` again, so the hook also marks branches created with plain git (`PostToolUse`). It keeps the installed mode
 - Check scripts and agent instructions against the behaviour changes listed under 0.7.0.beta3: `--confirm TOKEN` for `gc` and for removing worktrees with ignored files, `delete` and `clean` protecting `develop`, `trunk` and `release/*`, `mark` defaulting to `human` in a terminal, and usage errors exiting with 2
+
+## [Unreleased]
+
+- Add the gitflash Agent Skill (`skills/gitflash/SKILL.md`, shipped in the gem): when to use gitflash instead of plain git, the `--json` envelope, the plan then `--yes` flow, `--confirm` tokens, the commands and how to recover lost work with `undo`
+- Add `skill install`: copies the skill to `~/.claude/skills/gitflash/` (default, `--scope user`), to `.claude/skills/gitflash/` in the repository (`--scope project`) or to `DIR/gitflash/` (`--path DIR`). Replacing a file that differs from the shipped skill needs `--confirm TOKEN`; the project scope refuses symbolic links
+- Add `skill show`, which prints the skill
+- JSON schema: new command `skill install` with the `skill_install` plan and result

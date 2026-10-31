@@ -50,6 +50,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`, at least 1) |
 | `gitflash hook install` | Protect plain git commands run by Claude Code and mark the branches it creates (see below) |
 | `gitflash hook status` | Show whether the hook protects Claude Code sessions in the current directory |
+| `gitflash skill install` | Copy the gitflash Agent Skill into an agent's skills directory (see below); `gitflash skill show` prints it |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
 
@@ -107,6 +108,22 @@ Where the hook goes, following Claude Code's own rules:
 | `user` | `~/.claude/settings.json` | Every session |
 
 Claude Code reloads settings files, so running sessions pick the hook up without a restart. Run `gitflash hook status` in the directory where you start Claude Code to check which files apply and whether the `gitflash` executable is found.
+
+### Teach agents to use gitflash
+
+gitflash ships an [Agent Skill](skills/gitflash/SKILL.md): one `SKILL.md` that tells an agent when to use gitflash instead of plain git, how to read the `--json` envelope, the plan then `--yes` flow, `--confirm` tokens and how to recover work with `gitflash undo`. Install it once:
+
+```bash
+gitflash skill install
+```
+
+| Option | File | Read by |
+| --- | --- | --- |
+| `--scope user` (default) | `~/.claude/skills/gitflash/SKILL.md` | Every Claude Code session |
+| `--scope project` | `.claude/skills/gitflash/SKILL.md` at the repository top level, to commit for your team | Claude Code sessions in the repository |
+| `--path DIR` | `DIR/gitflash/SKILL.md` | Any agent that reads skills from `DIR` |
+
+Run it again after upgrading gitflash. When the installed file differs from the shipped one (for example because you edited it), replacing it needs `--confirm TOKEN` instead of `--yes`, since `gitflash undo` cannot bring your edits back.
 
 ### Scripts
 

@@ -125,6 +125,9 @@ module Gitflash
     desc 'hook SUBCOMMAND', 'Claude Code hooks: install them and check they are active'
     subcommand 'hook', HookCli
 
+    desc 'skill SUBCOMMAND', 'The Agent Skill that teaches agents to use gitflash'
+    subcommand 'skill', SkillCli
+
     desc 'pick [SOURCE] [SHA...]', descriptions.pick.short
     long_desc descriptions.pick.long
     option :list, type: :boolean, desc: 'List the commits of SOURCE that are not on this branch yet'

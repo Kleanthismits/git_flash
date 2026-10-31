@@ -32,6 +32,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `undo`: restore a snapshot, undo-able. verified. `lib/gitflash/commands/undo.rb`
 - `worktree-commands`: `worktree`/`wt` list, add, remove, lock, unlock, move, prune. verified. `lib/gitflash/{worktree_cli,commands/worktree_list}.rb`
 - `snapshot-commands`: snapshot, snapshots, gc. verified. `lib/gitflash/commands/{snapshot_create,snapshot_list,gc}.rb`
+- `skill`: Agent Skill file, `skill show` and `skill install`. verified. `lib/gitflash/{skill_cli,commands/skill_install}.rb`, `skills/gitflash/SKILL.md`
 - `change-flow`: plan, confirm, snapshot, execute, report. verified. `lib/gitflash/commands/base.rb`
 
 ## snapshots

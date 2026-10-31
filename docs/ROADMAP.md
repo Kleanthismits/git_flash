@@ -117,11 +117,11 @@ This is the core of the positioning.
   - For agents: `gitflash pick <source> --list --json` and `gitflash pick <source> <sha>... --yes --json`.
 - **Configuration.** `.gitflash.yml` in the repository and `~/.config/gitflash.yml` for protected branch patterns, the stale threshold and default flags.
 
-### Phase 4 — Agent integrations (0.8.0)
+### Phase 4 — Agent integrations (0.8.0) — in progress
 
 All of them use the same JSON contract.
 
-1. **Agent Skill.** `skills/gitflash/SKILL.md` ships in the gem and explains when to use gitflash, the envelope, the plan → `--yes` flow and `undo`. `gitflash skill install [--claude|--path DIR]` copies it into an agent's skills directory. Works in any agent that runs shell commands.
+1. **Agent Skill** — implemented. `skills/gitflash/SKILL.md` ships in the gem and explains when to use gitflash, the envelope, the plan → `--yes` flow and `undo`. `gitflash skill install [--scope user|project | --path DIR]` copies it into an agent's skills directory (default `~/.claude/skills`); `gitflash skill show` prints it. Works in any agent that runs shell commands.
 2. **MCP server — `gitflash mcp`.**
    - Uses stdio and the official `mcp` Ruby gem, loaded only when `gitflash mcp` runs.
    - Works only on the repository in its working directory; tools take no `repo_path`.

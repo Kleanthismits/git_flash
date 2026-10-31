@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
   # prevents Gem::InvalidSpecificationException
   spec.files = Dir.glob('lib/**/*') + %w[
     bin/gitflash CHANGELOG.md LICENSE README.md command_descriptions.yml schema/v1.json
+    skills/gitflash/SKILL.md
   ]
 
   spec.metadata['source_code_uri'] = spec.homepage
