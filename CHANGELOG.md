@@ -146,3 +146,12 @@ The changes:
 - `protected` patterns accept `{a,b}` alternatives, and a pattern that could never match a branch (a space at either end, a control character, `~`, `^`, `:` or `\`, `..` outside a `{a,b}` alternative, or an empty one) is `invalid_config` instead of silently protecting nothing (#51)
 - `hook install` writes the settings file in one step (a temporary file renamed into place), keeps its permissions and a dotfiles link, and refuses a `hooks` value it cannot add to. A crash while writing can no longer leave a broken settings file that Claude Code would ignore, together with your permission rules (#53)
 - CI: every GitHub Action is pinned to a commit SHA, checkout no longer keeps the token in the git config, and Dependabot proposes updates to the pins (#54)
+
+## [0.7.0] - 2026-10-31
+
+The parallel agent work release: settings, ownership marks, `worktree`, `clean` and `pick`, with every change from 0.7.0.beta1, beta2 and beta3 above. No changes since 0.7.0.beta3. The JSON contract of the new commands is now stable. Needs git 2.36 or newer.
+
+Upgrading from 0.6.0:
+
+- Run `gitflash hook install` again, so the hook also marks branches created with plain git (`PostToolUse`). It keeps the installed mode
+- Check scripts and agent instructions against the behaviour changes listed under 0.7.0.beta3: `--confirm TOKEN` for `gc` and for removing worktrees with ignored files, `delete` and `clean` protecting `develop`, `trunk` and `release/*`, `mark` defaulting to `human` in a terminal, and usage errors exiting with 2
