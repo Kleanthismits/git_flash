@@ -24,7 +24,7 @@ Or install it yourself as:
 
     $ gem install gitflash
 
-Prerelease versions such as `0.7.0.beta3` are only installed when you ask for them: `gem install gitflash --pre`, or `gem 'gitflash', '0.7.0.beta3'` in a Gemfile.
+Prerelease versions (named like `0.7.0.beta3`) are only installed when you ask for them: `gem install gitflash --pre`, or the exact version in a Gemfile.
 
 ## Requirements
 
