@@ -24,6 +24,9 @@ module Gitflash
         `confirmation_required` and `error.confirm_token`: show the plan to the user, and only
         when it is what they asked for, call the tool again with the same arguments and
         `confirm_token`. A token expires after 5 minutes and only confirms that plan.
+        clean_branches selects branches by rule: unless the user approved its plan in the client,
+        show them the list and wait for their OK. Do not call save_snapshot before plain git
+        commands when the gitflash hook is installed; the hook saves one itself.
       TEXT
 
       ANNOTATIONS = {

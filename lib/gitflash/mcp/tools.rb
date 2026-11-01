@@ -114,7 +114,8 @@ module Gitflash
         Tool.new(
           name: 'save_snapshot', kind: :additive,
           description: 'Save the current branches, HEAD, files and stashes, so undo can come ' \
-                       'back here.',
+                       'back here. Not needed before plain git commands when the gitflash ' \
+                       'hook is installed: it saves a snapshot itself.',
           properties: { message: { type: 'string', description: 'Why the snapshot is taken' } },
           required: [],
           argv: ->(a) { ['snapshot', *(a[:message] ? ['--message', a[:message]] : [])] }

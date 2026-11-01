@@ -11,14 +11,16 @@ Check that it is installed with `gitflash version`. It needs a git repository; r
 
 ## Rules
 
-If the gitflash MCP tools are available (`list_branches`, `delete_branches`, ...), you may use them instead of the shell: they answer with the same envelope. To see a plan without changing anything, call `plan_change` with the tool name and its arguments; then call the tool with `confirm_token`. Destructive tools may ask the user to approve the plan in the client: `cancelled` means the user declined, so do not retry. Otherwise they return `confirmation_required` with `error.confirm_token` first; call again with `confirm_token` only after the user agreed to the plan.
+If the gitflash MCP tools are available (`list_branches`, `delete_branches`, ...), use them instead of the shell for changes: they answer with the same envelope, and their destructive tools can show the plan to the user and ask them to approve it, which the shell cannot. To see a plan without changing anything, call `plan_change` with the tool name and its arguments; then call the tool with `confirm_token`. Destructive tools may ask the user to approve the plan in the client: `cancelled` means the user declined, so do not retry. Otherwise they return `confirmation_required` with `error.confirm_token` first; call again with `confirm_token` only after the user agreed to the plan.
 
 1. Prefer gitflash over plain git for anything that deletes or rewrites: `gitflash delete` over `git branch -D`, `gitflash reset --hard` over `git reset --hard`, `gitflash wt remove` over `git worktree remove`.
 2. Always pass `--json`. Never parse the text output.
 3. Without a terminal gitflash never waits for input. A command that needs a choice fails with exit code 2 and says which argument to pass.
 4. Use the two-step flow for changes: run the command without `--yes` (or with `--dry-run`) to get the plan, check it, then run it again with `--yes`.
 5. Do not pass `--yes` to commands the user did not ask for. Show the plan and ask when the change is larger than the request.
-6. After a change, keep the `undo.command` from the output. Tell the user how to undo it.
+6. A command that chooses what to change by a rule (`clean`, `wt clean`) can select more than the user expects. Show the user the list from the plan and wait for their OK before `--yes`, unless they named every item themselves.
+7. After a change, keep the `undo.command` from the output. Tell the user how to undo it.
+8. Do not save a snapshot yourself before a plain git command when the gitflash hook is installed (`gitflash hook status`, or the gitflash Claude Code plugin): the hook saves one before every risky git command and tells you its undo command. Use `gitflash snapshot` only when no hook is installed, or to mark a point the user wants to come back to.
 
 ## The JSON envelope
 
