@@ -30,17 +30,25 @@ RSpec.describe Gitflash::Mcp::Elicitation do
     double
   end
 
-  it 'is accepted only when the user ticks the box' do
-    accept = context({ action: 'accept', content: { confirm: true } })
-    expect(ask_with(elicitation, accept, tool, plan)).to eq(:accepted)
-    message, schema = accept.asked.first
-    expect(message).to include('delete_branches', '"feature"')
-    expect(schema[:required]).to eq(%w[confirm])
+  it 'is accepted on Accept, with the box ticked or left as it is' do
+    [{ action: 'accept', content: { confirm: true } }, { 'action' => 'accept', 'content' => {} },
+     { action: 'accept' }].each do |answer|
+      expect(ask_with(elicitation, context(answer), tool, plan)).to eq(:accepted)
+    end
   end
 
-  it 'is declined when the user declines, cancels or leaves the box empty' do
-    [{ action: 'decline' }, { action: 'cancel' }, { action: 'accept', content: { confirm: false } },
-     { 'action' => 'accept', 'content' => {} }].each do |answer|
+  it 'shows the plan on one line and a ticked, optional box' do
+    accept = context({ action: 'accept' })
+    ask_with(elicitation, accept, tool, plan)
+    message, schema = accept.asked.first
+    expect(message.lines.last).to eq('{"branches":["feature"],"force":false}')
+    expect(schema).not_to have_key(:required)
+    expect(schema.dig(:properties, :confirm, :default)).to be(true)
+  end
+
+  it 'is declined when the user declines, cancels or clears the box' do
+    [{ action: 'decline' }, { action: 'cancel' },
+     { action: 'accept', content: { confirm: false } }].each do |answer|
       expect(ask_with(elicitation, context(answer), tool, plan)).to eq(:declined)
     end
   end

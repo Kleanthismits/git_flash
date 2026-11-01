@@ -19,13 +19,14 @@ module Gitflash
     # confirm_token flow, and the reason goes to stderr.
     class Elicitation
       TIMEOUT = 120
+      # Accept is the approval. The box is optional and defaults to ticked: a required one made
+      # Claude Code refuse Accept until the user ticked it as well
       SCHEMA = {
         type: 'object',
         properties: {
-          confirm: { type: 'boolean', title: 'Make this change',
+          confirm: { type: 'boolean', title: 'Make this change', default: true,
                      description: 'gitflash saves a snapshot first' }
-        },
-        required: %w[confirm]
+        }
       }.freeze
       MAX_MESSAGE = 4000
       FORM = 'confirm'
@@ -99,12 +100,12 @@ module Gitflash
         nil
       end
 
-      # Accepting the form without ticking the box is a no, as are decline and cancel
+      # Accept is a yes unless the user cleared the box; decline and cancel are a no
       def decision(answer)
         answer = JSON.parse(JSON.generate(answer))
         return unless answer.is_a?(Hash) && %w[accept decline cancel].include?(answer['action'])
 
-        approved = answer['action'] == 'accept' && answer.dig('content', 'confirm') == true
+        approved = answer['action'] == 'accept' && answer.dig('content', 'confirm') != false
         approved ? :accepted : :declined
       end
 
@@ -113,7 +114,7 @@ module Gitflash
       def message(tool, plan)
         text = "gitflash #{tool.name} plans this change. A snapshot is saved first; the plan " \
                "lists anything gitflash undo cannot bring back.\n\n" \
-               "#{TerminalText.safe(JSON.pretty_generate(plan))}"
+               "#{TerminalText.safe(JSON.generate(plan))}"
         text.length > MAX_MESSAGE ? "#{text[0, MAX_MESSAGE]}\n..." : text
       end
     end
