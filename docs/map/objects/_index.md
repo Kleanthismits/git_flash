@@ -10,7 +10,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 
 ## core
 - `repo`: branches, commits, HEAD through git. verified. `lib/gitflash/repo.rb`
-- `branch`: branch record. verified. `lib/gitflash/branch.rb`
+- `branch`: branch record, with reflog activity. verified. `lib/gitflash/{branch,branch_activity}.rb`
 - `commit`: commit record. verified. `lib/gitflash/commit.rb`
 - `config`: settings files `.gitflash.yml`, `~/.config/gitflash.yml`. verified. `lib/gitflash/{config,config_keys}.rb`
 - `worktrees`: worktree records from git. verified. `lib/gitflash/{worktrees,worktree}.rb`

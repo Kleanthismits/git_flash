@@ -57,6 +57,40 @@ RSpec.describe Gitflash::Cleanup do
         .not_to include('done')
     end
 
+    it 'keeps unused branches from merged and agent, and says why' do
+      fresh = [branch('fresh', merged: true, unused: true),
+               branch('bot', merged: true, unused: true, owner: 'agent')]
+      expect(described_class.branches(fresh, rules: rules(:merged, :agent), protection: protection))
+        .to eq([])
+      held = described_class.held_back(fresh, rules: rules(:merged, :agent), protection: protection)
+      expect(held).to eq(%w[fresh bot].map do |name|
+        { branch: name, reason: 'no commits since it was created; --stale removes it after ' \
+                                '30 days unused' }
+      end)
+    end
+
+    it 'still selects an unused branch whose upstream is gone or that is stale' do
+      gone = branch('gone', merged: true, unused: true, upstream_gone: true)
+      old = branch('old', merged: true, unused: true, last_commit_at: now - (86_400 * 90),
+                          last_activity_at: now - (86_400 * 60))
+      result = described_class.branches([gone, old], rules: rules(:merged, :gone, :stale),
+                                                     protection: protection)
+      expect(result.to_h { |c| [c.item.name, c.reasons] })
+        .to eq('gone' => ['upstream gone'], 'old' => ['no commits for 30 days'])
+      expect(described_class.held_back([gone, old], rules: rules(:merged, :gone, :stale),
+                                                    protection: protection)).to eq([])
+    end
+
+    it 'judges stale by the latest commit or move of the branch' do
+      cut = branch('cut', last_commit_at: now - (86_400 * 90), last_activity_at: now - 86_400)
+      expect(names(described_class.branches([cut], rules: rules(:stale), protection: protection)))
+        .to eq([])
+      unknown = cut.with(last_activity_at: nil)
+      expect(names(described_class.branches([unknown], rules: rules(:stale),
+                                                       protection: protection)))
+        .to eq(['cut'])
+    end
+
     it 'selects nothing without matches' do
       expect(described_class.branches([branch('plain')], rules: rules(:merged, :gone),
                                                          protection: protection)).to eq([])

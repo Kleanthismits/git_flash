@@ -61,7 +61,7 @@ Every command accepts `--json`, `--yes` (`-y`), `--dry-run` and `--confirm TOKEN
 | Switch branch | `gitflash checkout BRANCH --json` |
 | Delete branches | `gitflash delete BRANCH... --yes --json` (unmerged ones need `--force`) |
 | Reset the current branch | `gitflash reset COMMIT --json` (mixed; `--soft`, `--hard`) |
-| Delete merged and upstream-gone branches | `gitflash clean --json` (add `--stale [DAYS]`, `--agent`; `--force` for unmerged ones) |
+| Delete merged and upstream-gone branches | `gitflash clean --json` (add `--stale [DAYS]`, `--agent`; `--force` for unmerged ones; a branch nobody has committed to yet is kept until it is stale) |
 | Mark branches as agent or human work | `gitflash mark BRANCH... --owner agent --json` (`--clear` removes the mark) |
 | List worktrees with absolute paths | `gitflash wt list --json` |
 | Create a worktree for parallel work | `gitflash wt add BRANCH --json` (the path is in `result`) |

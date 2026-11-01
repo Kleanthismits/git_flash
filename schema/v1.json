@@ -680,6 +680,21 @@
             null
           ],
           "description": "Who created the branch; null when unmarked (treated as human)."
+        },
+        "unused": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Nothing moved the branch since it was created (its reflog has only the creation): it is new, so clean does not treat it as merged. null when the branch has no reflog."
+        },
+        "last_activity_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "When the branch last moved (its newest reflog entry); null without a reflog. Stale means neither this nor last_commit_at is recent."
         }
       }
     },

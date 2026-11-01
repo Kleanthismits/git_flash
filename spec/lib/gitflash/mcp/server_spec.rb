@@ -128,6 +128,8 @@ RSpec.describe Gitflash::Mcp::Server, :git_repo do
     end
 
     it 'clean branches with a stable plan' do
+      git('branch', '-D', 'feature')
+      merged_branch('feature')
       expect(confirmed('clean_branches', merged: true)['status']).to eq('done')
       expect(branch_names).to eq(%w[main])
     end
