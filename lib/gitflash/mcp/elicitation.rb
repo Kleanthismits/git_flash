@@ -1,16 +1,22 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'mcp'
 require 'timeout'
 
 module Gitflash
   module Mcp
     # Asks the user to approve a destructive tool's plan through the MCP client (a form with one
     # checkbox), when the client declared the `elicitation` capability. The answer comes from the
-    # user, not the agent, so an approved plan runs without a second call. Whenever the user
-    # cannot be asked (no capability, an error, no answer within TIMEOUT seconds; some clients
-    # never answer), `ask` returns nil and the tool falls back to the confirm_token flow, and the
-    # reason goes to stderr, which MCP clients keep in their server logs.
+    # user, not the agent, so an approved plan runs without a second call.
+    #
+    # How depends on the connection. A legacy one (`initialize`) sends `elicitation/create` and
+    # waits up to TIMEOUT seconds; some clients never answer. The 2026-07-28 lifecycle forbids
+    # requests from the server, so there `ask` returns an `input_required` result holding the
+    # form, and the client calls the tool again with the answer (`answer`) and the state.
+    #
+    # Whenever the user cannot be asked, `ask` returns nil and the tool falls back to the
+    # confirm_token flow, and the reason goes to stderr.
     class Elicitation
       TIMEOUT = 120
       SCHEMA = {
@@ -22,6 +28,7 @@ module Gitflash
         required: %w[confirm]
       }.freeze
       MAX_MESSAGE = 4000
+      FORM = 'confirm'
 
       LOG = ->(text) { warn "gitflash mcp: #{text}" }
 
@@ -31,14 +38,32 @@ module Gitflash
         @log = log
       end
 
-      # :accepted, :declined, or nil when the user could not be asked. Without a request context
-      # (a call from Ruby, not from a client) there is nobody to ask and nothing is logged.
-      def ask(context, tool, plan)
+      # :accepted, :declined, an `input_required` result (2026-07-28 lifecycle), or nil when the
+      # user cannot be asked. `state` gives the request state the client echoes on its retry.
+      # Without a request context (a call from Ruby, not from a client) there is nobody to ask
+      # and nothing is logged.
+      def ask(context, tool, plan, state:)
         return unless context
 
         reason = unavailable(context)
         return skipped(tool, reason) if reason
+        return form(context, tool, plan, state.call) if context.modern?
 
+        direct(context, tool, plan)
+      end
+
+      # The user's answer on the retry of an `input_required` round. `fits` says whether the state
+      # the client echoed still confirms the plan the repository gives now.
+      def answer(context, tool, fits:)
+        return skipped(tool, 'the plan changed or the form expired') unless fits
+
+        response = context.input_response(FORM)
+        decision(response) || skipped(tool, "unknown answer #{response.inspect[0, 200]}")
+      end
+
+      private
+
+      def direct(context, tool, plan)
         answer = Timeout.timeout(@timeout) do
           context.create_form_elicitation(message: message(tool, plan), requested_schema: SCHEMA)
         end
@@ -49,13 +74,22 @@ module Gitflash
         skipped(tool, "asking failed: #{e.class}: #{e.message}")
       end
 
-      private
+      def form(context, tool, plan, state)
+        params = { mode: 'form', message: message(tool, plan), requestedSchema: SCHEMA }
+        result = MCP::Server::InputRequiredResult.new(
+          input_requests: { FORM => { method: 'elicitation/create', params: params } },
+          request_state: state
+        )
+        missing = result.missing_client_capabilities(context.client_capabilities)
+        missing.empty? ? result : skipped(tool, "the client cannot show forms (#{missing.to_json})")
+      end
 
       def unavailable(context)
         return 'started with --no-elicitation' unless @enabled
 
         capabilities = context.client_capabilities
-        return if capabilities.is_a?(Hash) && capabilities.key?(:elicitation)
+        return if capabilities.is_a?(Hash) && (capabilities.key?(:elicitation) ||
+                                               capabilities.key?('elicitation'))
 
         "the client did not declare the elicitation capability (#{capabilities.inspect[0, 200]})"
       end

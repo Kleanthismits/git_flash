@@ -198,6 +198,71 @@ RSpec.describe Gitflash::Mcp::Server, :git_repo do
     end
   end
 
+  describe 'destructive tools on a 2026-07-28 connection' do
+    let(:clock) { [Time.now.to_i] }
+    let(:server) do
+      described_class.new(elicitation: Gitflash::Mcp::Elicitation.new(log: ->(_) {}),
+                          confirmation: Gitflash::Mcp::Confirmation.new(clock: -> { clock.first }))
+    end
+    let(:form) { modern_call }
+
+    # A tools/call in the stateless lifecycle: the client's version and capabilities ride in _meta
+    def modern_call(capabilities: { elicitation: {} }, **extra)
+      meta = { 'io.modelcontextprotocol/protocolVersion' => '2026-07-28',
+               'io.modelcontextprotocol/clientCapabilities' => capabilities }
+      rpc('tools/call', name: 'delete_branches', arguments: { branches: ['feature'] }, _meta: meta,
+                        **extra)[:result]
+    end
+
+    def answered(state, answer)
+      modern_call(inputResponses: { confirm: answer }, requestState: state)
+    end
+
+    it 'returns the plan as a form instead of sending a request' do
+      expect(form[:resultType]).to eq('input_required')
+      request = form.dig(:inputRequests, 'confirm')
+      expect(request[:method]).to eq('elicitation/create')
+      expect(request.dig(:params, :message)).to include('delete_branches', '"feature"')
+      expect(branch_names).to eq(%w[feature main])
+    end
+
+    it 'makes the change when the user ticks the box' do
+      result = answered(form[:requestState], { action: 'accept', content: { confirm: true } })
+      expect(result.dig(:structuredContent, 'status')).to eq('done')
+      expect(branch_names).to eq(%w[main])
+    end
+
+    it 'cancels when the user declines' do
+      result = answered(form[:requestState], { action: 'decline' })
+      expect(result.dig(:structuredContent, 'status')).to eq('cancelled')
+      expect(branch_names).to eq(%w[feature main])
+    end
+
+    it 'falls back to the token when the state is forged or expired' do
+      state = form[:requestState]
+      clock[0] += Gitflash::Mcp::Confirmation::TTL + 1
+      [answered(state, { action: 'accept', content: { confirm: true } }),
+       answered('1.forged', { action: 'accept', content: { confirm: true } })].each do |result|
+        expect(result.dig(:structuredContent, 'status')).to eq('confirmation_required')
+      end
+      expect(branch_names).to eq(%w[feature main])
+    end
+
+    it 'does not take the form state as a confirm_token' do
+      arguments = { branches: ['feature'], confirm_token: form[:requestState] }
+      result = rpc('tools/call', name: 'delete_branches', arguments: arguments)
+      expect(result.dig(:result, :structuredContent, 'status')).to eq('confirmation_required')
+      expect(branch_names).to eq(%w[feature main])
+    end
+
+    it 'falls back to the token when the client cannot show forms' do
+      [{}, { elicitation: { url: {} } }].each do |capabilities|
+        result = modern_call(capabilities: capabilities)
+        expect(result.dig(:structuredContent, 'error', 'confirm_token')).to be_a(String)
+      end
+    end
+  end
+
   describe 'destructive tools when the client can ask the user' do
     let(:elicitation) { instance_double(Gitflash::Mcp::Elicitation) }
     let(:server) { described_class.new(elicitation: elicitation) }
@@ -205,7 +270,8 @@ RSpec.describe Gitflash::Mcp::Server, :git_repo do
 
     it 'make an approved change at once' do
       expect(elicitation).to receive(:ask)
-        .with(context, tool('delete_branches'), { 'branches' => ['feature'], 'force' => false })
+        .with(context, tool('delete_branches'), { 'branches' => ['feature'], 'force' => false },
+              state: kind_of(Proc))
         .and_return(:accepted)
       result = server.call(tool('delete_branches'), { branches: ['feature'] }, context)
       expect(result['status']).to eq('done')

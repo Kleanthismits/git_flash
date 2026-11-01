@@ -160,7 +160,8 @@ module Gitflash
       snapshot.
 
       When the client supports elicitation, a destructive tool first asks you to approve its plan
-      in the client, and runs at once when you do. Without an answer within 2 minutes, or with
+      in the client, and runs at once when you do (on a 2026-07-28 connection the form is an
+      input_required result). Without an answer within 2 minutes, or with
       --no-elicitation (for clients that never answer), it falls back to the token and writes
       the reason to stderr, which MCP clients keep in their logs.
 

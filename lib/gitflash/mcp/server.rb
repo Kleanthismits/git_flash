@@ -73,7 +73,8 @@ module Gitflash
           name: tool.name, description: tool.description, input_schema: schema,
           annotations: ANNOTATIONS.fetch(tool.kind).merge(open_world_hint: false)
         ) do |server_context: nil, **arguments|
-          server.send(:respond, server.call(tool, arguments, server_context))
+          result = server.call(tool, arguments, server_context)
+          result.is_a?(Hash) ? server.send(:respond, result) : result
         end
       end
 
@@ -102,11 +103,26 @@ module Gitflash
       # A token that does not fit gets a new one without asking: the agent asked for this change
       # before, so the user is not asked twice
       def approve(tool, arguments, preview, token, context)
-        answer = @elicitation.ask(context, tool, preview['plan']) unless token
+        answer = elicited(tool, arguments, preview['plan'], context) unless token
+        return answer if answer.is_a?(MCP::Server::InputRequiredResult)
         return run(tool.argv.call(arguments), preview['plan']) if answer == :accepted
         return declined(preview) if answer == :declined
 
         @confirmation.required(tool, arguments, preview, token)
+      end
+
+      # The form's request state is a token signed for `form:TOOL`, so the client's echo binds the
+      # answer to this plan and expires like a confirm_token, and it cannot be passed off as a
+      # confirm_token itself
+      def elicited(tool, arguments, plan, context)
+        name = "form:#{tool.name}"
+        state = context.request_state if context.respond_to?(:request_state)
+        unless state
+          issue = -> { @confirmation.issue(name, arguments, plan) }
+          return @elicitation.ask(context, tool, plan, state: issue)
+        end
+
+        @elicitation.answer(context, tool, fits: @confirmation.valid?(state, name, arguments, plan))
       end
 
       def declined(preview)
