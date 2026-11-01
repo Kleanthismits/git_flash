@@ -169,5 +169,6 @@ Upgrading from 0.6.0:
 - `mcp` tool `plan_change`: the plan and `confirm_token` of a destructive tool from a read-only call, so a client that asks before every destructive call asks only once
 - When nothing changed since the latest snapshot, `undo` in the result names that snapshot with `"reused": true`, and text output says it is an earlier one. Before, its older id looked like a missing snapshot
 - New runtime dependency: `mcp` (~> 1.8)
+- Fix: the Claude Code hook marks a branch created from an older commit as agent work. It used the commit's date to decide whether the branch was created a moment ago, so only branches made from a commit of the last two minutes were marked; it now uses the time of the branch's reflog entry. A branch deleted and created again at the same commit is also told apart from the old one now
 - `mcp` starts outside a git repository too; its tools then answer with `not_a_repository`
 - Claude Code plugin (`.claude-plugin/`): the hook (snapshot mode), the MCP server and the skill in one install with `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`. It needs the gitflash gem
