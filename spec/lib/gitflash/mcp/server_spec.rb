@@ -161,6 +161,43 @@ RSpec.describe Gitflash::Mcp::Server, :git_repo do
     end
   end
 
+  describe 'plan_change' do
+    it 'is read-only and plans without changing anything' do
+      listed = rpc('tools/list')[:result][:tools].find { |entry| entry[:name] == 'plan_change' }
+      expect(listed[:annotations]).to include(readOnlyHint: true, destructiveHint: false)
+      expect(listed.dig(:inputSchema, :properties, :tool, :enum))
+        .to eq(%w[delete_branches clean_branches reset_branch remove_worktrees move_worktree undo])
+
+      planned = server.call(tool('plan_change'),
+                            { tool: 'delete_branches', arguments: { branches: ['feature'] } })
+      expect(planned).to include('command' => 'delete', 'status' => 'confirmation_required')
+      expect(planned['plan']).to eq('branches' => ['feature'], 'force' => false)
+      expect(branch_names).to eq(%w[feature main])
+    end
+
+    it 'gives a token the destructive tool accepts, with the arguments in any order' do
+      token = server.call(tool('plan_change'),
+                          { tool: 'delete_branches',
+                            arguments: { force: false, branches: ['feature'] } })
+                    .dig('error', 'confirm_token')
+      result = server.call(tool('delete_branches'),
+                           { branches: ['feature'], force: false, confirm_token: token })
+      expect(result['status']).to eq('done')
+      expect(branch_names).to eq(%w[main])
+    end
+
+    it "checks the arguments against the tool's schema" do
+      [{ branches: ['--force'] }, { branches: ['feature'], confirm_token: 'x' }, {}].each do |args|
+        result = server.call(tool('plan_change'), { tool: 'delete_branches', arguments: args })
+        expect(result).to include('status' => 'error', 'ok' => false)
+        expect(result['error']).to include('code' => 'invalid_options', 'exit_code' => 2)
+      end
+      expect(server.call(tool('plan_change'), { tool: 'list_branches', arguments: {} })
+               .dig('error', 'message')).to include('Unknown destructive tool')
+      expect(branch_names).to eq(%w[feature main])
+    end
+  end
+
   describe 'destructive tools when the client can ask the user' do
     let(:elicitation) { instance_double(Gitflash::Mcp::Elicitation) }
     let(:server) { described_class.new(elicitation: elicitation) }

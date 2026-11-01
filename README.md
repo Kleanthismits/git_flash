@@ -151,13 +151,13 @@ Every tool answers with the same JSON envelope as `--json`, as structured conten
 
 | Kind | Tools |
 | --- | --- |
-| Read-only | `list_branches`, `list_worktrees`, `list_pickable_commits`, `list_snapshots` |
+| Read-only | `list_branches`, `list_worktrees`, `list_pickable_commits`, `list_snapshots`, `plan_change` |
 | Lose nothing | `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`, `mark_branches`, `save_snapshot` |
 | Destructive | `delete_branches`, `clean_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo` |
 
-When the client supports MCP elicitation, a destructive tool first shows you its plan in the client and asks you to approve it; it runs when you tick the box, and answers `cancelled` when you decline. If the client cannot ask, gives no answer within 2 minutes, or the server runs with `gitflash mcp --no-elicitation` (for clients that never answer), the token flow below is used.
+When the client supports MCP elicitation, a destructive tool first shows you its plan in the client and asks you to approve it; it runs when you tick the box, and answers `cancelled` when you decline. If the client cannot ask, gives no answer within 2 minutes, or the server runs with `gitflash mcp --no-elicitation` (for clients that never answer), the token flow below is used, and the server writes the reason to stderr, which Claude Code keeps in its MCP logs.
 
-Without that approval, a destructive tool changes nothing on its first call: it returns the plan with status `confirmation_required` and `error.confirm_token`. Calling it again with the same arguments and `confirm_token` makes exactly that change, after a snapshot. The token is valid for 5 minutes, only for that plan (if the repository changed so the plan differs, a new plan and token come back) and only for the running server. The tools are marked with MCP's `readOnlyHint` and `destructiveHint`, so clients can also ask you before a call. Names and paths that start with a dash are refused.
+Without that approval, a destructive tool changes nothing on its first call: it returns the plan with status `confirmation_required` and `error.confirm_token`. Calling it again with the same arguments and `confirm_token` makes exactly that change, after a snapshot. `plan_change` gives the same plan and token from a read-only tool, so a client that asks before every destructive call (Claude Code outside auto mode) asks only once, for the change itself. The token is valid for 5 minutes, only for that plan (if the repository changed so the plan differs, a new plan and token come back) and only for the running server. The tools are marked with MCP's `readOnlyHint` and `destructiveHint`, so clients can also ask you before a call. Names and paths that start with a dash are refused.
 
 ### Scripts
 
@@ -197,7 +197,7 @@ With `--json`, every command prints one object in the same envelope, defined in 
 
 - `status`: `done`, `planned` (`--dry-run`), `noop`, `cancelled`, `failed`, `confirmation_required` or `error`. `ok` is true for the first four.
 - `result` includes what you need to revert: the SHA of each deleted branch (`git branch NAME SHA`), the previous branch after `checkout`, the previous commit after `reset`.
-- `undo` names the snapshot saved before the change and the command that restores it (`gitflash undo ID`).
+- `undo` names the snapshot saved before the change and the command that restores it (`gitflash undo ID`). When nothing had changed since an earlier snapshot, that one is handed back instead of saving the same state again, with `"reused": true`: its id is older than the change, and undo with it is still correct.
 - `error.code` is a stable identifier such as `unknown_branch`, `protected_branch` or `confirmation_required`.
 
 ```bash

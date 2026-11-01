@@ -13,6 +13,21 @@ RSpec.describe Gitflash::Cli, :git_repo do
     Gitflash::Snapshots.new.list.map(&:id)
   end
 
+  describe 'a change whose state was already saved' do
+    it 'hands back the earlier snapshot and says so' do
+      first = run_cli('delete', 'feature', '--yes', '--json').json['undo']
+      expect(first).not_to have_key('reused')
+      git('branch', 'feature')
+
+      json = run_cli('delete', 'feature', '--yes', '--json').json
+      expect(json['undo']).to include('snapshot' => first['snapshot'], 'reused' => true)
+      git('branch', 'feature')
+      expect(run_cli('delete', 'feature', '--yes').stdout)
+        .to end_with("Undo with: gitflash undo #{first['snapshot']} (an earlier snapshot: " \
+                     "nothing had changed since it was taken)\n")
+    end
+  end
+
   describe 'undo after a gitflash change' do
     it 'recreates a deleted branch from the undo in the result' do
       undo = run_cli('delete', 'feature', '--yes', '--json').json['undo']

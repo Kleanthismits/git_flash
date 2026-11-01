@@ -105,12 +105,16 @@ RSpec.describe Gitflash::Snapshots, :git_repo do
                                           worktree: nil, stashes: [])
     end
 
-    it 'returns the latest snapshot when nothing changed' do
+    it 'returns the latest snapshot, marked as reused, when nothing changed' do
       first = snapshots.create(reason: 'first')
-      expect(snapshots.create(reason: 'second').id).to eq(first.id)
+      expect(first.reused?).to be(false)
+      again = snapshots.create(reason: 'second')
+      expect(again).to have_attributes(id: first.id, reused?: true)
 
       File.write('a', "edited\n")
-      expect(snapshots.create(reason: 'third').id).not_to eq(first.id)
+      third = snapshots.create(reason: 'third')
+      expect(third).to have_attributes(reused?: false)
+      expect(third.id).not_to eq(first.id)
     end
 
     it 'works before the first commit' do

@@ -16,9 +16,11 @@ module Gitflash
         gitflash works on the git repository this server was started in. Every result is the
         gitflash JSON envelope (`gitflash schema` describes it): check `ok`, `status` and
         `error.code`. Changes save a snapshot first; keep `undo.command` and tell the user how to
-        undo. Destructive tools ask the user to approve the plan when the client supports
-        elicitation; status `cancelled` means the user declined, so do not retry. Otherwise they
-        answer the first call with the plan, status
+        undo. To see what a destructive tool would do, call plan_change (read-only); it returns
+        the plan and a confirm_token. Destructive tools ask the user to approve the plan when
+        the client supports
+        elicitation, unless called with a confirm_token; status `cancelled` means the user
+        declined, so do not retry. Otherwise they answer the first call with the plan, status
         `confirmation_required` and `error.confirm_token`: show the plan to the user, and only
         when it is what they asked for, call the tool again with the same arguments and
         `confirm_token`. A token expires after 5 minutes and only confirms that plan.
@@ -27,12 +29,13 @@ module Gitflash
       ANNOTATIONS = {
         read: { read_only_hint: true, destructive_hint: false, idempotent_hint: true },
         additive: { read_only_hint: false, destructive_hint: false, idempotent_hint: false },
-        destructive: { read_only_hint: false, destructive_hint: true, idempotent_hint: false }
+        destructive: { read_only_hint: false, destructive_hint: true, idempotent_hint: false },
+        plan: { read_only_hint: true, destructive_hint: false, idempotent_hint: false }
       }.freeze
 
       CONFIRM_TOKEN = { type: 'string',
-                        description: 'The error.confirm_token of the first call, to make the ' \
-                                     'change it planned' }.freeze
+                        description: 'The error.confirm_token of plan_change or of the first ' \
+                                     'call, to make the change it planned' }.freeze
 
       def initialize(runner: Runner.new, confirmation: Confirmation.new,
                      elicitation: Elicitation.new)
@@ -55,6 +58,7 @@ module Gitflash
       def call(tool, arguments, context = nil)
         arguments = arguments.transform_keys(&:to_sym)
         return destructive(tool, arguments, context) if tool.kind == :destructive
+        return PlanChange.new(@runner, @confirmation).call(arguments) if tool.kind == :plan
 
         @runner.call(tool.argv.call(arguments))
       end
@@ -63,12 +67,10 @@ module Gitflash
 
       def mcp_tool(tool)
         server = self
-        properties = tool.properties
-        properties = properties.merge(confirm_token: CONFIRM_TOKEN) if tool.kind == :destructive
+        schema = Tools.input_schema(tool)
+        schema['properties']['confirm_token'] = CONFIRM_TOKEN if tool.kind == :destructive
         MCP::Tool.define(
-          name: tool.name, description: tool.description,
-          input_schema: { properties: properties, required: tool.required,
-                          additionalProperties: false },
+          name: tool.name, description: tool.description, input_schema: schema,
           annotations: ANNOTATIONS.fetch(tool.kind).merge(open_world_hint: false)
         ) do |server_context: nil, **arguments|
           server.send(:respond, server.call(tool, arguments, server_context))
@@ -104,22 +106,11 @@ module Gitflash
         return run(tool.argv.call(arguments), preview['plan']) if answer == :accepted
         return declined(preview) if answer == :declined
 
-        confirm(tool, arguments, preview, token)
+        @confirmation.required(tool, arguments, preview, token)
       end
 
       def declined(preview)
         preview.merge('status' => 'cancelled', 'dry_run' => false)
-      end
-
-      def confirm(tool, arguments, preview, token)
-        token_note = token ? 'The confirm_token has expired or does not match this plan. ' : ''
-        new_token = @confirmation.issue(tool.name, arguments, preview['plan'])
-        message = "#{token_note}Review the plan; to make this change, call #{tool.name} again " \
-                  "with the same arguments and confirm_token #{new_token} (valid until " \
-                  "#{Confirmation.expires_at(new_token)})."
-        preview.merge('ok' => false, 'status' => 'confirmation_required', 'dry_run' => false,
-                      'error' => { 'code' => 'confirmation_required', 'message' => message,
-                                   'exit_code' => 2, 'confirm_token' => new_token })
       end
 
       # --yes covers changes undo can revert. A change it cannot revert (removing a worktree with

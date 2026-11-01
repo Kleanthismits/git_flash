@@ -9,7 +9,8 @@ module Gitflash
     # checkbox), when the client declared the `elicitation` capability. The answer comes from the
     # user, not the agent, so an approved plan runs without a second call. Whenever the user
     # cannot be asked (no capability, an error, no answer within TIMEOUT seconds; some clients
-    # never answer), `ask` returns nil and the tool falls back to the confirm_token flow.
+    # never answer), `ask` returns nil and the tool falls back to the confirm_token flow, and the
+    # reason goes to stderr, which MCP clients keep in their server logs.
     class Elicitation
       TIMEOUT = 120
       SCHEMA = {
@@ -22,24 +23,47 @@ module Gitflash
       }.freeze
       MAX_MESSAGE = 4000
 
-      def initialize(enabled: true, timeout: TIMEOUT)
+      LOG = ->(text) { warn "gitflash mcp: #{text}" }
+
+      def initialize(enabled: true, timeout: TIMEOUT, log: LOG)
         @enabled = enabled
         @timeout = timeout
+        @log = log
       end
 
-      # :accepted, :declined, or nil when the user could not be asked
+      # :accepted, :declined, or nil when the user could not be asked. Without a request context
+      # (a call from Ruby, not from a client) there is nobody to ask and nothing is logged.
       def ask(context, tool, plan)
-        return unless @enabled && context&.client_capabilities&.dig(:elicitation)
+        return unless context
+
+        reason = unavailable(context)
+        return skipped(tool, reason) if reason
 
         answer = Timeout.timeout(@timeout) do
           context.create_form_elicitation(message: message(tool, plan), requested_schema: SCHEMA)
         end
-        decision(answer)
-      rescue StandardError
-        nil
+        decision(answer) || skipped(tool, "unknown answer #{answer.inspect[0, 200]}")
+      rescue Timeout::Error
+        skipped(tool, "no answer within #{@timeout} seconds")
+      rescue StandardError => e
+        skipped(tool, "asking failed: #{e.class}: #{e.message}")
       end
 
       private
+
+      def unavailable(context)
+        return 'started with --no-elicitation' unless @enabled
+
+        capabilities = context.client_capabilities
+        return if capabilities.is_a?(Hash) && capabilities.key?(:elicitation)
+
+        "the client did not declare the elicitation capability (#{capabilities.inspect[0, 200]})"
+      end
+
+      def skipped(tool, reason)
+        @log.call("#{tool.name}: not asking the user, #{reason}; using the confirm_token")
+        nil
+      end
 
       # Accepting the form without ticking the box is a no, as are decline and cancel
       def decision(answer)

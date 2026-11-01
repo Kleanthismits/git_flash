@@ -150,7 +150,8 @@ module Gitflash
       for the git repository in the current directory only. Tools answer with the JSON envelope
       of `gitflash schema`; outside a git repository they answer with not_a_repository.
 
-      Read-only tools: list_branches, list_worktrees, list_pickable_commits, list_snapshots.
+      Read-only tools: list_branches, list_worktrees, list_pickable_commits, list_snapshots,
+      plan_change (the plan and confirm_token of a destructive tool, changing nothing).
       Tools that lose nothing: add_worktree, cherry_pick_commits, cherry_pick_control,
       mark_branches, save_snapshot.
       Destructive tools: delete_branches, clean_branches, reset_branch, remove_worktrees,
@@ -160,7 +161,8 @@ module Gitflash
 
       When the client supports elicitation, a destructive tool first asks you to approve its plan
       in the client, and runs at once when you do. Without an answer within 2 minutes, or with
-      --no-elicitation (for clients that never answer), it falls back to the token.
+      --no-elicitation (for clients that never answer), it falls back to the token and writes
+      the reason to stderr, which MCP clients keep in their logs.
 
       Register it in Claude Code with: claude mcp add gitflash -- gitflash mcp
     TEXT

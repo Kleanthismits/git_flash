@@ -28,6 +28,9 @@ module Gitflash
       )
     end
 
+    # True for a snapshot `Snapshots#create` handed back instead of saving the same state again
+    def reused? = false
+
     # Untracked files this snapshot cannot bring back
     def unsaved_files
       skipped_files + excluded_files

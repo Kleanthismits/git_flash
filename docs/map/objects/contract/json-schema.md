@@ -23,7 +23,7 @@ One envelope for all commands, so agents parse one shape. Roadmap standard 4: co
 - `status` enum (`schema/v1.json:35-44`): done, planned, noop, cancelled, failed, confirmation_required, error.
 - `ok` true only for done/planned/noop/cancelled, else `error` required (`schema/v1.json:82-110`).
 - `confirmation_required` requires `plan` (`schema/v1.json`). `error.confirm_token` (optional string) is set only for a change `gitflash undo` cannot revert: re-run with `--confirm TOKEN`.
-- `undo` object: `{ snapshot, command }`, the snapshot saved before a change (`schema/v1.json:61-70`).
+- `undo` object: `{ snapshot, command }`, the snapshot saved before a change, and `reused` (const true, optional) when an earlier snapshot of the same state is handed back (`schema/v1.json`).
 - Per-command `plan` / `result` under `$defs` (`schema/v1.json:308`): branch, checkout_*, delete_*, reset_*, snapshot, undo_*, snapshots_result, snapshot_result, gc_*, hook_install, hook_status, skill_install.
 - `error.code` enum has 17 codes (`schema/v1.json:315-342`).
 - Enforced in specs: `run_cli(...).json` fails on mismatch (`spec/support/cli_helper.rb:11-18`).

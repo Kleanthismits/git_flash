@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'json'
+
 module Gitflash
   module Mcp
     # The tools `gitflash mcp` offers. Each one is a gitflash command; `argv` turns the tool's
@@ -9,6 +11,8 @@ module Gitflash
     #   destructive  can discard work; the first call returns the plan and a confirm_token,
     #                a second call with the token makes the change. A snapshot is always
     #                saved first, so `undo` can bring it back.
+    #   plan         plan_change: the plan and token of a destructive tool, as a read-only tool,
+    #                so a client that asks before every destructive call asks only once
     module Tools
       Tool = Data.define(:name, :kind, :description, :properties, :required, :argv)
 
@@ -36,7 +40,7 @@ module Gitflash
         stale_days: DAYS.merge(description: 'Branches without commits for this many days')
       }.freeze
 
-      ALL = [
+      COMMANDS = [
         Tool.new(
           name: 'list_branches', kind: :read,
           description: 'List local branches with last commit, upstream (ahead, behind, gone), ' \
@@ -165,6 +169,26 @@ module Gitflash
           required: [], argv: ->(a) { ['undo', *[a[:snapshot]].compact] }
         )
       ].freeze
+
+      PLAN = Tool.new(
+        name: 'plan_change', kind: :plan,
+        description: 'Show what a destructive tool would do, without changing anything: returns ' \
+                     'its plan with status confirmation_required and error.confirm_token. Then ' \
+                     'call that tool with the same arguments and confirm_token to make the change.',
+        properties: {
+          tool: { enum: COMMANDS.select { |tool| tool.kind == :destructive }.map(&:name) },
+          arguments: { type: 'object', description: "The destructive tool's arguments" }
+        },
+        required: %w[tool arguments], argv: nil
+      )
+
+      ALL = [*COMMANDS, PLAN].freeze
+
+      # The JSON Schema of a tool's arguments, with string keys
+      def self.input_schema(tool)
+        JSON.parse(JSON.generate({ type: 'object', properties: tool.properties,
+                                   required: tool.required, additionalProperties: false }))
+      end
     end
   end
 end

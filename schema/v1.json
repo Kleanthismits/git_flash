@@ -85,6 +85,10 @@
         },
         "command": {
           "type": "string"
+        },
+        "reused": {
+          "const": true,
+          "description": "Present when nothing had changed since an earlier snapshot, which is handed back instead of saving the same state again. Its id is older than the change; undo with it restores the state before the change."
         }
       }
     }

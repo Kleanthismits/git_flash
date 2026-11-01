@@ -34,6 +34,19 @@ module Gitflash
         false
       end
 
+      # The envelope of a plan that waits for confirmation: the dry run's, with a new token.
+      # `token` is the one the call brought, if any, which did not fit.
+      def required(tool, arguments, preview, token)
+        note = token ? 'The confirm_token has expired or does not match this plan. ' : ''
+        new_token = issue(tool.name, arguments, preview['plan'])
+        message = "#{note}Review the plan; to make this change, call #{tool.name} with the " \
+                  "same arguments and confirm_token #{new_token} (valid until " \
+                  "#{self.class.expires_at(new_token)})."
+        preview.merge('ok' => false, 'status' => 'confirmation_required', 'dry_run' => false,
+                      'error' => { 'code' => 'confirmation_required', 'message' => message,
+                                   'exit_code' => 2, 'confirm_token' => new_token })
+      end
+
       def self.expires_at(token)
         Time.at(token.split('.', 2).first.to_i).utc.iso8601
       end
