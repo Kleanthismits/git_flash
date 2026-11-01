@@ -41,7 +41,7 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current and default branch, `main`, `master`, `develop`, `development`, `trunk` and `release/*` are protected. Unmerged branches are kept unless you pass `--force` |
 | `gitflash reset [COMMIT]` | Reset to a commit, or pick one of the latest 100. Mixed by default; `--soft` keeps changes staged, `--hard` discards them after confirmation |
 | `gitflash mark [BRANCH...]` | Mark branches as agent or human work (default: human when stdin is a terminal, agent otherwise; a script run from a terminal should pass `--owner agent`), or `--clear` the mark. Without a branch it marks the current one. Use it for branches made with plain git so `clean --agent` can find them |
-| `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. Protected: current, default, `main`, `master`, `develop`, `development`, `trunk`, `release/*`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
+| `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. A branch nobody has committed to since it was created is kept too (it only looks merged); `--stale` removes it once it has been unused that long. Protected: current, default, `main`, `master`, `develop`, `development`, `trunk`, `release/*`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
 | `gitflash worktree` (`wt`) `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock`, `move` | Worktrees for parallel agent work, with absolute paths in `--json` (see below) |
 | `gitflash pick [SOURCE] [SHA...]` | Cherry-pick commits from another branch (pick SOURCE from a list when you omit it): `--list` shows what is missing here, `--continue`, `--skip` and `--abort` handle conflicts |
 | `gitflash undo [SNAPSHOT]` | Restore a snapshot, by default the latest one taken in this worktree: deleted branches, moved branches, HEAD, uncommitted and untracked files, dropped stashes |
@@ -50,6 +50,8 @@ Run `gitflash` inside a git repository to get a list with the available commands
 | `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`, at least 1) |
 | `gitflash hook install` | Protect plain git commands run by Claude Code and mark the branches it creates (see below) |
 | `gitflash hook status` | Show whether the hook protects Claude Code sessions in the current directory |
+| `gitflash skill install` | Copy the gitflash Agent Skill into an agent's skills directory (see below); `gitflash skill show` prints it |
+| `gitflash mcp` | Run an MCP server for the current repository on stdio (see below) |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
 
@@ -108,6 +110,55 @@ Where the hook goes, following Claude Code's own rules:
 
 Claude Code reloads settings files, so running sessions pick the hook up without a restart. Run `gitflash hook status` in the directory where you start Claude Code to check which files apply and whether the `gitflash` executable is found.
 
+### Claude Code plugin
+
+The plugin brings the hook, the MCP server and the skill to Claude Code in one install. It runs the `gitflash` command, so install the gem first (`gem install gitflash`, version 0.8.0 or newer), then in Claude Code:
+
+```
+/plugin marketplace add Kleanthismits/git_flash
+/plugin install gitflash@gitflash
+```
+
+On Claude Code 2.1.275 or later one line does both: `/plugin install gitflash --marketplace Kleanthismits/git_flash`.
+
+The plugin's hook runs in `snapshot` mode for every session. Do not also run `gitflash hook install`, or the hook runs twice; if you want `ask` or `deny` mode, use `gitflash hook install --mode ask` instead of the plugin, or disable the plugin's hooks. `gitflash hook status` only reads settings files, so it does not report the plugin's hook.
+
+### Teach agents to use gitflash
+
+gitflash ships an [Agent Skill](skills/gitflash/SKILL.md): one `SKILL.md` that tells an agent when to use gitflash instead of plain git, how to read the `--json` envelope, the plan then `--yes` flow, `--confirm` tokens and how to recover work with `gitflash undo`. Install it once:
+
+```bash
+gitflash skill install
+```
+
+| Option | File | Read by |
+| --- | --- | --- |
+| `--scope user` (default) | `~/.claude/skills/gitflash/SKILL.md` | Every Claude Code session |
+| `--scope project` | `.claude/skills/gitflash/SKILL.md` at the repository top level, to commit for your team | Claude Code sessions in the repository |
+| `--path DIR` | `DIR/gitflash/SKILL.md` | Any agent that reads skills from `DIR` |
+
+Run it again after upgrading gitflash. When the installed file differs from the shipped one (for example because you edited it), replacing it needs `--confirm TOKEN` instead of `--yes`, since `gitflash undo` cannot bring your edits back.
+
+### MCP server
+
+`gitflash mcp` serves gitflash to MCP clients (Claude Code, Claude Desktop, other agents) over stdio, for the repository in the directory it starts in. Register it in Claude Code from inside the repository:
+
+```bash
+claude mcp add gitflash -- gitflash mcp
+```
+
+Every tool answers with the same JSON envelope as `--json`, as structured content.
+
+| Kind | Tools |
+| --- | --- |
+| Read-only | `list_branches`, `list_worktrees`, `list_pickable_commits`, `list_snapshots`, `plan_change` |
+| Lose nothing | `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`, `mark_branches`, `save_snapshot` |
+| Destructive | `delete_branches`, `clean_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo` |
+
+When the client supports MCP elicitation, a destructive tool first shows you its plan in the client and asks you to approve it (on a 2026-07-28 connection, as Claude Code makes, the form comes back as an `input_required` result and the client calls the tool again with your answer); it runs when you press Accept (clearing the "Make this change" box first turns Accept into a no), and answers `cancelled` when you decline. If the client cannot ask, gives no answer within 2 minutes, or the server runs with `gitflash mcp --no-elicitation` (for clients that never answer), the token flow below is used, and the server writes the reason to stderr, which Claude Code keeps in its MCP logs.
+
+Without that approval, a destructive tool changes nothing on its first call: it returns the plan with status `confirmation_required` and `error.confirm_token`. Calling it again with the same arguments and `confirm_token` makes exactly that change, after a snapshot. `plan_change` gives the same plan and token from a read-only tool, so a client that asks before every destructive call (Claude Code outside auto mode) asks only once, for the change itself. The token is valid for 5 minutes, only for that plan (if the repository changed so the plan differs, a new plan and token come back) and only for the running server. The tools are marked with MCP's `readOnlyHint` and `destructiveHint`, so clients can also ask you before a call. Names and paths that start with a dash are refused.
+
 ### Scripts
 
 Without an argument, a command shows an interactive list. With arguments it runs directly, which also works in scripts.
@@ -146,7 +197,7 @@ With `--json`, every command prints one object in the same envelope, defined in 
 
 - `status`: `done`, `planned` (`--dry-run`), `noop`, `cancelled`, `failed`, `confirmation_required` or `error`. `ok` is true for the first four.
 - `result` includes what you need to revert: the SHA of each deleted branch (`git branch NAME SHA`), the previous branch after `checkout`, the previous commit after `reset`.
-- `undo` names the snapshot saved before the change and the command that restores it (`gitflash undo ID`).
+- `undo` names the snapshot saved before the change and the command that restores it (`gitflash undo ID`). When nothing had changed since an earlier snapshot, that one is handed back instead of saving the same state again, with `"reused": true`: its id is older than the change, and undo with it is still correct.
 - `error.code` is a stable identifier such as `unknown_branch`, `protected_branch` or `confirmation_required`.
 
 ```bash

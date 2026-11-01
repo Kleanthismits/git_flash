@@ -6,10 +6,12 @@ module Gitflash
   # A local branch as reported by `git for-each-ref`
   Branch = Data.define(
     :name, :sha, :current, :default, :upstream, :upstream_gone, :ahead, :behind,
-    :merged, :last_commit_at, :last_commit_author, :last_commit_subject, :owner
+    :merged, :last_commit_at, :last_commit_author, :last_commit_subject, :owner,
+    :unused, :last_activity_at
   ) do
-    # Records are built without an owner; Ownership#annotate adds it
-    def initialize(owner: nil, **fields)
+    # Records are built without an owner; Ownership#annotate adds it. `unused` and
+    # `last_activity_at` come from the reflog (BranchActivity) and are nil when it is not read.
+    def initialize(owner: nil, unused: nil, last_activity_at: nil, **fields)
       super
     end
 
@@ -53,12 +55,15 @@ module Gitflash
     alias_method :default?, :default
     alias_method :upstream_gone?, :upstream_gone
 
+    # Neither a commit nor a move of the branch (reflog) for `days` days: a branch cut today from
+    # an old commit is not stale
     def stale?(days, now: Time.now)
-      last_commit_at < now - (days * 86_400)
+      [last_commit_at, last_activity_at].compact.max < now - (days * 86_400)
     end
 
     def to_h
-      super.merge(last_commit_at: last_commit_at.iso8601)
+      super.merge(last_commit_at: last_commit_at.iso8601,
+                  last_activity_at: last_activity_at&.iso8601)
     end
   end
   Branch::TIPS_FORMAT = '%(refname) %(objectname)'

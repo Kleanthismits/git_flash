@@ -1,0 +1,34 @@
+{
+  "name": "gitflash",
+  "description": "Safety net and cleanup for git repositories that agents work in: snapshots before destructive git commands, undo, worktrees, branch cleanup and cherry-picks, as a hook, an MCP server and a skill. Needs the gitflash gem (gem install gitflash).",
+  "version": "0.7.0",
+  "author": {
+    "name": "Kleanthis Mitsioulis",
+    "url": "https://github.com/Kleanthismits"
+  },
+  "homepage": "https://github.com/Kleanthismits/git_flash",
+  "repository": "https://github.com/Kleanthismits/git_flash",
+  "license": "MIT",
+  "keywords": ["git", "undo", "snapshots", "worktrees", "mcp", "agents"],
+  "skills": "./skills/",
+  "mcpServers": {
+    "gitflash": {
+      "command": "gitflash",
+      "args": ["mcp"]
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "gitflash hook claude", "timeout": 30 }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "gitflash hook claude", "timeout": 30 }]
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 # gitflash map
 
 Catalog of what gitflash is made of and what a change hits. Source stays truth; cards cite it.
-Mapped on branch `phase3_cleanup` (0.7.0 released). Cards state the commit they were verified at.
+Mapped on branch `phase4_agent_integrations` (0.7.0 released, phase 4 implemented). Cards state the commit they were verified at.
 
 gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents work in. One JSON contract (`schema/v1.json`).
 
@@ -13,13 +13,14 @@ gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents 
 | report / envelope | `Ui#report` builds it. `Result` is a git outcome, not the envelope. |
 | confirmation | `ConfirmationRequired` (exit 2) + `Prompt` + `--yes` |
 | undo point | `Snapshot`, stored as a commit under `refs/gitflash/snapshots/`. Not a git stash. |
+| MCP / the server | `gitflash mcp` (`Gitflash::Mcp::Server`). `MCP` without the prefix is the `mcp` gem. |
 | the hook | `gitflash hook claude` (`Hook::Claude`). Output is Claude Code's protocol, not the envelope. |
 | exit codes | 0 ok, 1 `Error`, 2 `UsageError` / `ConfirmationRequired`. `hook claude` always 0. |
 
 ## Universes
 
-- **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude (PreToolUse and PostToolUse)/install/status, clean, pick, mark, worktree list/add/remove/lock/unlock/move/prune/clean, `.gitflash.yml`, ownership marks (set by `wt add` and `mark`); `Repo`, `Ui`, snapshot classes, `schema/v1.json`
-- **ghost:** `docs/ROADMAP.md` phase 4+ (MCP, Skill). Not in `lib/`. Do not implement against.
+- **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude (PreToolUse and PostToolUse)/install/status, clean, pick, mark, worktree list/add/remove/lock/unlock/move/prune/clean, skill show/install (`skills/gitflash/SKILL.md`), mcp (`lib/gitflash/mcp/`), Claude Code plugin (`.claude-plugin/`), `.gitflash.yml`, ownership marks (set by `wt add` and `mark`); `Repo`, `Ui`, snapshot classes, `schema/v1.json`
+- **ghost:** `docs/ROADMAP.md` phase 5. Not in `lib/`. Do not implement against.
 - **leftover:** none found
 
 ## Route

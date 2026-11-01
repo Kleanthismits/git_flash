@@ -155,3 +155,24 @@ Upgrading from 0.6.0:
 
 - Run `gitflash hook install` again, so the hook also marks branches created with plain git (`PostToolUse`). It keeps the installed mode
 - Check scripts and agent instructions against the behaviour changes listed under 0.7.0.beta3: `--confirm TOKEN` for `gc` and for removing worktrees with ignored files, `delete` and `clean` protecting `develop`, `trunk` and `release/*`, `mark` defaulting to `human` in a terminal, and usage errors exiting with 2
+
+## [Unreleased]
+
+- Add the gitflash Agent Skill (`skills/gitflash/SKILL.md`, shipped in the gem): when to use gitflash instead of plain git, the `--json` envelope, the plan then `--yes` flow, `--confirm` tokens, the commands and how to recover lost work with `undo`
+- Add `skill install`: copies the skill to `~/.claude/skills/gitflash/` (default, `--scope user`), to `.claude/skills/gitflash/` in the repository (`--scope project`) or to `DIR/gitflash/` (`--path DIR`). Replacing a file that differs from the shipped skill needs `--confirm TOKEN`; the project scope refuses symbolic links
+- Add `skill show`, which prints the skill
+- The skill and the MCP server's instructions tell agents to prefer the MCP tools for changes (they can ask the user), to show the list and wait for an OK before a rule-based cleanup (`clean`, `wt clean`), and not to save their own snapshot before plain git commands when the gitflash hook is installed
+- JSON schema: new command `skill install` with the `skill_install` plan and result
+- Add `mcp`: an MCP server on stdio (official `mcp` gem, loaded only by this command) for the repository in the current directory. Read-only tools `list_branches`, `list_worktrees`, `list_pickable_commits`, `list_snapshots`; tools that lose nothing `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`, `mark_branches`, `save_snapshot`; destructive tools `delete_branches`, `clean_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo`. Every tool answers with the JSON envelope. A destructive tool's first call returns the plan and `error.confirm_token`; a second call with `confirm_token` (valid 5 minutes, bound to the arguments and the plan) makes the change
+- `mcp` asks the user to approve a destructive tool's plan through the client when it supports elicitation, runs the change when they approve and answers `cancelled` when they decline. Without an answer within 2 minutes, an error, or with `--no-elicitation`, the token flow is used
+- `mcp` asks the user on 2026-07-28 connections too (Claude Code makes them), where the server may not send requests: the form comes back as an `input_required` result, and the client's retry carries the answer and a signed state bound to the plan. Before, the question always failed there and the token flow was used
+- `mcp` writes to stderr why it did not ask the user (no elicitation capability, an error, no answer in time, `--no-elicitation`); MCP clients keep it in their logs
+- `mcp` tool `plan_change`: the plan and `confirm_token` of a destructive tool from a read-only call, so a client that asks before every destructive call asks only once
+- When nothing changed since the latest snapshot, `undo` in the result names that snapshot with `"reused": true`, and text output says it is an earlier one. Before, its older id looked like a missing snapshot
+- New runtime dependency: `mcp` (~> 1.8)
+- Fix: the Claude Code hook marks a branch created from an older commit as agent work. It used the commit's date to decide whether the branch was created a moment ago, so only branches made from a commit of the last two minutes were marked; it now uses the time of the branch's reflog entry. A branch deleted and created again at the same commit is also told apart from the old one now
+- `clean` and `wt clean` keep a branch nobody has committed to since it was created, even though it is reachable from the default branch (`merged`) or marked as agent work (`--agent`): someone may be about to work on it. Before, a branch just cut from main was deleted as merged. It is listed in `plan.skipped` with the reason, and `--stale` removes it once it has been unused that long; `--force` does not change this. gitflash reads the branch's reflog (one git call); a branch without a reflog is judged as before
+- `--stale` (in `clean`, `wt clean` and `branches`) counts the latest move of the branch (its newest reflog entry) as activity, not only its latest commit, so a branch cut today from an old commit is not stale
+- JSON schema: branches carry `unused` and `last_activity_at` (from the reflog, null without one)
+- `mcp` starts outside a git repository too; its tools then answer with `not_a_repository`
+- Claude Code plugin (`.claude-plugin/`): the hook (snapshot mode), the MCP server and the skill in one install with `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`. It needs the gitflash gem

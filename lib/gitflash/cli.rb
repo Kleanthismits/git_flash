@@ -125,6 +125,9 @@ module Gitflash
     desc 'hook SUBCOMMAND', 'Claude Code hooks: install them and check they are active'
     subcommand 'hook', HookCli
 
+    desc 'skill SUBCOMMAND', 'The Agent Skill that teaches agents to use gitflash'
+    subcommand 'skill', SkillCli
+
     desc 'pick [SOURCE] [SHA...]', descriptions.pick.short
     long_desc descriptions.pick.long
     option :list, type: :boolean, desc: 'List the commits of SOURCE that are not on this branch yet'
@@ -140,6 +143,35 @@ module Gitflash
     desc 'worktree SUBCOMMAND', 'Worktrees for parallel agent work (alias: wt)'
     subcommand 'worktree', WorktreeCli
     map 'wt' => :worktree
+
+    desc 'mcp', 'Run an MCP server on stdio for the repository in the current directory'
+    long_desc <<~TEXT
+      Serves gitflash to MCP clients (Claude Code, Claude Desktop, other agents) over stdio,
+      for the git repository in the current directory only. Tools answer with the JSON envelope
+      of `gitflash schema`; outside a git repository they answer with not_a_repository.
+
+      Read-only tools: list_branches, list_worktrees, list_pickable_commits, list_snapshots,
+      plan_change (the plan and confirm_token of a destructive tool, changing nothing).
+      Tools that lose nothing: add_worktree, cherry_pick_commits, cherry_pick_control,
+      mark_branches, save_snapshot.
+      Destructive tools: delete_branches, clean_branches, reset_branch, remove_worktrees,
+      move_worktree, undo. Their first call returns the plan and error.confirm_token; a second
+      call with confirm_token (valid 5 minutes, for that plan only) makes the change, after a
+      snapshot.
+
+      When the client supports elicitation, a destructive tool first asks you to approve its plan
+      in the client, and runs at once when you do (on a 2026-07-28 connection the form is an
+      input_required result). Without an answer within 2 minutes, or with
+      --no-elicitation (for clients that never answer), it falls back to the token and writes
+      the reason to stderr, which MCP clients keep in their logs.
+
+      Register it in Claude Code with: claude mcp add gitflash -- gitflash mcp
+    TEXT
+    option :elicitation, type: :boolean, default: true,
+                         desc: 'Ask the user through the client before destructive changes'
+    def mcp
+      Mcp::Server.new(elicitation: Mcp::Elicitation.new(enabled: options[:elicitation])).start
+    end
 
     desc 'schema', 'Print the JSON Schema of the --json output'
     def schema

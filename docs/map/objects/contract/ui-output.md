@@ -19,8 +19,8 @@ Commands never print. They call `report` with a plan, result and optional `undo`
 ## Shape
 
 - `JSON_SCHEMA_VERSION = 1`, `OK_STATUSES` (`lib/gitflash/ui.rb:12-13`).
-- `report(status:, text:, **fields)` prints and returns exit status (`ui.rb:37-45`). Text mode appends `Undo with: gitflash undo ID` when `undo:` is a snapshot (`ui.rb:42`).
-- `envelope` turns `undo:` into `{ snapshot:, command: }` and drops nil keys (`ui.rb:77-90`).
+- `report(status:, text:, **fields)` prints and returns exit status (`ui.rb:37-45`). Text mode appends `Undo with: gitflash undo ID` when `undo:` is a snapshot, plus a note when it is reused (`Ui#undo_hint`).
+- `envelope` turns `undo:` into `{ snapshot:, command: }`, adding `reused: true` for a reused snapshot, and drops nil keys (`ui.rb:77-90`).
 - `error` prints envelope or warns (`ui.rb:47-54`). It never adds `undo`.
 - `interactive?` = not JSON and stdin is a tty (`ui.rb:30-32`). JSON mode never prompts.
 - `confirm?` true on `--yes`; raises `ConfirmationRequired` with plan when not interactive (`ui.rb`). With `irreversible: true` (a change `gitflash undo` cannot revert) `--yes` is not enough: it needs `--confirm TOKEN`, where `Ui.confirm_token(plan)` is the first 8 hex digits of SHA-256 over the plan's JSON, so a token never confirms a different plan. Without it, `ConfirmationRequired` carries `confirm_token`, which `Ui#error` adds to `error` in JSON; in a terminal the user types the token (`Prompt#ask`). Used by `gc`.

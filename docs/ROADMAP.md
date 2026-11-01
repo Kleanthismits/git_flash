@@ -117,12 +117,12 @@ This is the core of the positioning.
   - For agents: `gitflash pick <source> --list --json` and `gitflash pick <source> <sha>... --yes --json`.
 - **Configuration.** `.gitflash.yml` in the repository and `~/.config/gitflash.yml` for protected branch patterns, the stale threshold and default flags.
 
-### Phase 4 — Agent integrations (0.8.0)
+### Phase 4 — Agent integrations (0.8.0) — implemented, not released
 
 All of them use the same JSON contract.
 
-1. **Agent Skill.** `skills/gitflash/SKILL.md` ships in the gem and explains when to use gitflash, the envelope, the plan → `--yes` flow and `undo`. `gitflash skill install [--claude|--path DIR]` copies it into an agent's skills directory. Works in any agent that runs shell commands.
-2. **MCP server — `gitflash mcp`.**
+1. **Agent Skill** — implemented. `skills/gitflash/SKILL.md` ships in the gem and explains when to use gitflash, the envelope, the plan → `--yes` flow and `undo`. `gitflash skill install [--scope user|project | --path DIR]` copies it into an agent's skills directory (default `~/.claude/skills`); `gitflash skill show` prints it. Works in any agent that runs shell commands.
+2. **MCP server — `gitflash mcp`** — implemented. Elicitation asks the user first when the client supports it (2 minute limit, `--no-elicitation` to turn it off); the token flow is the fallback. Tools as built: read-only `list_branches`, `list_worktrees`, `list_pickable_commits`, `list_snapshots`; additive `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`, `mark_branches`, `save_snapshot`; destructive `delete_branches`, `clean_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo`. `branch_report` is covered by `list_branches`; `list_commits` is not built. Each tool runs the CLI with `--json` in a child process. The original plan:
    - Uses stdio and the official `mcp` Ruby gem, loaded only when `gitflash mcp` runs.
    - Works only on the repository in its working directory; tools take no `repo_path`.
    - Read-only tools (`read_only_hint: true`): `list_branches`, `branch_report`, `list_worktrees`, `list_commits`, `list_pickable_commits`, `list_snapshots`.
@@ -130,7 +130,7 @@ All of them use the same JSON contract.
    - Destructive tools (`destructive_hint: true`): `delete_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo`.
    - Confirmation that works in every client: a first call returns the plan and a short-lived token, a second call with the token runs it. When the client supports elicitation, the user is also asked through `create_form_elicitation`; the token flow still works when elicitation fails (the Cowork desktop app currently hangs on it, anthropics/claude-code#94806).
    - Every destructive call snapshots first, so `undo` is always available. Sampling and roots are not used (deprecated in the 2026-07-28 specification).
-3. **Claude Code plugin.** `.claude-plugin/plugin.json`, an `.mcp.json` that starts `gitflash mcp`, the skill, and the hook from phase 2. Installed with `/plugin marketplace add Kleanthismits/git_flash`.
+3. **Claude Code plugin** — implemented. `.claude-plugin/plugin.json` declares the skill (`skills/`), the MCP server (`gitflash mcp`) and the hook from phase 2 (PreToolUse and PostToolUse, snapshot mode) inline, so the repository root needs no `.mcp.json` or `hooks/`; `.claude-plugin/marketplace.json` lists it. Installed with `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`.
 
 ### Phase 5 — Distribution and codebase (alongside)
 

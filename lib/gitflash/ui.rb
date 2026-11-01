@@ -41,7 +41,7 @@ module Gitflash
         $stdout.puts JSON.generate(envelope(status: status, **fields))
       else
         $stdout.puts TerminalText.safe(text)
-        $stdout.puts "Undo with: gitflash undo #{fields[:undo].id}" if fields[:undo]
+        $stdout.puts undo_hint(fields[:undo]) if fields[:undo]
       end
       OK_STATUSES.include?(status) ? 0 : 1
     end
@@ -111,9 +111,15 @@ module Gitflash
         dry_run: dry_run?,
         plan: plan,
         result: result,
-        undo: undo && { snapshot: undo.id, command: "gitflash undo #{undo.id}" },
+        undo: undo && { snapshot: undo.id, command: "gitflash undo #{undo.id}",
+                        reused: (true if undo.reused?) }.compact,
         error: error
       }.compact
+    end
+
+    def undo_hint(undo)
+      note = undo.reused? ? ' (an earlier snapshot: nothing had changed since it was taken)' : ''
+      "Undo with: gitflash undo #{undo.id}#{note}"
     end
 
     def prompt

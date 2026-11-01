@@ -29,7 +29,7 @@ RSpec.describe Gitflash::Cli, :git_repo do
   def mark(branch, owner) = Gitflash::Ownership.new.mark(branch, owner)
 
   it 'selects merged branches with their reasons and asks for confirmation' do
-    git('branch', 'done')
+    merged_branch('done')
     unmerged_branch('wip')
     run = clean
     expect(run).to have_attributes(status: 2)
@@ -37,7 +37,7 @@ RSpec.describe Gitflash::Cli, :git_repo do
   end
 
   it 'deletes with a snapshot, and undo brings the branches back' do
-    git('branch', 'done')
+    merged_branch('done')
     sha = head_sha
     run = clean('--yes')
     expect(run.status).to eq(0)
@@ -99,18 +99,18 @@ RSpec.describe Gitflash::Cli, :git_repo do
     git('branch', 'held')
     git('worktree', 'add', '-q', File.join(outside, 'held'), 'held')
     File.write('.gitflash.yml', "protected: ['release/*']\n")
-    git('branch', 'done')
+    merged_branch('done')
     expect(plan_of(clean('--dry-run'))['branches']).to eq(['done'])
   end
 
   it 'never selects the usual long-lived branches, even merged ones' do
-    %w[develop development trunk release/2.0 done].each { |name| git('branch', name) }
+    %w[develop development trunk release/2.0 done].each { |name| merged_branch(name) }
     expect(plan_of(clean('--dry-run'))['branches']).to eq(['done'])
   end
 
   describe 'without origin/HEAD' do
     before do
-      git('branch', 'done')
+      merged_branch('done')
       git('remote', 'add', 'origin', File.join(outside, 'remote.git'))
     end
 
@@ -145,6 +145,38 @@ RSpec.describe Gitflash::Cli, :git_repo do
     mark('both', 'agent')
     reasons = plan_of(clean('--agent', '--stale', '30', '--force', '--dry-run'))['reasons']
     expect(reasons['both']).to eq(['no commits for 30 days', 'agent-created'])
+  end
+
+  it 'keeps a branch nobody has committed to yet, and says why' do
+    git('branch', 'fresh')
+    mark('fresh', 'agent')
+    %w[--merged --agent].each do |criterion|
+      run = clean(criterion, '--force', '--dry-run')
+      expect(run.json['status']).to eq('noop')
+      expect(plan_of(run)['skipped'])
+        .to eq([{ 'branch' => 'fresh', 'reason' => 'no commits since it was created; --stale ' \
+                                                   'removes it after 30 days unused' }])
+    end
+  end
+
+  it 'removes an unused branch with --stale once it has been unused that long' do
+    ENV['GIT_COMMITTER_DATE'] = '2020-01-01T00:00:00Z' # commits and reflog entries take it
+    commit_file('old.txt')
+    git('branch', 'forgotten')
+    ENV.delete('GIT_COMMITTER_DATE')
+    commit_file('new.txt')
+    git('branch', 'fresh')
+    run = clean('--stale', '30', '--yes')
+    expect(plan_of(run)['reasons']).to eq('forgotten' => ['no commits for 30 days'])
+    expect(branch_names).to contain_exactly('main', 'fresh')
+  ensure
+    ENV.delete('GIT_COMMITTER_DATE')
+  end
+
+  it 'treats a branch cut now from an old commit as active, not stale' do
+    unmerged_branch('old', date: '2020-01-01T00:00:00Z')
+    git('branch', 'cut', 'old')
+    expect(plan_of(clean('--stale', '30', '--force', '--dry-run'))['reasons'].keys).to eq(['old'])
   end
 
   it 'reports nothing to clean' do
