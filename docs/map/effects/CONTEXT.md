@@ -48,7 +48,7 @@ Nothing in `lib/` names these. They break silently.
 | `Configuration::Descriptions` (`lib/gitflash/configuration.rb:15`) | `command_descriptions.yml` one level above `lib/` | file moved |
 | `Cli::SCHEMA_PATH` (`lib/gitflash/cli.rb:10`) | `schema/v1.json` | file moved |
 | `schema/v1.json:3` `$id` | GitHub URL on `main` | repo or path renamed |
-| README | link to `schema/v1.json` | file moved |
+| README, `docs/json-contract.md`, `docs/agent-integrations.md` | `schema/v1.json`, `skills/gitflash/SKILL.md` (README by GitHub URL on `main`, so it works on rubygems.org) | file moved |
 | `.claude/settings.local.json` (gitignored globally, one machine) | `gitflash hook claude` | command renamed or removed; hook then fails silently (exit 0). Works on this branch. |
 | Claude Code hook protocol | `hookSpecificOutput`, `permissionDecision` fields | Claude changes the protocol; no error is shown |
 | Claude Code settings layout | `.claude/settings*.json`, `hooks.PreToolUse` | [[hook-install]] writes the wrong shape |

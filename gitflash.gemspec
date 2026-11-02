@@ -6,9 +6,9 @@ Gem::Specification.new do |spec|
   spec.version               = Gitflash::VERSION
   spec.authors               = ['Kleanthis Mitsioulis']
   spec.email                 = ['kleanthismits@hotmail.gr']
-  spec.summary               = 'Simplified usage of some git cli commands'
-  spec.description           = 'This gem allows you to perform a number of git commands ' \
-                               'using interactive cli prompts'
+  spec.summary               = 'Safety net and cleanup for git repos that AI coding agents work in'
+  spec.description           = 'Snapshots and undo for plain git, cleanup of agent branches ' \
+                               'and worktrees, one JSON contract for CLI, MCP, skill and hook'
   spec.homepage              = 'https://github.com/Kleanthismits/git_flash'
   spec.license               = 'MIT'
   spec.platform              = Gem::Platform::RUBY
@@ -30,6 +30,8 @@ Gem::Specification.new do |spec|
 
   spec.metadata['source_code_uri'] = spec.homepage
   spec.metadata['changelog_uri'] = 'https://github.com/Kleanthismits/git_flash/blob/main/CHANGELOG.md'
+  spec.metadata['documentation_uri'] = 'https://github.com/Kleanthismits/git_flash#readme'
+  spec.metadata['bug_tracker_uri'] = 'https://github.com/Kleanthismits/git_flash/issues'
   spec.metadata['rubygems_mfa_required'] = 'true'
   spec.extra_rdoc_files = ['README.md']
 end

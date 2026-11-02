@@ -1,82 +1,80 @@
-# GitFlash
+# gitflash
 
-[![GitHub version](https://badge.fury.io/gh/Kleanthismits%2Fgit_flash.svg)](https://badge.fury.io/gh/Kleanthismits%2Fgit_flash)
+[![Gem Version](https://img.shields.io/gem/v/gitflash)](https://rubygems.org/gems/gitflash)
+[![RSpec](https://github.com/Kleanthismits/git_flash/actions/workflows/rspec.yml/badge.svg)](https://github.com/Kleanthismits/git_flash/actions/workflows/rspec.yml)
 
-⚠️ **This project is still under development**: Use at your own risk!
+**A safety net and cleanup tool for git repositories that AI coding agents work in.**
 
-A safety net and cleanup tool for git repositories that AI coding agents work in. It works on plain git, with nothing new to adopt, and every command can be run by a person in a terminal or by an agent with a stable JSON contract.
+gitflash works on plain git, with nothing new to adopt. Every command can be run by a person in a terminal or by an agent through one stable JSON contract. (Not to be confused with git-flow, the branching model.)
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for where the project is going.
+> **Status: pre-1.0.** Command flags may still change between minor versions. The JSON contract ([schema v1](https://github.com/Kleanthismits/git_flash/blob/main/schema/v1.json)) is versioned and stable. See the [roadmap](https://github.com/Kleanthismits/git_flash/blob/main/docs/ROADMAP.md) for where the project is going.
+
+## Why
+
+An agent runs `git reset --hard` or `git clean -fd` from the shell. Claude Code's checkpoints do not track shell commands, and git never recorded the uncommitted and untracked files, so that work is gone. With gitflash:
+
+```bash
+gitflash hook install   # once per repository
+
+# Later, Claude Code runs a destructive command such as `git reset --hard HEAD~3`.
+# The hook saves a snapshot first and tells the agent how to undo it.
+
+gitflash undo --yes     # HEAD, branches, uncommitted and untracked files come back
+```
+
+gitflash also cleans up after parallel agent work: it knows which branches and worktrees agents created, and removes the merged, gone and stale ones with a snapshot first.
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'gitflash'
+```bash
+gem install gitflash
 ```
 
-And then execute:
-
-    $ bundle install
-
-Or install it yourself as:
-
-    $ gem install gitflash
+Requires Ruby 3.3+ and git 2.36+ (the worktree commands read `git worktree list -z`).
 
 Prerelease versions (named like `0.7.0.beta3`) are only installed when you ask for them: `gem install gitflash --pre`, or the exact version in a Gemfile.
 
-## Requirements
+## Quick start for agents
 
-This gem requires Ruby 3.3+ and git 2.36+ (the worktree commands read `git worktree list -z`).
+Pick one. Details for each are in [Agent integrations](https://github.com/Kleanthismits/git_flash/blob/main/docs/agent-integrations.md).
 
-## Usage
+| Way | Command | You get |
+| --- | --- | --- |
+| Claude Code plugin | `/plugin marketplace add Kleanthismits/git_flash`, then `/plugin install gitflash@gitflash` | Hook, MCP server and skill in one install (gem 0.8.0 or newer) |
+| Hook and skill | `gitflash hook install` and `gitflash skill install` | Snapshots before destructive plain git commands; the agent learns to prefer gitflash |
+| MCP server | `claude mcp add gitflash -- gitflash mcp` | gitflash as MCP tools, with your approval before destructive changes |
 
-Run `gitflash` inside a git repository to get a list with the available commands and their description.
+Do not combine the plugin with `gitflash hook install`, or the hook runs twice.
 
-| Command | Description |
+## Commands
+
+Run `gitflash` inside a git repository for the list, and `gitflash help <command>` for the flags of one command. Without arguments, most commands show an interactive list.
+
+| Command | What it does |
 | --- | --- |
-| `gitflash branches` | List local branches with last commit, upstream status and merge status. Filter with `--merged`, `--gone` or `--stale DAYS` |
+| `gitflash branches` | List local branches with last commit, upstream and merge status (`--merged`, `--gone`, `--stale DAYS`) |
 | `gitflash checkout [BRANCH]` | Check out a branch, or pick one from a list |
-| `gitflash delete [BRANCH...]` | Delete branches, or pick them from a list. The current and default branch, `main`, `master`, `develop`, `development`, `trunk` and `release/*` are protected. Unmerged branches are kept unless you pass `--force` |
-| `gitflash reset [COMMIT]` | Reset to a commit, or pick one of the latest 100. Mixed by default; `--soft` keeps changes staged, `--hard` discards them after confirmation |
-| `gitflash mark [BRANCH...]` | Mark branches as agent or human work (default: human when stdin is a terminal, agent otherwise; a script run from a terminal should pass `--owner agent`), or `--clear` the mark. Without a branch it marks the current one. Use it for branches made with plain git so `clean --agent` can find them |
-| `gitflash clean` | Delete merged branches and branches whose upstream is gone, with a snapshot first. `--stale [DAYS]` and `--agent` add stale and agent-created branches; unmerged ones are kept unless `--force`. A branch nobody has committed to since it was created is kept too (it only looks merged); `--stale` removes it once it has been unused that long. Protected: current, default, `main`, `master`, `develop`, `development`, `trunk`, `release/*`, `protected` in `.gitflash.yml`, branches checked out in a worktree |
-| `gitflash worktree` (`wt`) `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock`, `move` | Worktrees for parallel agent work, with absolute paths in `--json` (see below) |
-| `gitflash pick [SOURCE] [SHA...]` | Cherry-pick commits from another branch (pick SOURCE from a list when you omit it): `--list` shows what is missing here, `--continue`, `--skip` and `--abort` handle conflicts |
-| `gitflash undo [SNAPSHOT]` | Restore a snapshot, by default the latest one taken in this worktree: deleted branches, moved branches, HEAD, uncommitted and untracked files, dropped stashes |
+| `gitflash delete [BRANCH...]` | Delete branches; protected and unmerged branches are kept unless `--force` |
+| `gitflash reset [COMMIT]` | Reset to a commit (mixed by default, `--soft`, `--hard` after confirmation) |
+| `gitflash clean` | Delete merged branches and branches whose upstream is gone (`--stale [DAYS]`, `--agent` for agent-created ones) |
+| `gitflash mark [BRANCH...]` | Mark branches as agent or human work, so `clean --agent` finds branches made with plain git |
+| `gitflash worktree` (`wt`) | `list`, `add`, `remove`, `clean`, `prune`, `lock`, `unlock`, `move` worktrees for parallel agent work |
+| `gitflash pick [SOURCE] [SHA...]` | Cherry-pick commits from another branch (`--list`, `--continue`, `--skip`, `--abort`) |
+| `gitflash undo [SNAPSHOT]` | Restore a snapshot, by default the latest one taken in this worktree |
 | `gitflash snapshot` | Save the current state on request (`--scope`, `--message`) |
 | `gitflash snapshots` | List snapshots, newest first |
-| `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`, at least 1) |
-| `gitflash hook install` | Protect plain git commands run by Claude Code and mark the branches it creates (see below) |
-| `gitflash hook status` | Show whether the hook protects Claude Code sessions in the current directory |
-| `gitflash skill install` | Copy the gitflash Agent Skill into an agent's skills directory (see below); `gitflash skill show` prints it |
-| `gitflash mcp` | Run an MCP server for the current repository on stdio (see below) |
+| `gitflash gc` | Delete snapshots older than 30 days (`--older-than DAYS`) |
+| `gitflash hook install`, `hook status` | Protect plain git commands run by Claude Code, and check where the hook applies |
+| `gitflash skill install`, `skill show` | Install or print the gitflash Agent Skill |
+| `gitflash mcp` | Run an MCP server for the current repository on stdio |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
 
-### Parallel agent work
+## Undo
 
-`gitflash wt add feature` creates a worktree (default `../<repo>.worktrees/feature`) and marks a new branch as agent work. For a branch made with plain git, run `gitflash mark` on it (no argument marks the current branch). `gitflash wt list --json` gives every worktree's absolute path, branch, dirty state, ahead/behind, merge status, lock state and owner, so an agent never has to switch directories.
+Before every change it makes, gitflash saves a snapshot: branches, HEAD, tracked, staged and untracked files, and stash entries. Snapshots are plain git objects under `refs/gitflash/snapshots/`; the working tree is never touched while saving.
 
-`gitflash wt remove` and `gitflash wt clean` save a snapshot first, and `gitflash undo` adds the worktree back with its branch and uncommitted files. Ignored files (`.env`, `node_modules`) are not saved: the plan lists them before they are deleted, and removing a worktree that has some needs `--confirm TOKEN` (the token the refusal names) instead of `--yes`. A worktree with an untracked file over 50 MB is not removed.
-
-`gitflash pick other-branch --list` lists the commits missing here (a commit whose patch is already here is marked `=`). `gitflash pick other-branch SHA... --yes` applies them oldest first with `-x`. On a conflict it stops and lists the files; resolve them and run `gitflash pick --continue`, or `--skip` / `--abort`.
-
-Settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml` (the repository file wins, except for `worktree_dir`, where your own file wins; a repository's `worktree_dir` must be a relative path that stays next to the repository):
-
-```yaml
-protected: ["release/*", "hotfix/{a,b}"]   # branch patterns clean and delete never touch; both files add up
-stale_days: 30             # used by --stale without a number
-worktree_dir: "../%<repo>s.worktrees/%<branch>s"   # only these two placeholders, up to 512 characters
-snapshot_exclude: ["*.pem", ".env*", "secrets"]   # untracked files snapshots never copy (a directory covers all below it); both files add up
-```
-
-Snapshots copy every untracked file that is not ignored (up to 50 MB) into git objects under `refs/gitflash/snapshots/`. A stray secret that is not in `.gitignore` is copied too, and a `git push --mirror` or a `refs/*` refspec would publish it. Ignore such files, or list them in `snapshot_exclude`; files left out this way cannot be restored by `gitflash undo`.
-
-### Undo
-
-Before every change it makes, gitflash saves a snapshot: branches, HEAD, tracked, staged and untracked files, and stash entries. Snapshots are plain git objects under `refs/gitflash/snapshots/`; the working tree is never touched while saving. Git's own `revert` and `reflog` cover committed work; snapshots also cover what git never recorded: uncommitted and untracked files, deleted branches (git deletes their reflog) and dropped stashes.
+Git's own `revert` and `reflog` cover committed work. Snapshots also cover what git never recorded: uncommitted and untracked files, deleted branches (git deletes their reflog) and dropped stashes.
 
 ```bash
 gitflash delete old-feature --yes
@@ -88,142 +86,58 @@ gitflash undo --yes
 
 `gitflash undo` restores only what the snapshot saved and what differs, and saves the current state first, so an undo can itself be undone.
 
-### Protect plain git commands run by AI agents
+> [!WARNING]
+> Snapshots copy untracked files that are not ignored, including a stray secret, into git objects. A `git push --mirror` or a `refs/*` refspec would publish them. Ignore such files or list them in `snapshot_exclude`; see [Configuration](https://github.com/Kleanthismits/git_flash/blob/main/docs/configuration.md#snapshots-and-secrets).
 
-Agents often run git directly. Claude Code's own checkpoints do not cover changes made by shell commands, so a `git reset --hard` or `git clean -fd` run by an agent cannot be rewound there. Install the gitflash hook once per repository:
+## Parallel agent work
 
-```bash
-gitflash hook install
-```
+`gitflash wt add feature` creates a worktree (default `../<repo>.worktrees/feature`) and marks its new branch as agent work. `gitflash wt list --json` gives every worktree's absolute path, branch, dirty state, ahead/behind, merge status, lock state and owner, so an agent never has to switch directories.
 
-Before Claude Code runs a command that can discard work git cannot restore (`reset`, `checkout -- .`, `restore`, `clean -f`, `branch -D`, `stash drop`, `rebase`, `worktree remove --force`, ...), the hook saves a snapshot and tells the agent how to undo it. Other commands pass through; the hook adds about 0.1 s to commands that do not mention git. `--mode ask` also asks you to approve such commands, `--mode deny` blocks them. If the hook itself fails, `ask` mode still asks and `deny` mode blocks the command.
+For a branch made with plain git, run `gitflash mark` on it (no argument marks the current branch). The owner defaults to `human` when stdin is a terminal and `agent` otherwise, so a script run from a terminal should pass `--owner agent`.
 
-The same install adds a second hook that runs after a command: when the agent creates a branch with plain git (`git checkout -b`, `git switch -c`, `git branch NAME`, `git worktree add`), gitflash marks it as agent work, so `gitflash clean --agent` can find it. Only new, unmarked branches are marked, and `gitflash mark BRANCH --owner human` changes it. If you installed the hook with an earlier version, run `gitflash hook install` again to add it (the installed `--mode` is kept; a weaker mode needs `--downgrade`); `gitflash hook status` says whether branch marking is on.
+`gitflash wt remove` and `gitflash wt clean` save a snapshot first, and `gitflash undo` adds the worktree back with its branch and uncommitted files. Ignored files (`.env`, `node_modules`) are not saved: the plan lists them, and removing a worktree that has some needs `--confirm TOKEN` instead of `--yes`. A worktree with an untracked file over 50 MB is not removed.
 
-Where the hook goes, following Claude Code's own rules:
+`gitflash clean` keeps a branch nobody has committed to since it was created (it only looks merged); `--stale` removes it once it has been unused that long. Protected branches and branches checked out in a worktree are never touched.
 
-| Scope | File | Applies to |
-| --- | --- | --- |
-| `local` (default) | `.claude/settings.local.json` at the repository root (the main checkout's root inside a worktree) | Sessions anywhere in the repository and its worktrees |
-| `project` | `.claude/settings.json` at the repository top level, to share with your team | Sessions started in that directory |
-| `user` | `~/.claude/settings.json` | Every session |
+`gitflash pick other-branch --list` lists the commits missing here (a commit whose patch is already here is marked `=`). `gitflash pick other-branch SHA... --yes` applies them oldest first with `-x`. On a conflict it stops and lists the files; resolve them and run `gitflash pick --continue`, or `--skip` / `--abort`.
 
-Claude Code reloads settings files, so running sessions pick the hook up without a restart. Run `gitflash hook status` in the directory where you start Claude Code to check which files apply and whether the `gitflash` executable is found.
+## Scripts and agents
 
-### Claude Code plugin
-
-The plugin brings the hook, the MCP server and the skill to Claude Code in one install. It runs the `gitflash` command, so install the gem first (`gem install gitflash`, version 0.8.0 or newer), then in Claude Code:
-
-```
-/plugin marketplace add Kleanthismits/git_flash
-/plugin install gitflash@gitflash
-```
-
-On Claude Code 2.1.275 or later one line does both: `/plugin install gitflash --marketplace Kleanthismits/git_flash`.
-
-The plugin's hook runs in `snapshot` mode for every session. Do not also run `gitflash hook install`, or the hook runs twice; if you want `ask` or `deny` mode, use `gitflash hook install --mode ask` instead of the plugin, or disable the plugin's hooks. `gitflash hook status` only reads settings files, so it does not report the plugin's hook.
-
-### Teach agents to use gitflash
-
-gitflash ships an [Agent Skill](skills/gitflash/SKILL.md): one `SKILL.md` that tells an agent when to use gitflash instead of plain git, how to read the `--json` envelope, the plan then `--yes` flow, `--confirm` tokens and how to recover work with `gitflash undo`. Install it once:
+Every command takes `--json`, `--yes` and `--dry-run`. Without a terminal, gitflash never waits for input: a missing argument or an unconfirmed destructive change fails with exit code 2 and returns the plan.
 
 ```bash
-gitflash skill install
+gitflash delete old-feature --yes --json
 ```
 
-| Option | File | Read by |
-| --- | --- | --- |
-| `--scope user` (default) | `~/.claude/skills/gitflash/SKILL.md` | Every Claude Code session |
-| `--scope project` | `.claude/skills/gitflash/SKILL.md` at the repository top level, to commit for your team | Claude Code sessions in the repository |
-| `--path DIR` | `DIR/gitflash/SKILL.md` | Any agent that reads skills from `DIR` |
+Every `--json` answer uses one envelope with `status`, `plan`, `result`, `undo` and a stable `error.code`. Exit codes are `0` success, `1` a git command failed, `2` invalid usage or confirmation required. The full contract is in [JSON contract](https://github.com/Kleanthismits/git_flash/blob/main/docs/json-contract.md).
 
-Run it again after upgrading gitflash. When the installed file differs from the shipped one (for example because you edited it), replacing it needs `--confirm TOKEN` instead of `--yes`, since `gitflash undo` cannot bring your edits back.
+## Configuration
 
-### MCP server
+Optional settings live in `.gitflash.yml` in the repository and `~/.config/gitflash.yml`: extra protected branch patterns, the default for `--stale`, where worktrees go, and files snapshots never copy. See [Configuration](https://github.com/Kleanthismits/git_flash/blob/main/docs/configuration.md).
 
-`gitflash mcp` serves gitflash to MCP clients (Claude Code, Claude Desktop, other agents) over stdio, for the repository in the directory it starts in. Register it in Claude Code from inside the repository:
+## How it compares
 
-```bash
-claude mcp add gitflash -- gitflash mcp
-```
-
-Every tool answers with the same JSON envelope as `--json`, as structured content.
-
-| Kind | Tools |
+| Tool | Difference |
 | --- | --- |
-| Read-only | `list_branches`, `list_worktrees`, `list_pickable_commits`, `list_snapshots`, `plan_change` |
-| Lose nothing | `add_worktree`, `cherry_pick_commits`, `cherry_pick_control`, `mark_branches`, `save_snapshot` |
-| Destructive | `delete_branches`, `clean_branches`, `reset_branch`, `remove_worktrees`, `move_worktree`, `undo` |
+| jj (Jujutsu) | Has an operation log and `jj undo`, but you adopt a new version control tool |
+| GitButler | Has an MCP server and Claude Code hooks, but needs the GitButler app and its branch model |
+| `mcp-server-git` and other git MCP servers | Give agents git actions, but no undo for what the agent changed |
+| Claude Code checkpoints | Undo Claude's file edits, but not changes made through shell commands |
 
-When the client supports MCP elicitation, a destructive tool first shows you its plan in the client and asks you to approve it (on a 2026-07-28 connection, as Claude Code makes, the form comes back as an `input_required` result and the client calls the tool again with your answer); it runs when you press Accept (clearing the "Make this change" box first turns Accept into a no), and answers `cancelled` when you decline. If the client cannot ask, gives no answer within 2 minutes, or the server runs with `gitflash mcp --no-elicitation` (for clients that never answer), the token flow below is used, and the server writes the reason to stderr, which Claude Code keeps in its MCP logs.
-
-Without that approval, a destructive tool changes nothing on its first call: it returns the plan with status `confirmation_required` and `error.confirm_token`. Calling it again with the same arguments and `confirm_token` makes exactly that change, after a snapshot. `plan_change` gives the same plan and token from a read-only tool, so a client that asks before every destructive call (Claude Code outside auto mode) asks only once, for the change itself. The token is valid for 5 minutes, only for that plan (if the repository changed so the plan differs, a new plan and token come back) and only for the running server. The tools are marked with MCP's `readOnlyHint` and `destructiveHint`, so clients can also ask you before a call. Names and paths that start with a dash are refused.
-
-### Scripts
-
-Without an argument, a command shows an interactive list. With arguments it runs directly, which also works in scripts.
-
-Options for every command:
-
-| Option | Effect |
-| --- | --- |
-| `--json` | Print JSON instead of text. Never shows lists or prompts |
-| `--yes`, `-y` | Skip confirmation prompts |
-| `--dry-run` | Show what would happen without changing anything |
-
-Run `gitflash help <command>` for details on a command.
-
-### Scripts and AI agents
-
-Without a terminal (for example in a script, CI or an AI coding agent), gitflash never waits for input:
-
-- A command that needs a list selection fails with exit code 2 and says which argument to pass.
-- A destructive action (`delete`, `reset --hard`) fails with exit code 2 and returns the plan unless you pass `--yes`.
-- A change `gitflash undo` cannot revert (`gc`, which deletes snapshots, and `wt remove` or `wt clean` of a worktree with ignored files) is not covered by `--yes`: it fails with exit code 2 and names a token (with `--json`, the plan and `error.confirm_token`; `--dry-run` shows the plan as text). Re-run with `--confirm TOKEN` to make that exact change; in a terminal you type the token instead.
-
-With `--json`, every command prints one object in the same envelope, defined in [schema/v1.json](schema/v1.json) (also printed by `gitflash schema`):
-
-```json
-{
-  "schema": 1,
-  "command": "delete",
-  "ok": true,
-  "status": "done",
-  "dry_run": false,
-  "plan": { "branches": ["old-feature"], "force": false },
-  "result": { "deleted": [{ "branch": "old-feature", "sha": "3551cba" }], "failed": [] }
-}
-```
-
-- `status`: `done`, `planned` (`--dry-run`), `noop`, `cancelled`, `failed`, `confirmation_required` or `error`. `ok` is true for the first four.
-- `result` includes what you need to revert: the SHA of each deleted branch (`git branch NAME SHA`), the previous branch after `checkout`, the previous commit after `reset`.
-- `undo` names the snapshot saved before the change and the command that restores it (`gitflash undo ID`). When nothing had changed since an earlier snapshot, that one is handed back instead of saving the same state again, with `"reused": true`: its id is older than the change, and undo with it is still correct.
-- `error.code` is a stable identifier such as `unknown_branch`, `protected_branch` or `confirmation_required`.
-
-```bash
-gitflash branches --merged --json
-```
-
-```bash
-gitflash delete old-feature another-branch --yes --json
-```
-
-Exit codes: `0` success, `1` a git command failed (for example a branch was not fully merged), `2` invalid usage or confirmation required.
+gitflash adds undo for plain git, for the operations agent tools do not track, with nothing new to adopt.
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repository, run `bin/setup` to install dependencies. Then run `bundle exec rake spec` for the tests and `bundle exec rubocop` for the linter. `bin/console` opens an interactive prompt.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+To install the gem from your checkout, run `bundle exec rake install`.
+
+To release, bump the version in `lib/gitflash/version.rb` and `.claude-plugin/plugin.json` (a spec checks they match), move the `[Unreleased]` notes in `CHANGELOG.md` under the new version, and run `bundle exec rake release`. It tags the version, pushes the tag and publishes the gem to [rubygems.org](https://rubygems.org/gems/gitflash).
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/Kleanthismits/git_flash. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/Kleanthismits/git_flash/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on [GitHub](https://github.com/Kleanthismits/git_flash/issues). Everyone interacting in the project is expected to follow the [code of conduct](https://github.com/Kleanthismits/git_flash/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
-## Code of Conduct
-
-Everyone interacting in the GitFlash project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/Kleanthismits/git_flash/blob/main/CODE_OF_CONDUCT.md).
+Available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
