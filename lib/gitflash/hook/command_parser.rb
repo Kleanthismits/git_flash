@@ -31,9 +31,12 @@ module Gitflash
       end
 
       SHELLS = %w[bash sh zsh dash ksh].freeze
-      # The option that makes a shell run its next argument as a script: `-c`, `-lc`
-      SCRIPT_FLAG = /\A-[a-z]*c[a-z]*\z/
       MAX_NESTING = 3
+
+      # The option that makes a shell run its next argument as a script: `-c`, `-lc`. The `c` is
+      # looked for apart from the pattern, which `-ccc...c` would otherwise make backtrack.
+      def self.script_flag?(word) = word.match?(/\A-[a-z]+\z/) && word.include?('c')
+
       # Subcommands git never lets an alias replace and that have no rule, so their aliases need
       # not be read
       BUILTINS = (Rules::RULES.keys + %w[status log diff show add commit push pull fetch rev-parse
@@ -140,7 +143,7 @@ module Gitflash
         return words.drop(1).join(' ') if words.first == 'eval'
         return nil unless SHELLS.include?(File.basename(words.first))
 
-        index = words.index { |word| word.match?(SCRIPT_FLAG) }
+        index = words.index { |word| CommandParser.script_flag?(word) }
         index && words[index + 1]
       end
 

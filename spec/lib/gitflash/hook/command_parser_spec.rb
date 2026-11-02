@@ -182,6 +182,14 @@ RSpec.describe Gitflash::Hook::CommandParser do
     end
   end
 
+  describe '.script_flag?' do
+    it 'finds -c among short shell options, in time on long words' do
+      expect(%w[-c -lc -cl -l --c -c1 c].map { |word| described_class.script_flag?(word) })
+        .to eq([true, true, true, false, false, false, false])
+      expect(described_class.script_flag?("-#{'c' * 50_000}!")).to be(false)
+    end
+  end
+
   describe 'heredocs' do
     let(:clean) { ['/repo', %w[worktree], []] }
     let(:reset) { ['/repo', %w[branches head worktree], [:current]] }

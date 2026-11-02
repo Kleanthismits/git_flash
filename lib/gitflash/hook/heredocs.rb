@@ -113,7 +113,7 @@ module Gitflash
 
       def stdin_script?(words)
         CommandParser::SHELLS.include?(File.basename(words.first.to_s)) &&
-          words.none? { |word| word.match?(CommandParser::SCRIPT_FLAG) }
+          words.none? { |word| CommandParser.script_flag?(word) }
       end
     end
   end
