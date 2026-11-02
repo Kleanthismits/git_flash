@@ -22,6 +22,51 @@ gitflash hook install   # once per repository
 gitflash undo --yes     # HEAD, branches, uncommitted and untracked files come back
 ```
 
+To see it happen without an agent, run [`demo/agent-undo.sh`](https://github.com/Kleanthismits/git_flash/blob/main/demo/agent-undo.sh) from a checkout. It works in a throwaway repository and feeds the hook the same input Claude Code sends.
+
+<details>
+<summary>See it run</summary>
+
+```text
+== A repository with uncommitted work
+$ git status --short
+ M app.rb
+?? notes.txt
+
+== The agent is about to run: git reset --hard && git clean -fd
+$ <Claude Code hook input> | gitflash hook claude
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "additionalContext": "gitflash saved snapshot 20261102T094036000992-f633 before `git reset --hard && git clean -fd`. If this discards work that was still needed, restore it with `gitflash undo 20261102T094036000992-f633` (list snapshots with `gitflash snapshots`)."
+  }
+}
+
+== The command runs. Git alone cannot get this work back
+$ git reset --hard && git clean -fd
+HEAD is now at 1313e78 Initial commit
+Removing notes.txt
+$ git status --short
+$ cat app.rb
+puts "hello"
+
+== gitflash undo restores the snapshot the hook saved
+$ gitflash undo --yes
+Restored snapshot 20261102T094036000992-f633:
+* restore tracked, staged and untracked files
+Undo with: gitflash undo 20261102T094037415717-1342
+$ git status --short
+ M app.rb
+?? notes.txt
+$ cat app.rb notes.txt
+puts "hello, world"
+API_URL=http://localhost:3000
+
+Uncommitted edit and untracked file are back.
+```
+
+</details>
+
 gitflash also cleans up after parallel agent work: it knows which branches and worktrees agents created, and removes the merged, gone and stale ones with a snapshot first.
 
 ## Installation
