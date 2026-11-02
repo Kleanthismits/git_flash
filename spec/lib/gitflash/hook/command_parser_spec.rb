@@ -182,6 +182,50 @@ RSpec.describe Gitflash::Hook::CommandParser do
     end
   end
 
+  describe '.script_flag?' do
+    it 'finds -c among short shell options, in time on long words' do
+      expect(%w[-c -lc -cl -l --c -c1 c].map { |word| described_class.script_flag?(word) })
+        .to eq([true, true, true, false, false, false, false])
+      expect(described_class.script_flag?("-#{'c' * 50_000}!")).to be(false)
+    end
+  end
+
+  describe 'heredocs' do
+    let(:clean) { ['/repo', %w[worktree], []] }
+    let(:reset) { ['/repo', %w[branches head worktree], [:current]] }
+
+    it 'reads nothing in a quoted heredoc body as a command' do
+      expect(targets("git commit -F - <<'EOF'\nUse `git reset --hard` here\nEOF")).to eq([])
+      expect(targets("git commit -F - <<\"EOF\"\ngit reset --hard\nEOF")).to eq([])
+      expect(targets("cat <<\\EOF\nthen git clean -fd runs\nEOF")).to eq([])
+    end
+
+    it 'keeps a quote in the body from hiding the commands after it' do
+      expect(targets("cat <<'EOF' > f\ndon't stop\nEOF\ngit reset --hard")).to eq([reset])
+      expect(targets("cat <<'EOF' > f\nsay \"hi\nEOF\ngit reset --hard")).to eq([reset])
+      expect(targets("cat <<'EOF' > f && git clean -fd\ndon't\nEOF")).to eq([clean])
+    end
+
+    it 'reads the substitutions of an unquoted body, which the shell runs' do
+      expect(targets("cat <<EOF\n`git reset --hard`\nEOF")).to eq([reset])
+      expect(targets("cat <<EOF\nit's $(git clean -f)\nEOF")).to eq([clean])
+      expect(targets("cat <<EOF\ngit reset --hard\nEOF")).to eq([])
+    end
+
+    it 'reads the body as a script when a shell reads it from stdin' do
+      expect(targets("bash <<'EOF'\ngit reset --hard\nEOF")).to eq([reset])
+      expect(targets("sh -s <<EOF\ngit clean -f\nEOF")).to eq([clean])
+      expect(targets("bash -c 'cat' <<'EOF'\ngit reset --hard\nEOF")).to eq([])
+    end
+
+    it 'handles <<-, several heredocs on one line, here-strings and a missing delimiter' do
+      expect(targets("cat <<-EOF\n\tgit reset --hard\n\tEOF\ngit clean -f")).to eq([clean])
+      expect(targets("cat <<'A' <<'B'\ndon't\nA\nit's\nB\ngit clean -f")).to eq([clean])
+      expect(targets("cat <<< 'x'; git clean -f")).to eq([clean])
+      expect(targets("cat <<'EOF'\ngit reset --hard")).to eq([])
+    end
+  end
+
   describe 'the repository git uses' do
     {
       'git --work-tree=/other --git-dir=/other/.git reset --hard' => '/other',

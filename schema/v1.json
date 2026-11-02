@@ -27,6 +27,7 @@
         "gc",
         "hook install",
         "hook status",
+        "skill install",
         "worktree list",
         "worktree add",
         "worktree remove",
@@ -84,6 +85,10 @@
         },
         "command": {
           "type": "string"
+        },
+        "reused": {
+          "const": true,
+          "description": "Present when nothing had changed since an earlier snapshot, which is handed back instead of saving the same state again. Its id is older than the change; undo with it restores the state before the change."
         }
       }
     }
@@ -313,6 +318,25 @@
         "properties": {
           "result": {
             "$ref": "#/$defs/hook_status"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "skill install"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "$ref": "#/$defs/skill_install"
+          },
+          "result": {
+            "$ref": "#/$defs/skill_install"
           }
         }
       }
@@ -656,6 +680,21 @@
             null
           ],
           "description": "Who created the branch; null when unmarked (treated as human)."
+        },
+        "unused": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Nothing moved the branch since it was created (its reflog has only the creation): it is new, so clean does not treat it as merged. null when the branch has no reflog."
+        },
+        "last_activity_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "When the branch last moved (its newest reflog entry); null without a reflog. Stale means neither this nor last_commit_at is recent."
         }
       }
     },
@@ -1191,6 +1230,41 @@
         "marking": {
           "type": "boolean",
           "description": "A settings file that applies here also has the PostToolUse hook that marks agent branches."
+        }
+      }
+    },
+    "skill_install": {
+      "type": "object",
+      "required": [
+        "scope",
+        "directory",
+        "file",
+        "version"
+      ],
+      "properties": {
+        "scope": {
+          "enum": [
+            "user",
+            "project",
+            "path"
+          ],
+          "description": "`path` when --path DIR was given."
+        },
+        "directory": {
+          "type": "string",
+          "description": "The skills directory; the skill is its gitflash/ subdirectory."
+        },
+        "file": {
+          "type": "string",
+          "description": "Absolute path of the installed SKILL.md."
+        },
+        "version": {
+          "type": "string",
+          "description": "The gitflash version whose skill is installed."
+        },
+        "previous_sha256": {
+          "type": "string",
+          "description": "SHA-256 of the file this install replaces, when one differs. Replacing it needs --confirm TOKEN."
         }
       }
     },

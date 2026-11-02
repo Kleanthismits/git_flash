@@ -4,8 +4,8 @@ cluster: core
 universe: live
 status: verified
 entity: lib/gitflash/cleanup.rb
-verified_on: 2026-10-24
-verified_at: 6b41e31 plus long-lived branch protection (#45)
+verified_on: 2026-11-01
+verified_at: b55b61e plus unused-branch rule
 ---
 
 # Cleanup
@@ -23,6 +23,7 @@ All selection rules in one place that runs no git command, so each rule is teste
 - `Cleanup.worktrees(...)` returns `[chosen, skipped]`; a `blocker` lambda says why a match may not be removed (`Worktree#removal_blocker`), such a match is skipped with the reason.
 - `Protection#protected?`: current, default, `main`, `master`, `develop`, `development`, `trunk`, `release/*` (`Protection::NAMES` / `PATTERNS`), [[config]] `protected`, branches checked out in worktrees (`lib/gitflash/protection.rb`). Also used by [[delete]].
 - `:merged` never matches the default branch.
+- Unused branches ([[branch]] `unused`: nothing moved them since creation, read from the reflog): `:merged` and `:agent` skip them (`NEW_BRANCH_SAFE`), `:gone` and `:stale` still match. `Rules#held_back` gives the reason; `Cleanup.held_back` returns `{ branch:, reason: }` rows for `clean`'s `plan.skipped`; `Cleanup.worktrees` adds such rows to its skipped list.
 
 ## Connected to
 

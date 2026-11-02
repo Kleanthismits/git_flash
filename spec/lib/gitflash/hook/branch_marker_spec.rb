@@ -19,6 +19,16 @@ RSpec.describe Gitflash::Hook::BranchMarker, :git_repo do
     expect(owners).to eq('feat' => 'agent')
   end
 
+  it 'marks a branch created now from an old commit, going by the reflog time' do
+    ENV['GIT_COMMITTER_DATE'] = '2020-01-01T00:00:00Z'
+    git('commit', '-q', '--allow-empty', '-m', 'old')
+    ENV.delete('GIT_COMMITTER_DATE')
+    git('switch', '-q', '-c', 'from-old')
+    expect(mark('git switch -c from-old')).to eq(['from-old'])
+  ensure
+    ENV.delete('GIT_COMMITTER_DATE')
+  end
+
   it 'marks every branch of a chain, once each' do
     git('switch', '-q', '-c', 'a')
     git('branch', 'b')

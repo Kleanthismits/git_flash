@@ -20,12 +20,22 @@ module Gitflash
 
       private
 
-      # Sets @reasons (chosen branch => why) and @skipped (matches kept for being unmerged)
+      # Sets @reasons (chosen branch => why) and @skipped (matches kept for being unmerged, and
+      # unused branches)
       def select(branches)
-        candidates = Cleanup.branches(branches, rules: rules, protection: protection)
-        chosen, kept = candidates.partition { |candidate| force? || candidate.item.merged }
+        chosen, kept = candidates(branches)
         @reasons = chosen.to_h { |candidate| [candidate.item.name, candidate.reasons] }
-        @skipped = kept.map { |candidate| skipped_row(candidate) }
+        @skipped = kept.map { |candidate| skipped_row(candidate) } + held_back(branches)
+      end
+
+      # [chosen, kept for being unmerged]
+      def candidates(branches)
+        Cleanup.branches(branches, rules: rules, protection: protection)
+               .partition { |candidate| force? || candidate.item.merged }
+      end
+
+      def held_back(branches)
+        Cleanup.held_back(branches, rules: rules, protection: protection)
       end
 
       def build_plan(names)

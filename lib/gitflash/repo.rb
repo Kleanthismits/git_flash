@@ -26,11 +26,12 @@ module Gitflash
       raise Error.new('Not a git repository', code: 'not_a_repository')
     end
 
-    # Local branches. With `merged_status: true` each branch also reports whether it is
-    # merged into the default branch (one extra git call).
+    # Local branches. With `merged_status: true` each branch also reports whether it is merged
+    # into the default branch and what its reflog says (BranchActivity): two extra git calls.
     def branches(merged_status: false)
       merged_names = merged_status ? merged_branch_names : nil
       list = branch_lines.map { |line| Branch.parse(line, default_branch:, merged_names:) }
+      list = BranchActivity.annotate(list, bash: @bash) if merged_status
       Ownership.new(bash: @bash).annotate(list)
     end
 
@@ -104,8 +105,7 @@ module Gitflash
     end
 
     def branch_lines
-      @branch_lines ||= @bash.exec('git', 'for-each-ref', "--format=#{BRANCH_FORMAT}",
-                                   HEADS)
+      @branch_lines ||= @bash.exec('git', 'for-each-ref', "--format=#{BRANCH_FORMAT}", HEADS)
                              .each_line(chomp: true).reject(&:empty?)
     end
 

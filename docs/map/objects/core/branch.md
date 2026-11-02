@@ -4,8 +4,8 @@ cluster: core
 universe: live
 status: verified
 entity: lib/gitflash/branch.rb
-verified_on: 2026-10-04
-verified_at: 36940dc plus the tag-safe ref fix
+verified_on: 2026-11-01
+verified_at: b55b61e plus unused-branch rule
 ---
 
 # Branch
@@ -18,9 +18,9 @@ Immutable `Data` parsed once from `for-each-ref`, so commands filter and report 
 
 ## Shape
 
-- 13 fields; `owner` is nil until [[ownership]]`#annotate` sets it, so `parse` never reads config (`lib/gitflash/branch.rb`), mirrored by `$defs/branch` in [[json-schema]] (`schema/v1.json:350`).
+- 15 fields; `unused` and `last_activity_at` are nil until `BranchActivity.annotate` reads the reflogs (one `git log -g` for all branches, `lib/gitflash/branch_activity.rb`; called by [[repo]] `branches(merged_status: true)`). `unused`: the only reflog entry is `branch: Created from`. `owner` is nil until [[ownership]]`#annotate` sets it, so `parse` never reads config (`lib/gitflash/branch.rb`), mirrored by `$defs/branch` in [[json-schema]] (`schema/v1.json:350`).
 - `merged` nil when status unknown (`branch.rb`, `25`).
-- `stale?(days)` (`branch.rb`); `to_h` formats time ISO 8601 (`branch.rb`).
+- `stale?(days)`: neither `last_commit_at` nor `last_activity_at` within `days` (`branch.rb`); `to_h` formats time ISO 8601 (`branch.rb`).
 - `Branch.parse_tips` and `Branch::TIPS_FORMAT` read `{ name => sha }` from full refs; shared by [[state-capture]] and [[restore]] (`branch.rb`, last line of file).
 - Parse order bound to `Repo::BRANCH_FORMAT` (`branch.rb`).
 
@@ -44,4 +44,4 @@ Immutable `Data` parsed once from `for-each-ref`, so commands filter and report 
 
 ## See
 
-- Source: `lib/gitflash/branch.rb`
+- Source: `lib/gitflash/branch.rb`, `lib/gitflash/branch_activity.rb`

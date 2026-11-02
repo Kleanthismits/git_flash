@@ -22,11 +22,12 @@ module Gitflash
     end
 
     # Saves the current state. `branches` limits the recorded branches (nil records all).
-    # Returns the latest snapshot instead when nothing changed since it was taken.
+    # Returns the latest snapshot instead, marked `reused?`, when nothing changed since it was
+    # taken: its id is older than the change, but undo with it restores the state before it.
     def create(reason:, scope: SCOPES, branches: nil)
       state = @capture.call(scope, branches)
       latest = list.first
-      return latest if latest&.state == state
+      return ReusedSnapshot.new(latest) if latest&.state == state
 
       store(Snapshot.new(**identity, reason: reason, **state))
     end

@@ -19,6 +19,16 @@ module GitRepoHelper
     git('commit', '-q', '-m', message)
   end
 
+  # A branch with a commit of its own that main then took in (fast-forward), so it is merged
+  # and used. A branch only cut from main has never been used, and clean keeps it.
+  def merged_branch(name)
+    base = git('branch', '--show-current').strip
+    git('switch', '-q', '-c', name)
+    commit_file("#{name.tr('/', '_')}.txt")
+    git('switch', '-q', base)
+    git('merge', '-q', '--ff-only', name)
+  end
+
   def head_sha
     git('rev-parse', 'HEAD').strip
   end

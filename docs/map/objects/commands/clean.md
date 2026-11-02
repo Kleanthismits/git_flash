@@ -4,8 +4,8 @@ cluster: commands
 universe: live
 status: verified
 entity: lib/gitflash/commands/clean.rb
-verified_on: 2026-10-24
-verified_at: 6b41e31 plus long-lived branch protection (#45)
+verified_on: 2026-11-01
+verified_at: b55b61e plus unused-branch rule
 ---
 
 # Clean command
@@ -22,6 +22,7 @@ Same guarded flow as `delete` (plan, confirm, snapshot, report), so `undo` and t
 - With an `origin` remote but no `origin/HEAD`, the plan (also the no-op plan) carries `warning` and the confirmation text a `Note:` (`Clean#warning`, `default_branch_guessed?`): merged is judged against a guessed local main/master; the fix is `git remote set-head origin --auto`.
 - Protection: current, default, `main`, `master`, `develop`, `development`, `trunk`, `release/*` (`Protection::NAMES` / `PATTERNS`), `protected` patterns, any branch checked out in a worktree ([[cleanup]] `Protection`).
 - Unmerged matches are kept (listed in `plan.skipped`) unless `--force`; `delete`'s `-d` / `-D` rule.
+- Unused branches (no commits since creation) are not chosen by `--merged` / `--agent`, even with `--force`; listed in `plan.skipped` ([[cleanup]] `held_back`). `--stale` removes them.
 - Plan adds `reasons` (per branch) and `skipped` to the `delete` plan; result is `delete_result`. Hooks into `Delete`: `build_plan`.
 - Nothing chosen: status `noop` with the plan.
 

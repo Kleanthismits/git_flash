@@ -25,8 +25,15 @@ RSpec.describe Gitflash::Cli, :git_repo do
     Dir.chdir(wt_path(branch)) { commit_file("#{branch}.txt") }
   end
 
+  # A worktree whose branch has a commit that main took in: merged, and used
+  def add_merged(branch)
+    add(branch)
+    diverge(branch)
+    git('merge', '-q', '--ff-only', branch)
+  end
+
   it 'selects worktrees on merged branches and keeps the rest' do
-    add('done')
+    add_merged('done')
     add('busy')
     diverge('busy')
     run = wt_clean('--dry-run')
@@ -36,7 +43,7 @@ RSpec.describe Gitflash::Cli, :git_repo do
   end
 
   it 'removes them after confirmation, snapshots, and undo brings one back' do
-    add('done')
+    add_merged('done')
     expect(wt_clean).to have_attributes(status: 2)
 
     run = wt_clean('--yes')
@@ -50,8 +57,8 @@ RSpec.describe Gitflash::Cli, :git_repo do
   end
 
   it 'skips dirty and locked worktrees with the reason, unless --force' do
-    add('dirty')
-    add('locked')
+    add_merged('dirty')
+    add_merged('locked')
     File.write(File.join(wt_path('dirty'), 'wip.txt'), 'x')
     git('worktree', 'lock', wt_path('locked'))
 
@@ -84,6 +91,17 @@ RSpec.describe Gitflash::Cli, :git_repo do
       expect(run.json['plan']['worktrees']).to eq([])
     end
     expect(File.directory?(wt_path('done'))).to be(true)
+  end
+
+  it 'keeps a worktree whose branch nobody has committed to yet, and says why' do
+    add('fresh')
+    %w[--merged --agent].each do |criterion|
+      run = wt_clean(criterion, '--dry-run')
+      expect(run.json['status']).to eq('noop')
+      expect(run.json['plan']['skipped'].map { |row| row['reason'] })
+        .to eq(['fresh has no commits since it was created; --stale removes it after 30 days ' \
+                'unused'])
+    end
   end
 
   it 'reports nothing to clean' do

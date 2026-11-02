@@ -18,7 +18,7 @@ Service layer shared by CLI and integrations. Parsing git output stays here and 
 
 ## Shape
 
-- Reads: `branches`, `current_branch`, `default_branch`, `commits(limit: 100)`, `resolve_commit` (`repo.rb`).
+- Reads: `branches` (`merged_status: true` adds merge status and reflog activity, two git calls), `current_branch`, `default_branch`, `commits(limit: 100)`, `resolve_commit` (`repo.rb`).
 - Paths: `toplevel`, `main_root` (main checkout root, differs inside a linked worktree) (`repo.rb`). Used by [[undo]] and [[hook-install]].
 - Writes: `checkout`, `delete_branch`, `reset` return `Result` (`repo.rb`, `run` at `repo.rb`).
 - Default branch: origin/HEAD, else local `main` / `master` (`repo.rb`).

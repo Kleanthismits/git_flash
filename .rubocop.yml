@@ -21,6 +21,11 @@ Metrics/ClassLength:
   Exclude:
     - lib/gitflash/cli.rb
 
+# The MCP tool table: one entry per tool, no logic
+Metrics/ModuleLength:
+  Exclude:
+    - lib/gitflash/mcp/tools.rb
+
 Metrics/BlockLength:
   Enabled: true
   Exclude:

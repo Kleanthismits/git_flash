@@ -73,11 +73,20 @@ module Gitflash
       def stamp(creation)
         return '' unless Dir.exist?(creation[:dir])
 
+        creation_entry(creation[:dir], creation[:branch])&.join(' ').to_s
+      end
+
+      # [time, commit, message] of the oldest reflog entry of a branch, or nil. The time is the
+      # reflog entry's own (`@{UNIX}` with --date=unix), not the commit's: a branch created now
+      # from an old commit is new.
+      def creation_entry(dir, branch)
         stdout, _stderr, success = Git::BashCommand.capture(
-          'git', '-C', creation[:dir], 'log', '-g', '--format=%ct %H %gs',
-          "#{Repo::HEADS}#{creation[:branch]}", '--'
+          'git', '-C', dir, 'log', '-g', '--date=unix', '--format=%gd%x1f%H%x1f%gs',
+          "#{Repo::HEADS}#{branch}", '--'
         )
-        success ? stdout.lines(chomp: true).last.to_s : ''
+        selector, sha, subject = stdout.lines(chomp: true).last.to_s.split("\x1f", 3)
+        time = selector.to_s[/@\{(\d+)\}\z/, 1]
+        success && time ? [time.to_i, sha, subject.to_s] : nil
       end
 
       # One file per tool call, named from a hash so the id can never form a path
@@ -133,7 +142,7 @@ module Gitflash
 
         Dir.chdir(dir) do
           ownership = Ownership.new
-          next false unless created_recently?(branch) && !ownership.all.key?(branch)
+          next false unless created_recently?(dir, branch) && !ownership.all.key?(branch)
 
           ownership.mark(branch, 'agent')
           true
@@ -141,14 +150,11 @@ module Gitflash
       end
 
       # The oldest reflog entry of the branch is its creation, and it is recent
-      def created_recently?(branch)
-        stdout, _stderr, success = Git::BashCommand.capture(
-          'git', 'log', '-g', '--format=%ct%x1f%gs', "#{Repo::HEADS}#{branch}", '--'
-        )
-        return false unless success
+      def created_recently?(dir, branch)
+        time, _sha, subject = creation_entry(dir, branch)
+        return false unless time
 
-        created, subject = stdout.lines(chomp: true).last.to_s.split("\x1f", 2)
-        subject.to_s.start_with?(CREATED) && @clock.call.to_i - created.to_i <= RECENT_SECONDS
+        subject.start_with?(CREATED) && @clock.call.to_i - time <= RECENT_SECONDS
       end
     end
   end
