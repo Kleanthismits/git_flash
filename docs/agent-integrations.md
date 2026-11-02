@@ -33,7 +33,7 @@ Claude Code reloads settings files, so running sessions pick the hook up without
 
 ## Claude Code plugin
 
-The plugin brings the hook, the MCP server and the skill to Claude Code in one install. It runs the `gitflash` command, so install the gem first (`gem install gitflash`, version 0.8.0 or newer), then in Claude Code:
+The plugin brings the hook, the MCP server and the skill to Claude Code in one install. It runs the `gitflash` command, so install the gem first (`gem install gitflash --pre` for 0.8.0.beta1; version 0.8.0 or newer once it is released), then in Claude Code:
 
 ```
 /plugin marketplace add Kleanthismits/git_flash

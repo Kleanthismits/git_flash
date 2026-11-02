@@ -156,7 +156,17 @@ Upgrading from 0.6.0:
 - Run `gitflash hook install` again, so the hook also marks branches created with plain git (`PostToolUse`). It keeps the installed mode
 - Check scripts and agent instructions against the behaviour changes listed under 0.7.0.beta3: `--confirm TOKEN` for `gc` and for removing worktrees with ignored files, `delete` and `clean` protecting `develop`, `trunk` and `release/*`, `mark` defaulting to `human` in a terminal, and usage errors exiting with 2
 
-## [Unreleased]
+## [0.8.0.beta1] - 2026-11-02
+
+First beta of the agent integrations release: an Agent Skill, an MCP server that asks the user to approve destructive changes, and a Claude Code plugin that installs the hook, the server and the skill together. Install with `gem install gitflash --pre`; the plugin needs this gem. Needs git 2.36 or newer.
+
+Behaviour changes to check in scripts and agent instructions:
+
+- `clean` and `wt clean` keep a branch nobody has committed to since it was created, also with `--agent` and `--force`; `--stale` removes it later
+- `--stale` counts the latest move of a branch, not only its latest commit
+- `undo` in the result can name an earlier snapshot, marked `"reused": true`, when nothing changed since it was taken
+
+The changes:
 
 - Add the gitflash Agent Skill (`skills/gitflash/SKILL.md`, shipped in the gem): when to use gitflash instead of plain git, the `--json` envelope, the plan then `--yes` flow, `--confirm` tokens, the commands and how to recover lost work with `undo`
 - Add `skill install`: copies the skill to `~/.claude/skills/gitflash/` (default, `--scope user`), to `.claude/skills/gitflash/` in the repository (`--scope project`) or to `DIR/gitflash/` (`--path DIR`). Replacing a file that differs from the shipped skill needs `--confirm TOKEN`; the project scope refuses symbolic links

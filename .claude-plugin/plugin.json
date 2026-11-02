@@ -1,7 +1,7 @@
 {
   "name": "gitflash",
   "description": "Safety net and cleanup for git repositories that agents work in: snapshots before destructive git commands, undo, worktrees, branch cleanup and cherry-picks, as a hook, an MCP server and a skill. Needs the gitflash gem (gem install gitflash).",
-  "version": "0.7.0",
+  "version": "0.8.0.beta1",
   "author": {
     "name": "Kleanthis Mitsioulis",
     "url": "https://github.com/Kleanthismits"

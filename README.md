@@ -85,7 +85,7 @@ Pick one. Details for each are in [Agent integrations](https://github.com/Kleant
 
 | Way | Command | You get |
 | --- | --- | --- |
-| Claude Code plugin | `/plugin marketplace add Kleanthismits/git_flash`, then `/plugin install gitflash@gitflash` | Hook, MCP server and skill in one install (gem 0.8.0 or newer) |
+| Claude Code plugin | `/plugin marketplace add Kleanthismits/git_flash`, then `/plugin install gitflash@gitflash` | Hook, MCP server and skill in one install (gem 0.8.0 or newer; for now the 0.8.0.beta1 prerelease: `gem install gitflash --pre`) |
 | Hook and skill | `gitflash hook install` and `gitflash skill install` | Snapshots before destructive plain git commands; the agent learns to prefer gitflash |
 | MCP server | `claude mcp add gitflash -- gitflash mcp` | gitflash as MCP tools, with your approval before destructive changes |
 

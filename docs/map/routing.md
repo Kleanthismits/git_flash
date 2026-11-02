@@ -1,7 +1,7 @@
 # gitflash map
 
 Catalog of what gitflash is made of and what a change hits. Source stays truth; cards cite it.
-Mapped on branch `phase4_agent_integrations` (0.7.0 released, phase 4 implemented). Cards state the commit they were verified at.
+Mapped on branch `phase4_agent_integrations` (0.7.0 released, phase 4 in beta as 0.8.0.beta1). Cards state the commit they were verified at.
 
 gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents work in. One JSON contract (`schema/v1.json`).
 
