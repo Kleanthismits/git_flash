@@ -31,6 +31,8 @@ module Gitflash
       end
 
       SHELLS = %w[bash sh zsh dash ksh].freeze
+      # The option that makes a shell run its next argument as a script: `-c`, `-lc`
+      SCRIPT_FLAG = /\A-[a-z]*c[a-z]*\z/
       MAX_NESTING = 3
       # Subcommands git never lets an alias replace and that have no rule, so their aliases need
       # not be read
@@ -78,13 +80,14 @@ module Gitflash
 
       def git_commands(command_line, dir = @cwd, depth = 0)
         stack = []
-        ShellText.segments(command_line).flat_map do |segment|
+        ShellText.commands(command_line).flat_map do |segment, heredocs|
           words = CommandWords.new(segment)
           if DIR_COMMANDS.include?(words.words.first)
             dir = dir_after(words.words, dir, stack)
             next substituted(segment, dir, depth)
           end
-          substituted(segment, dir, depth) + in_segment(words, dir, segment.strip, depth)
+          scripts = Heredocs.scripts(heredocs, words.words)
+          substituted(segment, dir, depth, scripts) + in_segment(words, dir, segment.strip, depth)
         end
       end
 
@@ -104,9 +107,10 @@ module Gitflash
         commands_in(words.words, dir, segment, depth, words.env)
       end
 
-      # Git commands inside `$(...)`, `<(...)` and backticks, which the shell runs first
-      def substituted(command_line, dir, depth)
-        ShellText.substitutions(command_line).flat_map do |script|
+      # Git commands inside `$(...)`, `<(...)` and backticks, which the shell runs first, and in
+      # the scripts its heredocs run (Heredocs.scripts)
+      def substituted(command_line, dir, depth, scripts = [])
+        (ShellText.substitutions(command_line) + scripts).flat_map do |script|
           nested(script, dir, depth)
         end
       end
@@ -136,7 +140,7 @@ module Gitflash
         return words.drop(1).join(' ') if words.first == 'eval'
         return nil unless SHELLS.include?(File.basename(words.first))
 
-        index = words.index { |word| word.match?(/\A-[a-z]*c[a-z]*\z/) }
+        index = words.index { |word| word.match?(SCRIPT_FLAG) }
         index && words[index + 1]
       end
 
