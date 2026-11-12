@@ -5,3 +5,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # Gems: the versions in Gemfile.lock, and the ranges in the Gemfile and gemspec when a new
+  # version falls outside them
+  - package-ecosystem: bundler
+    directory: /
+    schedule:
+      interval: weekly
