@@ -13,7 +13,7 @@ Does the change belong in gitflash? Check it against `docs/ROADMAP.md`. If it do
 Look for these first, in this order:
 
 1. **Lost work.** A path where a branch, commit, worktree or untracked file is removed with no snapshot taken first, or where the snapshot cannot restore it.
-2. **A silent safety net.** The hook lets a destructive command through with no snapshot. In `snapshot` mode `hook claude` exits 0 even when it fails, so a crash there is invisible to the user. In `ask` and `deny` mode a failure must exit 2, which blocks the command; a change that lets it exit 0 runs the command unprotected.
+2. **A silent safety net.** The hook lets a destructive command through with no snapshot. `hook claude` exits 0 even when it fails. In `snapshot` mode the command then runs with no snapshot and the user sees nothing. In `ask` and `deny` mode a failure must still write an ask or deny decision, or exit 2 when no decision can be written. A change that breaks either lets the command run unprotected. See `docs/map/objects/hooks/hook-claude.md`.
 3. **A broken contract.** A field, status, error code or exit code in `schema/v1.json` changes meaning, or the output of a command no longer matches the schema. Exit codes are defined in `docs/map/objects/contract/exit-codes.md`.
 4. **A skipped confirmation.** A destructive command runs without `--yes` or a prompt, or a dry run changes something.
 5. **Untrusted input trusted.** Branch names, paths, settings files and shell text come from the repository or from an agent. Look for short ref names where full refs are required, followed symlinks, unescaped terminal text, and patterns that can backtrack.
