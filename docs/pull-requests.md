@@ -15,10 +15,14 @@ Settle the direction first. For a new command, a changed default or a contract c
    - `bundle exec rubocop`
    - `sh docs/map/_meta/sync-twins.sh`, then `ruby docs/map/_meta/check.rb`, after updating the cards listed in `docs/map/effects/CONTEXT.md`
 2. If the change alters what a command does, run the command in a scratch repository and keep the real output. `--json` output is best. A claim that it works is not evidence.
-3. For a medium or high tier change (see below), get a review from a reader with fresh context before the maintainer looks, and fix what it finds. Any one of these counts:
-   - an agent that has not seen the work, given the diff and `REVIEW.md` (in Claude Code: `/code-review`, and `/security-review` for a high tier change)
-   - the review bot on the pull request. It does not run by itself here; tick "Trigger review" in its comment.
-4. Remove everything the task did not need: unrelated refactors, renamed variables, reformatted lines.
+3. Remove everything the task did not need: unrelated refactors, renamed variables, reformatted lines.
+
+## Fresh-context review
+
+A medium or high tier change (see below) gets a review from a reader with fresh context before the maintainer looks. Fix what it finds. Any one of these counts:
+
+- Before opening: an agent that has not seen the work, given the diff and `REVIEW.md` (in Claude Code: `/code-review`, and `/security-review` for a high tier change).
+- After opening: the review bot. It needs a pull request to exist and does not run by itself here. Open the pull request as a draft, tick "Trigger review" in the bot's comment, answer its findings, then mark the pull request ready.
 
 ## Size
 
@@ -78,7 +82,8 @@ Evidence that fits the file: the CI run on the branch for a workflow change, the
 
 - Answer every thread. Either fix it, or resolve it with one line that says why not (false positive, intended, out of scope).
 - Fix the class of bug, not the one line that was flagged. Search for the same pattern elsewhere in the diff and fix it in the same commit.
-- A bug that was there before this pull request gets an issue. Fix it here only when the fix is trivial and inside lines the pull request already changes.
+- A bug that was there before this pull request, and that this pull request neither exposes nor makes worse, gets an issue. Fix it here only when the fix is trivial and inside lines the pull request already changes.
+- An old bug that this pull request makes reachable or worse is this pull request's bug. Fix it here.
 - Three rounds of review and fix is the limit. If findings still arrive after the third round, stop patching and reconsider the approach, or split the pull request.
 - If a reviewer flags the same kind of thing again in a later pull request, fix the source: a RuboCop rule, a spec, a map card, or a line in `REVIEW.md`.
 

@@ -42,7 +42,7 @@ At most three nits per review. If there are more, post the three that matter mos
 ## How to report
 
 - Start the summary with a count: "2 important, 1 nit, 1 pre-existing". If there is nothing to fix, say "Nothing to fix" and stop.
-- Tag every finding **Important**, **Nit** or **Pre-existing**. Pre-existing means the defect was there before this pull request. Do not ask the author to fix it here.
+- Tag every finding **Important**, **Nit** or **Pre-existing**. Pre-existing means the defect was there before this pull request, and the pull request neither exposes it nor makes it worse. Do not ask the author to fix it here. An old defect that the pull request makes reachable or worse is **Important**: say what the change does to it.
 - Give every finding a file and line, the input or state that triggers it, and the wrong result.
 - When one finding is an instance of a pattern, name the pattern and list the other places, so the author fixes all of them in one round.
-- After the first round, review only the new commits. When the round limit is reached and findings still arrive, tell the author to reconsider the approach instead of listing more.
+- After the first round, review only the new commits. When the round limit is reached and findings still arrive, tell the author to reconsider the approach. Still report every **Important** finding with its trigger and result, so nothing merges unknown. Post no more nits.
