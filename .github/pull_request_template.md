@@ -1,8 +1,7 @@
 <!-- Rules: docs/pull-requests.md. All five sections are required. Write "none" when a section is empty. -->
 
-Closes #
-
 ## Problem
+<!-- What was wrong or missing, and for whom. Add "Closes #N" when an issue exists. -->
 
 ## Change
 
