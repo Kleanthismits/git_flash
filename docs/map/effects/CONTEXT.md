@@ -49,6 +49,7 @@ Nothing in `lib/` names these. They break silently.
 | `Cli::SCHEMA_PATH` (`lib/gitflash/cli.rb:10`) | `schema/v1.json` | file moved |
 | `schema/v1.json:3` `$id` | GitHub URL on `main` | repo or path renamed |
 | README, `docs/json-contract.md`, `docs/agent-integrations.md` | `schema/v1.json`, `skills/gitflash/SKILL.md` (README by GitHub URL on `main`, so it works on rubygems.org) | file moved |
+| `docs/pull-requests.md` (high tier lists), `REVIEW.md` | command names, class names (`Cleanup`, `Protection`, `Restore`, `WorktreeRevival`, `Snapshot`, `Snapshots`, `SnapshotCheck`, `StateCapture`, `HookInstall`), `REF_PREFIX`, `lib/gitflash/hook/`, `lib/gitflash/mcp/`, the CI checks in `.github/workflows/rspec.yml`, `spec/plugin_spec.rb`, the `exit-codes` card path | any is renamed, moved or split: a destructive path drops out of the high tier without notice |
 | `.claude/settings.local.json` (gitignored globally, one machine) | `gitflash hook claude` | command renamed or removed; hook then fails silently (exit 0). Works on this branch. |
 | Claude Code hook protocol | `hookSpecificOutput`, `permissionDecision` fields | Claude changes the protocol; no error is shown |
 | Claude Code settings layout | `.claude/settings*.json`, `hooks.PreToolUse` | [[hook-install]] writes the wrong shape |

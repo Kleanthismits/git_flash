@@ -23,7 +23,7 @@ Agents branch on exit status and `error.code`, not message text. 2 means "fix th
 - 2: `UsageError` (`lib/gitflash/usage_error.rb:10-12`), `ConfirmationRequired` (`lib/gitflash/confirmation_required.rb:11-13`).
 - Each error carries `code`, optional `plan`, `status` (`error.rb:8-22`).
 - Codes are in the schema enum (`schema/v1.json:315-342`). Snapshot-era additions: `unknown_snapshot` (`lib/gitflash/commands/undo.rb`), `wrong_worktree` (`undo.rb`), `invalid_settings` (`lib/gitflash/hook/settings.rb:49`), `invalid_config` (`lib/gitflash/config.rb`), `conflict` (`lib/gitflash/commands/pick_outcome.rb`, status `failed`, exit 1), `unknown_worktree` and `protected_worktree` (`lib/gitflash/commands/worktree_{command,remove,move}.rb`).
-- `gitflash hook claude` is the exception: it rescues everything and exits 0 (`lib/gitflash/hook_cli.rb:33-35`).
+- `gitflash hook claude` is the exception: it rescues everything and exits 0. One case exits 2: `ask` or `deny` mode when no decision can be written, so that Claude Code blocks the command (`lib/gitflash/hook_cli.rb`, `HookCli#claude`; see [[hook-claude]]).
 - `CommandRunner` rescues `Error` and, as `failed` exit 1, any other `StandardError` (`lib/gitflash/command_runner.rb`). Thor parse errors are `invalid_usage` exit 2 through `Cli.start` / `UsageReport`.
 
 ## Connected to

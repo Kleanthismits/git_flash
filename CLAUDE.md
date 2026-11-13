@@ -6,5 +6,7 @@ Ruby CLI: safety net and cleanup for git repos AI agents work in. Direction: `do
 |---|---|
 | need what a part is, or what a change hits | `docs/map/CLAUDE.md` |
 | changed files under `lib/` or `schema/` | re-check the cards listed in `docs/map/effects/CONTEXT.md`, update them, then run `ruby docs/map/_meta/check.rb` |
+| opening or updating a pull request | `docs/pull-requests.md` |
+| reviewing a pull request or a diff | `REVIEW.md` |
 
 `AGENTS.md` is a copy of this file. Edit `CLAUDE.md` only, then run `docs/map/_meta/sync-twins.sh`.

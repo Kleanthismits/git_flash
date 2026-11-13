@@ -39,7 +39,7 @@ Thin: declares flags and commands, delegates to [[command-runner]]. Heavy logic 
 
 - **Hits:** every command's flags and exit path; `spec/lib/gitflash/cli_spec.rb`, `cli_snapshots_spec.rb`.
 - **Does not hit:** [[repo]] internals, [[snapshot-store]].
-- **Outside-in:** `.claude/settings.local.json` (gitignored globally, this machine) runs `gitflash hook claude` as a PreToolUse hook. Renaming `hook claude` or its output protocol breaks every Claude Code Bash call here silently (the hook always exits 0, `hook_cli.rb:33-35`).
+- **Outside-in:** `.claude/settings.local.json` (gitignored globally, this machine) runs `gitflash hook claude` as a PreToolUse hook. Renaming `hook claude` or its output protocol breaks every Claude Code Bash call here silently (the hook exits 0 on an error; the one exception is exit 2 in `ask` or `deny` mode when no decision can be written; `HookCli#claude` in `hook_cli.rb`, see [[hook-claude]]).
 
 ## Surfaces
 

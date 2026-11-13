@@ -15,7 +15,7 @@ gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents 
 | undo point | `Snapshot`, stored as a commit under `refs/gitflash/snapshots/`. Not a git stash. |
 | MCP / the server | `gitflash mcp` (`Gitflash::Mcp::Server`). `MCP` without the prefix is the `mcp` gem. |
 | the hook | `gitflash hook claude` (`Hook::Claude`). Output is Claude Code's protocol, not the envelope. |
-| exit codes | 0 ok, 1 `Error`, 2 `UsageError` / `ConfirmationRequired`. `hook claude` always 0. |
+| exit codes | 0 ok, 1 `Error`, 2 `UsageError` / `ConfirmationRequired`. `hook claude`: 0, also on an error; 2 only when `ask` or `deny` mode cannot write its decision. |
 
 ## Universes
 
