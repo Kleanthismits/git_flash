@@ -187,3 +187,11 @@ The changes:
 - JSON schema: branches carry `unused` and `last_activity_at` (from the reflog, null without one)
 - `mcp` starts outside a git repository too; its tools then answer with `not_a_repository`
 - Claude Code plugin (`.claude-plugin/`): the hook (snapshot mode), the MCP server and the skill in one install with `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`. It needs the gitflash gem
+
+## [0.8.0.beta2] - 2026-11-14
+
+Second beta of the agent integrations release. gitflash itself has not changed since 0.8.0.beta1: this beta is tested against the current versions of its dependencies. Install with `gem install gitflash --pre`. Needs git 2.36 or newer.
+
+- Tested with `mcp` 1.9.0; the requirement stays `~> 1.8`
+- Development and CI only: `rubocop` 1.92.2, `pry` 0.16.1, `simplecov` 1.3.2 and `ruby/setup-ruby` 1.338.0, and Dependabot proposes gem updates as well as Action updates
+- Contributors: rules for pull requests and reviews (`docs/pull-requests.md`, `REVIEW.md`)
