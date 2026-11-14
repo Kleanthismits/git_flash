@@ -11,7 +11,7 @@ group :development do
   gem 'json_schemer', '~> 2.4'
   gem 'pry', '~> 0.14.1'
   gem 'rspec', '~> 3.0'
-  gem 'rubocop', '~> 1.72'
+  gem 'rubocop', '~> 1.92'
   gem 'rubocop-performance', '~> 1.21'
   gem 'rubocop-rspec', '~> 3.5'
   gem 'simplecov'
