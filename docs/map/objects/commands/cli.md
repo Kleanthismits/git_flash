@@ -4,8 +4,8 @@ cluster: commands
 universe: live
 status: verified
 entity: lib/gitflash/cli.rb
-verified_on: 2026-10-24
-verified_at: 6b41e31 plus the error envelope fix (#46)
+verified_on: 2026-11-22
+verified_at: 6fad98e plus shell completion (phase 5)
 ---
 
 # CLI
@@ -27,17 +27,17 @@ Thin: declares flags and commands, delegates to [[command-runner]]. Heavy logic 
 - `skill` subcommand = `SkillCli`: `show`, `install`, see [[skill]].
 - `mcp` command: [[mcp]] server on stdio, no work tree check.
 - `worktree` subcommand (alias `wt`) = `WorktreeCli`, see [[worktree-commands]].
-- `schema` (`cli.rb:85`) and `version` (`cli.rb:92`) print outside the envelope.
+- `schema`, `completion SHELL` and `version` print outside the envelope. `completion` builds the script from the Thor tree: see [[completion]]. An unknown shell is a `Thor::Error`, so `invalid_usage`, exit 2.
 - `exit_on_failure?` true (`cli.rb:12`). Binary: `bin/gitflash`.
 
 ## Connected to
 
 - **owns:** [[command-runner]], all command cards, [[hook-claude]], [[hook-install]]
-- **joins:** [[command-descriptions]], [[json-schema]] (`SCHEMA_PATH`, `cli.rb:10`)
+- **joins:** [[command-descriptions]], [[json-schema]] (`SCHEMA_PATH`, `cli.rb:10`), [[completion]] (reads every command and option)
 
 ## If you change this
 
-- **Hits:** every command's flags and exit path; `spec/lib/gitflash/cli_spec.rb`, `cli_snapshots_spec.rb`.
+- **Hits:** every command's flags and exit path; the completion scripts ([[completion]], regenerated, nothing to edit); `spec/lib/gitflash/cli_spec.rb`, `cli_snapshots_spec.rb`.
 - **Does not hit:** [[repo]] internals, [[snapshot-store]].
 - **Outside-in:** `.claude/settings.local.json` (gitignored globally, this machine) runs `gitflash hook claude` as a PreToolUse hook. Renaming `hook claude` or its output protocol breaks every Claude Code Bash call here silently (the hook exits 0 on an error; the one exception is exit 2 in `ask` or `deny` mode when no decision can be written; `HookCli#claude` in `hook_cli.rb`, see [[hook-claude]]).
 

@@ -1,0 +1,63 @@
+# gitflash completion for fish. Load it with: gitflash completion fish | source
+# or save it as ~/.config/fish/completions/gitflash.fish
+function __gitflash_cmd
+    set -l tokens (commandline -opc)
+    set -e tokens[1]
+    set -l found
+    set -l skip 0
+    for w in $tokens
+        if test $skip -eq 1
+            set skip 0
+            continue
+        end
+        switch $w
+            case <%= value_switches.join(' ') %>
+                set skip 1
+                continue
+            case '-*'
+                continue
+        end
+        set -a found $w
+    end
+    set -l cmd $found[1]
+<% aliases.each do |from, to| -%>
+    test "$cmd" = <%= from %>; and set cmd <%= to %>
+<% end -%>
+    if contains -- "$cmd" <%= groups.join(' ') %>; and test (count $found) -gt 1
+        set cmd "$cmd $found[2]"
+    end
+    echo $cmd
+end
+
+function __gitflash_at
+    set -l cmd (__gitflash_cmd)
+    test "$cmd" = "$argv[1]"
+end
+
+function __gitflash_branches
+    <%= View::BRANCHES %>
+end
+
+complete -c gitflash -f
+<% children.each do |name, text| -%>
+complete -c gitflash -n '__gitflash_at ""' -a <%= name %> -d <%= fish_quote(text) %>
+<% end -%>
+<% groups.each do |group| -%>
+<% children(group).each do |name, text| -%>
+complete -c gitflash <%= fish_at(group) %> -a <%= name %> -d <%= fish_quote(text) %>
+<% end -%>
+<% end -%>
+<% global_options.each do |option| -%>
+complete -c gitflash <%= fish_option(option) %>
+<% end -%>
+<% commands.each do |command| -%>
+<% command.options.each do |option| -%>
+complete -c gitflash <%= fish_at(command.path) %> <%= fish_option(option) %>
+<% end -%>
+<% if command.branches -%>
+complete -c gitflash <%= fish_at(command.path) %> -a '(__gitflash_branches)'
+<% end -%>
+<% if command.words.any? -%>
+complete -c gitflash <%= fish_at(command.path) %> -a '<%= command.words.join(' ') %>'
+<% end -%>
+<% end -%>

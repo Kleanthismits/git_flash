@@ -1,0 +1,54 @@
+#compdef gitflash
+# gitflash completion for zsh. Load it with: source <(gitflash completion zsh)
+# or save it as _gitflash in a directory of $fpath.
+_gitflash() {
+  local -a found items
+  local i w skip=0
+  for ((i = 2; i < CURRENT; i++)); do
+    w=${words[i]}
+    if ((skip)); then skip=0; continue; fi
+    case $w in
+      (<%= value_switches.join('|') %>) skip=1; continue ;;
+      (-*) continue ;;
+    esac
+    found+=("$w")
+  done
+  local cmd=${found[1]-} prev=${words[CURRENT-1]}
+<% aliases.each do |from, to| -%>
+  [[ $cmd == <%= from %> ]] && cmd=<%= to %>
+<% end -%>
+  case $cmd in (<%= groups.join('|') %>) (( ${#found} > 1 )) && cmd="$cmd ${found[2]}" ;; esac
+  case "$cmd $prev" in
+<% enum_options.each do |path, switch, values| -%>
+    ('<%= path %> <%= switch %>') compadd -- <%= values.join(' ') %>; return ;;
+<% end -%>
+  esac
+  case $prev in
+    (<%= value_switches.join('|') %>) return ;;
+  esac
+  if [[ $PREFIX == -* ]]; then
+    items=(<%= described_options(global_options) %>)
+    case $cmd in
+<% commands_with_options.each do |command| -%>
+      ('<%= command.path %>') items+=(<%= described_options(command.options) %>) ;;
+<% end -%>
+    esac
+    _describe -t options option items
+    return
+  fi
+  case $cmd in
+    ('') items=(<%= described(children) %>); _describe -t commands command items ;;
+<% groups.each do |group| -%>
+    ('<%= group %>') items=(<%= described(children(group)) %>); _describe -t commands command items ;;
+<% end -%>
+    (<%= branch_pattern %>) compadd -- ${(f)"$(<%= View::BRANCHES %>)"} ;;
+<% commands_with_words.each do |command| -%>
+    ('<%= command.path %>') compadd -- <%= command.words.join(' ') %> ;;
+<% end -%>
+  esac
+}
+if [[ $funcstack[1] == _gitflash ]]; then
+  _gitflash "$@"
+else
+  compdef _gitflash gitflash
+fi
