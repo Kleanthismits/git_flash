@@ -45,7 +45,7 @@ Nothing in `lib/` names these. They break silently.
 | `gitflash.gemspec:23` | executable `gitflash` | binary renamed |
 | `.claude-plugin/plugin.json` | `gitflash hook claude`, `gitflash mcp`, `skills/`, `Gitflash::VERSION` | any is renamed or moved, or the version is bumped without it (`spec/plugin_spec.rb` fails); see [[plugin]] |
 | `Mcp::Runner::BIN`, `LIB` (`lib/gitflash/mcp/runner.rb`) | `bin/gitflash`, `lib/` | either moved; every tool returns a `failed` envelope |
-| `Configuration::Descriptions` (`lib/gitflash/configuration.rb:15`) | `command_descriptions.yml` one level above `lib/` | file moved |
+| `Configuration::Descriptions::FILE` (`lib/gitflash/configuration.rb`) | `command_descriptions.yml` one level above `lib/` | file moved |
 | `Cli::SCHEMA_PATH` (`lib/gitflash/cli.rb:10`) | `schema/v1.json` | file moved |
 | `schema/v1.json:3` `$id` | GitHub URL on `main` | repo or path renamed |
 | README, `docs/json-contract.md`, `docs/agent-integrations.md` | `schema/v1.json`, `skills/gitflash/SKILL.md` (README by GitHub URL on `main`, so it works on rubygems.org) | file moved |

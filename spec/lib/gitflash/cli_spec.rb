@@ -387,9 +387,18 @@ RSpec.describe Gitflash::Cli, :git_repo do
 
   describe 'help texts' do
     it 'loads descriptions for every command' do
-      %w[branches checkout delete reset].each do |command|
-        expect(described_class.descriptions.public_send(command).short).to be_a(String)
+      %i[branches checkout delete reset].each do |command|
+        expect(described_class.description(command).short).to be_a(String)
       end
+    end
+
+    it 'keeps the descriptions frozen' do
+      all = Gitflash::Configuration::Descriptions.all
+      expect([all, all[:branches], all[:branches].long]).to all(be_frozen)
+    end
+
+    it 'names a missing description' do
+      expect { described_class.description(:nope) }.to raise_error(KeyError, /nope/)
     end
   end
 end
