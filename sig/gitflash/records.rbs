@@ -1,0 +1,61 @@
+module Gitflash
+  # The records Repo returns. Only what Repo's signatures need is declared here.
+
+  class Result < Data
+    attr_reader success: bool
+    attr_reader output: String
+
+    def initialize: (success: bool, output: String) -> void
+
+    def success?: () -> bool
+  end
+
+  class Commit < Data
+    attr_reader sha: String
+    attr_reader subject: String
+    attr_reader author: String
+    attr_reader committed_at: Time
+
+    def initialize: (sha: String, subject: String, author: String, committed_at: Time) -> void
+
+    def self.parse: (String line) -> Commit
+
+    def label: () -> String
+  end
+
+  class Branch < Data
+    attr_reader name: String
+    attr_reader sha: String
+    attr_reader current: bool
+    attr_reader default: bool
+    attr_reader upstream: String?
+    attr_reader upstream_gone: bool
+    attr_reader ahead: Integer
+    attr_reader behind: Integer
+    attr_reader merged: bool?
+    attr_reader last_commit_at: Time
+    attr_reader last_commit_author: String
+    attr_reader last_commit_subject: String
+    attr_reader owner: String?
+    attr_reader unused: bool?
+    attr_reader last_activity_at: Time?
+
+    def self.parse: (String line, ?default_branch: String?, ?merged_names: Set[String]?) -> Branch
+
+    def current?: () -> bool
+  end
+
+  class Error < StandardError
+    attr_reader code: String
+    attr_reader plan: untyped
+
+    def initialize: (?String? message, ?code: String, ?plan: untyped) -> void
+
+    def exit_code: () -> Integer
+
+    def status: () -> String
+  end
+
+  class UsageError < Error
+  end
+end

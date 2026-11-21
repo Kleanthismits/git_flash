@@ -1,0 +1,71 @@
+module Gitflash
+  # How Repo runs git. Git::BashCommand implements it; specs pass doubles.
+  interface _Bash
+    # stdout of a successful command; raises Git::CommandError otherwise
+    def exec: (*String args, ?env: Hash[String, String?]) -> String
+
+    # [stdout, stderr, success] whatever the exit status
+    def capture: (*String args, ?env: Hash[String, String?]) -> [String, String, bool]
+  end
+
+  # Reads and changes the git repository in the current working directory.
+  class Repo
+    SEPARATOR: String
+    BRANCH_FORMAT: String
+    COMMIT_FORMAT: String
+    COMMITS_LIMIT: Integer
+    FALLBACK_DEFAULT_BRANCHES: Array[String]
+    HEADS: String
+    REMOTE_HEAD: String
+
+    @bash: _Bash
+    @default_branch: String?
+    @default_ref: String?
+    @branch_lines: Array[String]
+
+    def initialize: (?bash: _Bash) -> void
+
+    # Raises Error with code not_a_repository outside a work tree
+    def ensure_work_tree!: () -> void
+
+    def branches: (?merged_status: bool) -> Array[Branch]
+
+    def current_branch: () -> String?
+
+    def toplevel: () -> String
+
+    def main_root: () -> String
+
+    def default_branch: () -> String?
+
+    def commits: (?limit: Integer) -> Array[Commit]
+
+    # Full sha, or nil when ref does not name a commit
+    def resolve_commit: (String ref) -> String?
+
+    # Raises UsageError for a name that starts with a dash
+    def checkout: (String branch) -> Result
+
+    def delete_branch: (String branch, ?force: bool) -> Result
+
+    def reset: (String commit, mode: String | Symbol) -> Result
+
+    private
+
+    def branch_name: (String? ref) -> String?
+
+    def refuse_option_like!: (String name) -> void
+
+    def branch_lines: () -> Array[String]
+
+    def default_ref: () -> String?
+
+    def remote_default_ref: () -> String?
+
+    def local_default_branch: () -> String?
+
+    def merged_branch_names: () -> Set[String]?
+
+    def run: (*String) -> Result
+  end
+end
