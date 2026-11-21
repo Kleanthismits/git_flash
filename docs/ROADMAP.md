@@ -132,13 +132,13 @@ All of them use the same JSON contract.
    - Every destructive call snapshots first, so `undo` is always available. Sampling and roots are not used (deprecated in the 2026-07-28 specification).
 3. **Claude Code plugin** — implemented. `.claude-plugin/plugin.json` declares the skill (`skills/`), the MCP server (`gitflash mcp`) and the hook from phase 2 (PreToolUse and PostToolUse, snapshot mode) inline, so the repository root needs no `.mcp.json` or `hooks/`; `.claude-plugin/marketplace.json` lists it. Installed with `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`.
 
-### Phase 5 — Distribution and codebase (alongside)
+### Phase 5 — Distribution and codebase (0.9.0)
 
-- **Trusted publishing:** a tag push releases the gem from GitHub Actions (`rubygems/release-gem`, `id-token: write`).
-- **Dependabot** for Bundler and GitHub Actions.
-- **CI:** add Ruby 3.5/head with failures allowed.
-- **Code:** replace the Struct builder in `Configuration::Descriptions` with a frozen Hash or `Data`; add RBS signatures for `Repo`.
-- **Shell completions** for zsh, bash and fish.
+- **Trusted publishing** — implemented. `.github/workflows/release.yml` runs on a `v*` tag push: it checks the tag against `Gitflash::VERSION`, runs RSpec and publishes with `rubygems/release-gem` (`id-token: write`, `release` environment). rubygems.org must list the repository, `release.yml` and the `release` environment as a trusted publisher.
+- **Dependabot** for Bundler and GitHub Actions — done before this phase (`.github/dependabot.yml`).
+- **CI** — implemented. Ruby 4.0 (the release first planned as 3.5) and head run with failures allowed; check names stay `build (3.3)` and `build (3.4)`.
+- **Code** — implemented. `Configuration::Descriptions` reads `command_descriptions.yml` into a frozen Hash of `Data` records (`description(:name)`). RBS signatures for `Repo` and its records live in `sig/` and ship in the gem; CI validates them and runs the Repo and CLI specs under `rbs/test`.
+- **Shell completions** — implemented. `gitflash completion bash|zsh|fish`, generated from the Thor command tree; branch names come from `git for-each-ref`, so completing never starts Ruby.
 
 ### Deferred
 

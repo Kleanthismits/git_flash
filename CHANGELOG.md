@@ -206,3 +206,12 @@ Upgrading from 0.7.0:
 - New runtime dependency: `mcp` (~> 1.8), tested with 1.10.0
 - To use the Claude Code plugin, install the gem first, then `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`. Do not keep a hook from `gitflash hook install` next to the plugin, or the hook runs twice
 - Development and CI only: `rubocop` 1.92.3 and `ruby/setup-ruby` 1.341.0
+
+## [Unreleased]
+
+Phase 5: distribution and codebase.
+
+- Add `completion SHELL`: prints a completion script for `bash`, `zsh` or `fish`. It completes commands, the `worktree` (`wt`), `hook` and `skill` subcommands, options and their values, and local branch names for commands that take a branch or worktree. The script is built from the commands of the installed version, so run it again after upgrading. Completing runs `git`, never gitflash
+- The gem ships RBS signatures for `Repo` and the records it returns (`sig/gitflash/`)
+- Releases are published from GitHub Actions when a version tag is pushed, through RubyGems trusted publishing: no RubyGems key is stored. The workflow refuses a tag that does not match the gem version
+- Development and CI only: help texts load into frozen `Data` records instead of nested Structs; CI also runs Ruby 4.0 and head (allowed to fail), validates the signatures and checks every call `Repo` gets in its specs against them; new development dependency `rbs` (~> 4.0)
