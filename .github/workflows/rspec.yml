@@ -8,12 +8,23 @@ permissions:
 
 jobs:
   build:
+    # Keeps the check names `build (3.3)` and `build (3.4)`; the coverage step names one
+    name: build (${{ matrix.ruby-version }})
     runs-on: ubuntu-latest
+
+    # Ruby 4.0 and head may fail without failing the run: they warn about what will break next
+    continue-on-error: ${{ matrix.experimental }}
 
     strategy:
       fail-fast: false
       matrix:
         ruby-version: ['3.3', '3.4']
+        experimental: [false]
+        include:
+          - ruby-version: '4.0'
+            experimental: true
+          - ruby-version: head
+            experimental: true
 
     steps:
     - name: Checkout code
