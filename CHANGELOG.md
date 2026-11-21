@@ -195,3 +195,14 @@ Second beta of the agent integrations release. gitflash itself has not changed s
 - Tested with `mcp` 1.9.0; the requirement stays `~> 1.8`
 - Development and CI only: `rubocop` 1.92.2, `pry` 0.16.1, `simplecov` 1.3.2 and `ruby/setup-ruby` 1.338.0, and Dependabot proposes gem updates as well as Action updates
 - Contributors: rules for pull requests and reviews (`docs/pull-requests.md`, `REVIEW.md`)
+
+## [0.8.0] - 2026-11-21
+
+The agent integrations release: an Agent Skill, an MCP server that asks the user to approve destructive changes, and a Claude Code plugin that installs the hook, the server and the skill together, with every change from 0.8.0.beta1 and beta2 above. gitflash itself has not changed since 0.8.0.beta2. Needs git 2.36 or newer.
+
+Upgrading from 0.7.0:
+
+- Check scripts and agent instructions against the behaviour changes listed under 0.8.0.beta1: `clean` and `wt clean` keep a branch nobody has committed to since it was created, `--stale` counts the latest move of a branch, and `undo` can name an earlier snapshot marked `"reused": true`
+- New runtime dependency: `mcp` (~> 1.8), tested with 1.10.0
+- To use the Claude Code plugin, install the gem first, then `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`. Do not keep a hook from `gitflash hook install` next to the plugin, or the hook runs twice
+- Development and CI only: `rubocop` 1.92.3 and `ruby/setup-ruby` 1.341.0

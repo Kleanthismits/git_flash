@@ -117,7 +117,7 @@ This is the core of the positioning.
   - For agents: `gitflash pick <source> --list --json` and `gitflash pick <source> <sha>... --yes --json`.
 - **Configuration.** `.gitflash.yml` in the repository and `~/.config/gitflash.yml` for protected branch patterns, the stale threshold and default flags.
 
-### Phase 4 — Agent integrations (0.8.0) — implemented, in beta (0.8.0.beta2)
+### Phase 4 — Agent integrations (0.8.0) — released
 
 All of them use the same JSON contract.
 
