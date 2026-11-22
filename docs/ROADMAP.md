@@ -132,7 +132,7 @@ All of them use the same JSON contract.
    - Every destructive call snapshots first, so `undo` is always available. Sampling and roots are not used (deprecated in the 2026-07-28 specification).
 3. **Claude Code plugin** — implemented. `.claude-plugin/plugin.json` declares the skill (`skills/`), the MCP server (`gitflash mcp`) and the hook from phase 2 (PreToolUse and PostToolUse, snapshot mode) inline, so the repository root needs no `.mcp.json` or `hooks/`; `.claude-plugin/marketplace.json` lists it. Installed with `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`.
 
-### Phase 5 — Distribution and codebase (0.9.0)
+### Phase 5 — Distribution and codebase (0.9.0) — implemented, in beta (0.9.0.beta1)
 
 - **Trusted publishing** — implemented. `.github/workflows/release.yml` runs on a `v*` tag push: it checks the tag against `Gitflash::VERSION`, runs RSpec and publishes with `rubygems/release-gem` (`id-token: write`, `release` environment). rubygems.org must list the repository, `release.yml` and the `release` environment as a trusted publisher.
 - **Dependabot** for Bundler and GitHub Actions — done before this phase (`.github/dependabot.yml`).
