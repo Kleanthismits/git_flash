@@ -136,6 +136,13 @@ RSpec.describe Gitflash::Completion, :git_repo do
         .to eq([['feature-one'], ['agent'], %w[agent human]])
     end
 
+    # = is a valid branch name: only an = after a switch joins a value to it
+    it 'reads an = that follows no switch as an argument' do
+      git('branch', '=')
+      expect([complete_bash('pick', '=', 'feat'), complete_bash('pick', '=')])
+        .to eq([[], ['=']])
+    end
+
     # bash 3.2 keeps --owner=ag as one word; readline replaces only the part after =, so the
     # candidate is the value alone
     it 'reads --switch=value in one word, before an argument and while completing it' do

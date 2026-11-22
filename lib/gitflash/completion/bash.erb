@@ -16,9 +16,10 @@ _gitflash() {
   local cur=${COMP_WORDS[COMP_CWORD]} prev=${COMP_WORDS[COMP_CWORD-1]}
   # --switch=value: bash 4 and later split it into --switch, = and value (= is in
   # COMP_WORDBREAKS). bash 3.2 keeps one word, but readline still replaces only the value.
-  if [[ $cur == = ]]; then
+  # An = that does not follow a switch is a word of its own: = is a valid branch name.
+  if [[ $cur == = && $prev == -* ]]; then
     cur=''
-  elif [[ $prev == = ]]; then
+  elif [[ $prev == = && ${COMP_WORDS[COMP_CWORD-2]} == -* ]]; then
     prev=${COMP_WORDS[COMP_CWORD-2]}
   elif [[ $cur == --*=* ]]; then
     prev=${cur%%=*} cur=${cur#*=}
@@ -34,7 +35,7 @@ _gitflash_complete() {
   for ((i = 1; i < COMP_CWORD; i++)); do
     w=${COMP_WORDS[i]}
     # = after a switch: the next word is that switch's value, never an argument
-    if [[ $w == = ]]; then skip=1; continue; fi
+    if [[ $w == = && ${COMP_WORDS[i-1]} == -* ]]; then skip=1; continue; fi
     if ((skip)); then skip=0; continue; fi
     case $w in
       <%= tree.value_switches.join('|') %>) skip=1; continue ;;
