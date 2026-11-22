@@ -140,6 +140,10 @@ All of them use the same JSON contract.
 - **Code** — implemented. `Configuration::Descriptions` reads `command_descriptions.yml` into a frozen Hash of `Data` records (`description(:name)`). RBS signatures for `Repo`: considered, not done. The JSON contract specs and the specs against real repositories already catch a wrong return shape, nothing checks `Repo`'s callers without a type checker, and the signatures are one more file to update with every `Repo` change.
 - **Shell completions** — implemented. `gitflash completion bash|zsh|fish`, generated from the Thor command tree; branch names come from `git for-each-ref`, so completing never starts Ruby.
 
+### Next — toward 1.0
+
+- **Homebrew formula** — not started. A gem is installed for one Ruby: in a repository whose `.ruby-version` names another Ruby, rbenv and similar managers find no `gitflash`. An agent runs gitflash in whatever repository it works in, and the Claude Code plugin starts `gitflash mcp` and the hook the same way, so a missing command makes them fail. A formula installs gitflash with Homebrew's own Ruby and its gems in one place, so one `gitflash` stays on `PATH` whatever Ruby a project uses. Install with `brew install` from a tap first (`Kleanthismits/homebrew-tap`); homebrew-core asks for a project with more users. The release workflow can update the formula's URL and sha256 on each `v*` tag. RubyGems stays the main channel and covers platforms Homebrew does not.
+
 ### Deferred
 
 Human-only features that other tools already cover well:
@@ -147,7 +151,6 @@ Human-only features that other tools already cover well:
 - a stash picker
 - a richer interactive checkout menu (recent-first sorting and remote branches are still useful in `branches --json`)
 - a `wt switch` shell function
-- a Homebrew formula
 
 ## Out of scope
 
