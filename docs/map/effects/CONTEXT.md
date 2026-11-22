@@ -1,7 +1,7 @@
 # Effects: what to open before a change
 
 Catalog, not a waterfall. Card and this file disagree: fix the card.
-Verified at dde88fd on 2026-10-03.
+Verified at 6fad98e plus phase 5 on 2026-11-22.
 
 ## Inside the tree
 

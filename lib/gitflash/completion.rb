@@ -2,27 +2,35 @@
 
 module Gitflash
   # Shell completion scripts for `gitflash completion SHELL`, built from the Thor command tree so
-  # a new command or option is completed without editing a script. Commands whose arguments name
-  # branches or worktrees (BRANCH, SOURCE, COMMIT, WORKTREE in their usage) complete local branch
-  # names, read with plain git: completing never starts Ruby.
+  # a new command or option is completed without editing a script. What an argument or an option
+  # value completes comes from its name in the usage (`checkout [BRANCH]`) or its banner (`REF`);
+  # branch names are read with plain git, so completing never starts Ruby.
   class Completion
     SHELLS = %w[bash zsh fish].freeze
-    BRANCH_ARGUMENTS = /\[?(BRANCH|SOURCE|COMMIT|WORKTREE)\b/
     HIDDEN = %w[tree].freeze
     TEMPLATES = File.expand_path('completion', __dir__)
-    # Fixed words a command's argument takes
-    ARGUMENT_WORDS = { 'completion' => SHELLS }.freeze
 
-    Option = Data.define(:switches, :description, :values, :takes_value)
-    # `words` are the fixed words its argument takes; `branches` when it takes branch names
-    Command = Data.define(:path, :description, :options, :branches, :words)
+    # What a value completes: local branch names, any path, directories, or fixed words (an
+    # Array). A name that is not listed completes nothing.
+    ARGUMENTS = { 'BRANCH' => :branch, 'SOURCE' => :branch, 'COMMIT' => :branch,
+                  'WORKTREE' => :branch, 'PATH' => :path, 'SHELL' => SHELLS }.freeze
+    BANNERS = { 'REF' => :branch, 'DIR' => :directory }.freeze
+
+    # `value` is what the option's value completes; `optional` when it may be left out
+    # (`clean --stale`), so the next word may be an argument instead
+    Option = Data.define(:switches, :description, :takes_value, :optional, :value)
+    # `arguments` are what each positional argument completes, in order; `repeats` when the last
+    # one may be given more than once (`delete [BRANCH...]`)
+    Command = Data.define(:path, :description, :options, :arguments, :repeats)
 
     def initialize(cli = Cli)
       @cli = cli
     end
 
     def script(shell)
-      raise ArgumentError, "Unknown shell '#{shell}'" unless SHELLS.include?(shell)
+      unless SHELLS.include?(shell)
+        raise Thor::Error, "Unknown shell '#{shell}'. Choose one of: #{SHELLS.join(', ')}"
+      end
 
       View.new(self).render(File.join(TEMPLATES, "#{shell}.erb"))
     end
@@ -58,7 +66,7 @@ module Gitflash
       @cli.class_options.values.map { |option| option_record(option) }
     end
 
-    # Switches whose next word is their value, so it is not read as a command
+    # Switches whose next word is their value, so it is not read as a command or an argument
     def value_switches
       options = global_options + commands.flat_map(&:options)
       options.select(&:takes_value).flat_map(&:switches).uniq
@@ -71,19 +79,25 @@ module Gitflash
     end
 
     def build(path, command)
+      words = command.usage.split.drop(1)
       Command.new(path:, description: command.description.to_s,
                   options: command.options.values.map { |option| option_record(option) },
-                  branches: command.usage.match?(BRANCH_ARGUMENTS),
-                  words: ARGUMENT_WORDS.fetch(path, []))
+                  arguments: words.map { |word| ARGUMENTS[word.delete('[].')] },
+                  repeats: words.last.to_s.end_with?('...', '...]'))
     end
 
     def option_record(option)
-      switches = [option.switch_name, *option.aliases]
+      Option.new(switches: switches(option), description: option.description.to_s,
+                 takes_value: !option.boolean?, optional: !option.lazy_default.nil?,
+                 value: option.enum || BANNERS[option.banner])
+    end
+
+    # A boolean option that defaults to true is also turned off with --no-<name>
+    def switches(option)
       if option.boolean? && option.default == true
-        switches << "--no-#{option.switch_name.delete_prefix('--')}"
+        negated = "--no-#{option.switch_name.delete_prefix('--')}"
       end
-      Option.new(switches:, description: option.description.to_s, values: option.enum || [],
-                 takes_value: !option.boolean?)
+      [option.switch_name, *option.aliases, negated].compact
     end
   end
 end

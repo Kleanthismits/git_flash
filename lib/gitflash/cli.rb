@@ -181,8 +181,9 @@ module Gitflash
     desc 'completion SHELL', 'Print the shell completion script for bash, zsh or fish'
     long_desc <<~TEXT
       Prints a completion script for SHELL (bash, zsh or fish) on stdout. It completes commands,
-      worktree, hook and skill subcommands, options and their values, and local branch names
-      for commands that take a branch or worktree. Completing runs git, never gitflash.
+      worktree, hook and skill subcommands, options and their values, local branch names for
+      arguments that take a branch or worktree, and file names for paths. Completing runs git,
+      never gitflash.
 
       bash:  add `source <(gitflash completion bash)` to ~/.bashrc
       zsh:   add `source <(gitflash completion zsh)` to ~/.zshrc after compinit, or save the
@@ -192,11 +193,6 @@ module Gitflash
       Run it again after upgrading gitflash to complete new commands and options.
     TEXT
     def completion(shell)
-      unless Completion::SHELLS.include?(shell)
-        raise Thor::Error,
-              "Unknown shell '#{shell}'. Choose one of: #{Completion::SHELLS.join(', ')}"
-      end
-
       puts Completion.new.script(shell)
     end
 

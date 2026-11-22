@@ -8,26 +8,24 @@ _gitflash() {
     w=${words[i]}
     if ((skip)); then skip=0; continue; fi
     case $w in
-      (<%= value_switches.join('|') %>) skip=1; continue ;;
+      (<%= tree.value_switches.join('|') %>) skip=1; continue ;;
       (-*) continue ;;
     esac
     found+=("$w")
   done
   local cmd=${found[1]-} prev=${words[CURRENT-1]}
-<% aliases.each do |from, to| -%>
+  local n=$(( ${#found} - 1 ))
+<% tree.aliases.each do |from, to| -%>
   [[ $cmd == <%= from %> ]] && cmd=<%= to %>
 <% end -%>
-  case $cmd in (<%= groups.join('|') %>) (( ${#found} > 1 )) && cmd="$cmd ${found[2]}" ;; esac
+  case $cmd in (<%= tree.groups.join('|') %>) if ((n > 0)); then cmd="$cmd ${found[2]}"; n=$((n - 1)); fi ;; esac
   case "$cmd $prev" in
-<% enum_options.each do |path, switch, values| -%>
-    ('<%= path %> <%= switch %>') compadd -- <%= values.join(' ') %>; return ;;
+<% value_cases.each do |pattern, value| -%>
+    (<%= pattern %>) <%= zsh_action(value) %>; return ;;
 <% end -%>
   esac
-  case $prev in
-    (<%= value_switches.join('|') %>) return ;;
-  esac
   if [[ $PREFIX == -* ]]; then
-    items=(<%= described_options(global_options) %>)
+    items=(<%= described_options(tree.global_options) %>)
     case $cmd in
 <% commands_with_options.each do |command| -%>
       ('<%= command.path %>') items+=(<%= described_options(command.options) %>) ;;
@@ -36,14 +34,13 @@ _gitflash() {
     _describe -t options option items
     return
   fi
-  case $cmd in
-    ('') items=(<%= described(children) %>); _describe -t commands command items ;;
-<% groups.each do |group| -%>
-    ('<%= group %>') items=(<%= described(children(group)) %>); _describe -t commands command items ;;
+  case "$cmd $n" in
+    (' -1') items=(<%= described(tree.children) %>); _describe -t commands command items ;;
+<% tree.groups.each do |group| -%>
+    ('<%= group %> 0') items=(<%= described(tree.children(group)) %>); _describe -t commands command items ;;
 <% end -%>
-    (<%= branch_pattern %>) compadd -- ${(f)"$(<%= View::BRANCHES %>)"} ;;
-<% commands_with_words.each do |command| -%>
-    ('<%= command.path %>') compadd -- <%= command.words.join(' ') %> ;;
+<% argument_cases.each do |pattern, value| -%>
+    (<%= pattern %>) <%= zsh_action(value) %> ;;
 <% end -%>
   esac
 }

@@ -16,8 +16,8 @@ jobs:
     environment: release
 
     permissions:
-      # rake release pushes the tag when it is missing; on a tag push it is already there
-      contents: write
+      # rake release pushes the tag only when it is missing; on a tag push it is there already
+      contents: read
       # trusted publishing: exchange the GitHub OIDC token for a short-lived RubyGems key
       id-token: write
 

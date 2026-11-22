@@ -53,8 +53,21 @@ RSpec.describe Gitflash::Completion, :git_repo do
     expect(pick.options.flat_map(&:switches)).to include('--commit', '--no-commit')
   end
 
+  it 'reads what each argument completes from the usage, in order' do
+    by_path = tree.commands.to_h { |command| [command.path, [command.arguments, command.repeats]] }
+    expect(by_path.values_at('pick', 'worktree move', 'delete', 'completion'))
+      .to eq([[[:branch, nil], true], [%i[branch path], false], [[:branch], true],
+              [[%w[bash zsh fish]], false]])
+  end
+
+  it 'reads what an option value completes from its banner or enum' do
+    add = tree.commands.find { |command| command.path == 'worktree add' }
+    expect(add.options.to_h { |option| [option.switches.first, option.value] })
+      .to include('--from' => :branch, '--path' => :directory, '--owner' => %w[agent human])
+  end
+
   it 'refuses an unknown shell' do
-    expect { tree.script('tcsh') }.to raise_error(ArgumentError, /tcsh/)
+    expect { tree.script('tcsh') }.to raise_error(Thor::Error, /tcsh.*bash, zsh, fish/)
   end
 
   describe 'the scripts' do
@@ -107,6 +120,30 @@ RSpec.describe Gitflash::Completion, :git_repo do
     it 'completes shell names for completion' do
       expect(complete_bash('completion', '')).to eq(%w[bash zsh fish])
     end
+
+    it 'completes each argument by its position' do
+      expect([complete_bash('pick', 'feat'), complete_bash('pick', 'feature-one', 'feat'),
+              complete_bash('wt', 'move', 'feat'),
+              complete_bash('wt', 'move', 'feature-one', 'feat'),
+              complete_bash('delete', 'main', 'feat')])
+        .to eq([['feature-one'], [], ['feature-one'], [], ['feature-one']])
+    end
+
+    it 'completes branch names for an option that takes a ref' do
+      expect(complete_bash('wt', 'add', '--from', 'feat')).to eq(['feature-one'])
+    end
+
+    it 'completes options after an option whose value may be left out' do
+      expect(complete_bash('clean', '--stale', '--mer')).to eq(['--merged'])
+    end
+
+    it 'never runs a branch name, and quotes it for the command line' do
+      name = '$(touch${IFS}pwned)'
+      git('branch', name)
+      quoted = '\\$\\(touch\\$\\{IFS\\}pwned\\)'
+      expect([complete_bash('delete', '$'), complete_bash('delete', '\\$\\(to'),
+              File.exist?('pwned')]).to eq([[quoted], [quoted], false])
+    end
   end
 
   describe 'zsh and fish completion' do
@@ -127,8 +164,10 @@ RSpec.describe Gitflash::Completion, :git_repo do
       skip 'fish is not installed' unless available?('fish')
 
       expect([complete_fish('gitflash wt re'), complete_fish('gitflash delete feat'),
-              complete_fish('gitflash mark --owner '), complete_fish('gitflash wt add --fr')])
-        .to eq([['remove'], ['feature-one'], %w[agent human], ['--from']])
+              complete_fish('gitflash mark --owner '), complete_fish('gitflash wt add --fr'),
+              complete_fish('gitflash wt add --from feat'),
+              complete_fish('gitflash pick main feat')])
+        .to eq([['remove'], ['feature-one'], %w[agent human], ['--from'], ['feature-one'], []])
     end
   end
 

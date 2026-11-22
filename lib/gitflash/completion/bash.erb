@@ -1,4 +1,17 @@
 # gitflash completion for bash. Load it with: source <(gitflash completion bash)
+
+# Adds the local branches that start with $1 (its backslashes removed), quoted for the command
+# line. Branch names never go through compgen -W, which would expand them: a branch named
+# $(...) would run.
+_gitflash_branches() {
+  local b q prefix=${1//\\/}
+  while IFS= read -r b; do
+    [[ $b == "$prefix"* ]] || continue
+    printf -v q '%q' "$b"
+    COMPREPLY+=("$q")
+  done < <(<%= View::BRANCHES %>)
+}
+
 _gitflash() {
   local cur=${COMP_WORDS[COMP_CWORD]} prev=${COMP_WORDS[COMP_CWORD-1]}
   local -a found=()
@@ -7,47 +20,41 @@ _gitflash() {
     w=${COMP_WORDS[i]}
     if ((skip)); then skip=0; continue; fi
     case $w in
-      <%= value_switches.join('|') %>) skip=1; continue ;;
+      <%= tree.value_switches.join('|') %>) skip=1; continue ;;
       -*) continue ;;
     esac
     found+=("$w")
   done
-  local cmd=${found[0]-}
-<% aliases.each do |from, to| -%>
+  local cmd=${found[0]-} n=$(( ${#found[@]} - 1 ))
+<% tree.aliases.each do |from, to| -%>
   [[ $cmd == <%= from %> ]] && cmd=<%= to %>
 <% end -%>
-  case $cmd in <%= groups.join('|') %>) (( ${#found[@]} > 1 )) && cmd="$cmd ${found[1]}" ;; esac
+  case $cmd in <%= tree.groups.join('|') %>) if ((n > 0)); then cmd="$cmd ${found[1]}"; n=$((n - 1)); fi ;; esac
+  COMPREPLY=()
   case "$cmd $prev" in
-<% enum_options.each do |path, switch, values| -%>
-    '<%= path %> <%= switch %>') COMPREPLY=($(compgen -W '<%= values.join(' ') %>' -- "$cur")); return ;;
+<% value_cases.each do |pattern, value| -%>
+    <%= pattern %>) <%= bash_action(value) %>; return ;;
 <% end -%>
   esac
-  case $prev in
-    <%= value_switches.join('|') %>) return ;;
-  esac
-  local words=''
-  case $cur in
-    -*)
-      words='<%= switches(global_options) %>'
-      case $cmd in
+  if [[ $cur == -* ]]; then
+    local words='<%= switches(tree.global_options) %>'
+    case $cmd in
 <% commands_with_options.each do |command| -%>
-        '<%= command.path %>') words+=' <%= switches(command.options) %>' ;;
+      '<%= command.path %>') words+=' <%= switches(command.options) %>' ;;
 <% end -%>
-      esac
-      ;;
-    *)
-      case $cmd in
-        '') words='<%= names(children) %>' ;;
-<% groups.each do |group| -%>
-        '<%= group %>') words='<%= names(children(group)) %>' ;;
+    esac
+    COMPREPLY=($(compgen -W "$words" -- "$cur"))
+    return
+  fi
+  case "$cmd $n" in
+    ' -1') COMPREPLY=($(compgen -W '<%= names(tree.children) %>' -- "$cur")) ;;
+<% tree.groups.each do |group| -%>
+    '<%= group %> 0') COMPREPLY=($(compgen -W '<%= names(tree.children(group)) %>' -- "$cur")) ;;
 <% end -%>
-        <%= branch_pattern %>) words="$(<%= View::BRANCHES %>)" ;;
-<% commands_with_words.each do |command| -%>
-        '<%= command.path %>') words='<%= command.words.join(' ') %>' ;;
+<% argument_cases.each do |pattern, value| -%>
+    <%= pattern %>) <%= bash_action(value) %> ;;
 <% end -%>
-      esac
-      ;;
   esac
-  COMPREPLY=($(compgen -W "$words" -- "$cur"))
 }
-complete -F _gitflash gitflash
+# -o default: bash completes file names when the function offers nothing (PATH and DIR values)
+complete -o default -F _gitflash gitflash

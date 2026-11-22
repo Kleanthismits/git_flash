@@ -79,7 +79,7 @@ Requires Ruby 3.3+ and git 2.36+ (the worktree commands read `git worktree list 
 
 Prerelease versions (named like `0.7.0.beta3`) are only installed when you ask for them: `gem install gitflash --pre`, or the exact version in a Gemfile.
 
-Shell completion for commands, options and branch names:
+Shell completion for commands, options, branch names and paths:
 
 ```bash
 echo 'source <(gitflash completion zsh)' >> ~/.zshrc     # after compinit

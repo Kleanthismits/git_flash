@@ -27,7 +27,7 @@ Thin: declares flags and commands, delegates to [[command-runner]]. Heavy logic 
 - `skill` subcommand = `SkillCli`: `show`, `install`, see [[skill]].
 - `mcp` command: [[mcp]] server on stdio, no work tree check.
 - `worktree` subcommand (alias `wt`) = `WorktreeCli`, see [[worktree-commands]].
-- `schema`, `completion SHELL` and `version` print outside the envelope. `completion` builds the script from the Thor tree: see [[completion]]. An unknown shell is a `Thor::Error`, so `invalid_usage`, exit 2.
+- `schema`, `completion SHELL` and `version` print outside the envelope. `completion` builds the script from the Thor tree: see [[completion]]. An unknown shell is a `Thor::Error` raised by `Completion#script`, so `invalid_usage`, exit 2.
 - `exit_on_failure?` true (`cli.rb:12`). Binary: `bin/gitflash`.
 
 ## Connected to

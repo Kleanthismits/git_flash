@@ -1,5 +1,7 @@
 # gitflash completion for fish. Load it with: gitflash completion fish | source
 # or save it as ~/.config/fish/completions/gitflash.fish
+
+# Prints the command being completed, then how many of its arguments come before this word
 function __gitflash_cmd
     set -l tokens (commandline -opc)
     set -e tokens[1]
@@ -11,7 +13,7 @@ function __gitflash_cmd
             continue
         end
         switch $w
-            case <%= value_switches.join(' ') %>
+            case <%= tree.value_switches.join(' ') %>
                 set skip 1
                 continue
             case '-*'
@@ -20,18 +22,30 @@ function __gitflash_cmd
         set -a found $w
     end
     set -l cmd $found[1]
-<% aliases.each do |from, to| -%>
+    set -l n (math (count $found) - 1)
+<% tree.aliases.each do |from, to| -%>
     test "$cmd" = <%= from %>; and set cmd <%= to %>
 <% end -%>
-    if contains -- "$cmd" <%= groups.join(' ') %>; and test (count $found) -gt 1
+    if contains -- "$cmd" <%= tree.groups.join(' ') %>; and test $n -gt 0
         set cmd "$cmd $found[2]"
+        set n (math $n - 1)
     end
     echo $cmd
+    echo $n
 end
 
+# True when completing command path $argv[1]; with $argv[2], only at argument n ("1") or at
+# argument n and later ("1+")
 function __gitflash_at
-    set -l cmd (__gitflash_cmd)
-    test "$cmd" = "$argv[1]"
+    set -l state (__gitflash_cmd)
+    test "$state[1]" = "$argv[1]"; or return 1
+    set -q argv[2]; or return 0
+    set -l n (string trim -r -c + -- $argv[2])
+    if string match -q -- '*+' $argv[2]
+        test $state[2] -ge $n
+    else
+        test $state[2] -eq $n
+    end
 end
 
 function __gitflash_branches
@@ -39,25 +53,22 @@ function __gitflash_branches
 end
 
 complete -c gitflash -f
-<% children.each do |name, text| -%>
+<% tree.children.each do |name, text| -%>
 complete -c gitflash -n '__gitflash_at ""' -a <%= name %> -d <%= fish_quote(text) %>
 <% end -%>
-<% groups.each do |group| -%>
-<% children(group).each do |name, text| -%>
-complete -c gitflash <%= fish_at(group) %> -a <%= name %> -d <%= fish_quote(text) %>
+<% tree.groups.each do |group| -%>
+<% tree.children(group).each do |name, text| -%>
+complete -c gitflash <%= fish_at(group, '0') %> -a <%= name %> -d <%= fish_quote(text) %>
 <% end -%>
 <% end -%>
-<% global_options.each do |option| -%>
+<% tree.global_options.each do |option| -%>
 complete -c gitflash <%= fish_option(option) %>
 <% end -%>
-<% commands.each do |command| -%>
+<% tree.commands.each do |command| -%>
 <% command.options.each do |option| -%>
 complete -c gitflash <%= fish_at(command.path) %> <%= fish_option(option) %>
 <% end -%>
-<% if command.branches -%>
-complete -c gitflash <%= fish_at(command.path) %> -a '(__gitflash_branches)'
 <% end -%>
-<% if command.words.any? -%>
-complete -c gitflash <%= fish_at(command.path) %> -a '<%= command.words.join(' ') %>'
-<% end -%>
+<% fish_arguments.each do |path, argument, value| -%>
+complete -c gitflash <%= fish_at(path, argument) %> <%= fish_values(value) %>
 <% end -%>
