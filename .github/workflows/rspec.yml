@@ -73,7 +73,8 @@ jobs:
     - name: Check Repo against its signatures
       if: matrix.ruby-version == '3.3'
       env:
-        RUBYOPT: -rrbs/test/setup
+        # bundler/setup first: rbs/test alone loads the default json before the Gemfile's one
+        RUBYOPT: -rbundler/setup -rrbs/test/setup
         RBS_TEST_TARGET: Gitflash::Repo
         RBS_TEST_OPT: -I sig
         RBS_TEST_RAISE: 'true'
