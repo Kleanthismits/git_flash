@@ -164,7 +164,7 @@ RSpec.describe Gitflash::Completion, :git_repo do
       skip 'fish is not installed' unless available?('fish')
 
       expect([complete_fish('gitflash wt re'), complete_fish('gitflash delete feat'),
-              complete_fish('gitflash mark --owner '), complete_fish('gitflash wt add --fr'),
+              complete_fish('gitflash mark --owner '), complete_fish('gitflash wt add --fro'),
               complete_fish('gitflash wt add --from feat'),
               complete_fish('gitflash pick main feat')])
         .to eq([['remove'], ['feature-one'], %w[agent human], ['--from'], ['feature-one'], []])
