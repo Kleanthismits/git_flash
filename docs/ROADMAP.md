@@ -136,7 +136,7 @@ All of them use the same JSON contract.
 
 - **Trusted publishing** — implemented. `.github/workflows/release.yml` runs on a `v*` tag push: it checks the tag against `Gitflash::VERSION`, runs RSpec and publishes with `rubygems/release-gem` (`id-token: write`, `release` environment). rubygems.org must list the repository, `release.yml` and the `release` environment as a trusted publisher.
 - **Dependabot** for Bundler and GitHub Actions — done before this phase (`.github/dependabot.yml`).
-- **CI** — implemented. Ruby 4.0 (the release first planned as 3.5) and head run with failures allowed; check names stay `build (3.3)` and `build (3.4)`.
+- **CI** — implemented. Ruby 4.0 (the release first planned as 3.5) runs as a normal job; check names stay `build (3.3)` and `build (3.4)`. Head is not run: Ruby's development build failed in Bundler setup, before any spec, so it showed a red check that said nothing about gitflash.
 - **Code** — implemented. `Configuration::Descriptions` reads `command_descriptions.yml` into a frozen Hash of `Data` records (`description(:name)`). RBS signatures for `Repo`: considered, not done. The JSON contract specs and the specs against real repositories already catch a wrong return shape, nothing checks `Repo`'s callers without a type checker, and the signatures are one more file to update with every `Repo` change.
 - **Shell completions** — implemented. `gitflash completion bash|zsh|fish`, generated from the Thor command tree; branch names come from `git for-each-ref`, so completing never starts Ruby.
 

@@ -213,4 +213,4 @@ Phase 5: distribution and codebase.
 
 - Add `completion SHELL`: prints a completion script for `bash`, `zsh` or `fish`. It completes commands, the `worktree` (`wt`), `hook` and `skill` subcommands, options and their values, and local branch names for arguments that take a branch or worktree, and file names for paths. The script is built from the commands of the installed version, so run it again after upgrading. Completing runs `git`, never gitflash
 - Releases are published from GitHub Actions when a version tag is pushed, through RubyGems trusted publishing: no RubyGems key is stored. The workflow refuses a tag that does not match the gem version
-- Development and CI only: help texts load into frozen `Data` records instead of nested Structs; CI also runs Ruby 4.0 and head (allowed to fail)
+- Development and CI only: help texts load into frozen `Data` records instead of nested Structs; CI also runs Ruby 4.0
