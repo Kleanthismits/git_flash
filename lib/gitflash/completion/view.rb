@@ -17,7 +17,7 @@ module Gitflash
       ZSH = { branch: "compadd -- ${(f)\"$(#{BRANCHES})\"}", path: '_files',
               directory: '_files -/' }.freeze
       FISH = { branch: "-a '(__gitflash_branches)'", path: '-F',
-               directory: "-a '(__fish_complete_directories (commandline -ct))'" }.freeze
+               directory: "-a '(__fish_complete_directories)'" }.freeze
 
       attr_reader :tree
 

@@ -14,10 +14,27 @@ _gitflash_branches() {
 
 _gitflash() {
   local cur=${COMP_WORDS[COMP_CWORD]} prev=${COMP_WORDS[COMP_CWORD-1]}
+  # --switch=value: bash 4 and later split it into --switch, = and value (= is in
+  # COMP_WORDBREAKS). bash 3.2 keeps one word, but readline still replaces only the value.
+  if [[ $cur == = ]]; then
+    cur=''
+  elif [[ $prev == = ]]; then
+    prev=${COMP_WORDS[COMP_CWORD-2]}
+  elif [[ $cur == --*=* ]]; then
+    prev=${cur%%=*} cur=${cur#*=}
+  fi
+  COMPREPLY=()
+  _gitflash_complete
+}
+
+# Reads cur and prev from _gitflash and fills COMPREPLY
+_gitflash_complete() {
   local -a found=()
   local i w skip=0
   for ((i = 1; i < COMP_CWORD; i++)); do
     w=${COMP_WORDS[i]}
+    # = after a switch: the next word is that switch's value, never an argument
+    if [[ $w == = ]]; then skip=1; continue; fi
     if ((skip)); then skip=0; continue; fi
     case $w in
       <%= tree.value_switches.join('|') %>) skip=1; continue ;;
@@ -30,7 +47,6 @@ _gitflash() {
   [[ $cmd == <%= from %> ]] && cmd=<%= to %>
 <% end -%>
   case $cmd in <%= tree.groups.join('|') %>) if ((n > 0)); then cmd="$cmd ${found[1]}"; n=$((n - 1)); fi ;; esac
-  COMPREPLY=()
   case "$cmd $prev" in
 <% value_cases.each do |pattern, value| -%>
     <%= pattern %>) <%= bash_action(value) %>; return ;;

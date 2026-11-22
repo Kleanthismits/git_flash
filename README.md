@@ -84,7 +84,7 @@ Shell completion for commands, options, branch names and paths:
 ```bash
 echo 'source <(gitflash completion zsh)' >> ~/.zshrc     # after compinit
 echo 'source <(gitflash completion bash)' >> ~/.bashrc
-gitflash completion fish > ~/.config/fish/completions/gitflash.fish
+mkdir -p ~/.config/fish/completions && gitflash completion fish > ~/.config/fish/completions/gitflash.fish
 ```
 
 Run it again after upgrading gitflash; `gitflash help completion` has the details.
@@ -187,6 +187,8 @@ gitflash adds undo for plain git, for the operations agent tools do not track, w
 After checking out the repository, run `bin/setup` to install dependencies. Then run `bundle exec rake spec` for the tests and `bundle exec rubocop` for the linter. `bin/console` opens an interactive prompt.
 
 To install the gem from your checkout, run `bundle exec rake install`.
+
+The first release needs two settings made once by the maintainer: a GitHub environment named `release`, and a trusted publisher on rubygems.org for this repository, the workflow `release.yml` and the environment `release`. Without them the Release workflow cannot publish.
 
 To release, bump the version in `lib/gitflash/version.rb` and `.claude-plugin/plugin.json` (a spec checks they match), move the `[Unreleased]` notes in `CHANGELOG.md` under the new version, and merge it into `main`. Then tag that commit and push the tag: `git tag v0.9.0 && git push origin v0.9.0`. The Release workflow checks the tag against the version, runs the specs and publishes the gem to [rubygems.org](https://rubygems.org/gems/gitflash) through trusted publishing; no RubyGems key is stored anywhere.
 

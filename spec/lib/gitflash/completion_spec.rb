@@ -129,6 +129,21 @@ RSpec.describe Gitflash::Completion, :git_repo do
         .to eq([['feature-one'], [], ['feature-one'], [], ['feature-one']])
     end
 
+    # bash 4 and later split --confirm=TOKEN into the words --confirm, = and TOKEN
+    it 'reads a split --switch=value as one value, before an argument and while completing it' do
+      expect([complete_bash('checkout', '--confirm', '=', 'TOKEN', 'feat'),
+              complete_bash('mark', '--owner', '=', 'ag'), complete_bash('mark', '--owner', '=')])
+        .to eq([['feature-one'], ['agent'], %w[agent human]])
+    end
+
+    # bash 3.2 keeps --owner=ag as one word; readline replaces only the part after =, so the
+    # candidate is the value alone
+    it 'reads --switch=value in one word, before an argument and while completing it' do
+      expect([complete_bash('checkout', '--confirm=TOKEN', 'feat'),
+              complete_bash('mark', '--owner=ag'), complete_bash('wt', 'add', '--from=feat')])
+        .to eq([['feature-one'], ['agent'], ['feature-one']])
+    end
+
     it 'completes branch names for an option that takes a ref' do
       expect(complete_bash('wt', 'add', '--from', 'feat')).to eq(['feature-one'])
     end

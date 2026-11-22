@@ -27,6 +27,7 @@ Built from `Cli`, its subcommand classes and their options at run time, so a new
 - Templates `lib/gitflash/completion/{bash,zsh,fish}.erb`, rendered by `View` (`lib/gitflash/completion/view.rb`), which exposes the Completion as `tree` and adds the shell-shaped lists (`value_cases`, `argument_cases`, `fish_arguments`) and quoting. Every script finds the command the same way: the first word that is not an option or an option's value, plus the second word when the first is a group; the words after it are its arguments, counted from 0.
 - Branch names: `%(refname:lstrip=2)`, not `refname:short` (a tag of the same name changes the short name).
 - **Branch names are untrusted** (an agent or a cloned repo can name a branch `$(...)`). bash never passes them to `compgen -W`, which expands its words: `_gitflash_branches` matches the prefix itself and adds each name quoted with `printf %q`. zsh `compadd` and fish `-a` do not expand candidates. Only static words from the templates go through `compgen -W`.
+- `--switch=value`: bash 4 and later split it into `--switch`, `=` and the value (`=` is in `COMP_WORDBREAKS`); bash 3.2 keeps one word. `_gitflash` reads both forms as one value before handing off to `_gitflash_complete`, so the value is never counted as an argument.
 - bash registers with `complete -o default`, so it completes file names when the function offers nothing (paths, and any argument that completes nothing).
 
 ## Connected to

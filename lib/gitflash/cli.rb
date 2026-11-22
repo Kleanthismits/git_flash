@@ -188,7 +188,8 @@ module Gitflash
       bash:  add `source <(gitflash completion bash)` to ~/.bashrc
       zsh:   add `source <(gitflash completion zsh)` to ~/.zshrc after compinit, or save the
              output as _gitflash in a directory of $fpath
-      fish:  gitflash completion fish > ~/.config/fish/completions/gitflash.fish
+      fish:  mkdir -p ~/.config/fish/completions
+             gitflash completion fish > ~/.config/fish/completions/gitflash.fish
 
       Run it again after upgrading gitflash to complete new commands and options.
     TEXT
