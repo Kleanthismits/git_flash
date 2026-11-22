@@ -190,8 +190,6 @@ To install the gem from your checkout, run `bundle exec rake install`.
 
 To release, bump the version in `lib/gitflash/version.rb` and `.claude-plugin/plugin.json` (a spec checks they match), move the `[Unreleased]` notes in `CHANGELOG.md` under the new version, and merge it into `main`. Then tag that commit and push the tag: `git tag v0.9.0 && git push origin v0.9.0`. The Release workflow checks the tag against the version, runs the specs and publishes the gem to [rubygems.org](https://rubygems.org/gems/gitflash) through trusted publishing; no RubyGems key is stored anywhere.
 
-`sig/` holds RBS signatures for `Repo`. CI validates them with `bundle exec rbs -I sig validate` and checks every call `Repo` gets in its specs against them.
-
 ## Contributing
 
 Bug reports and pull requests are welcome on [GitHub](https://github.com/Kleanthismits/git_flash/issues). Everyone interacting in the project is expected to follow the [code of conduct](https://github.com/Kleanthismits/git_flash/blob/main/CODE_OF_CONDUCT.md).

@@ -4,8 +4,8 @@ cluster: core
 universe: live
 status: verified
 entity: lib/gitflash/repo.rb
-verified_on: 2026-11-22
-verified_at: 6fad98e plus RBS signatures (phase 5)
+verified_on: 2026-10-03
+verified_at: dde88fd
 ---
 
 # Repo
@@ -24,8 +24,7 @@ Service layer shared by CLI and integrations. Parsing git output stays here and 
 - Default branch: origin/HEAD, else local `main` / `master` (`repo.rb`).
 - Parsing contract with [[branch]] / [[commit]]: `BRANCH_FORMAT`, `COMMIT_FORMAT`, `SEPARATOR` (`repo.rb`).
 - `ensure_work_tree!` raises `not_a_repository` (`repo.rb`).
-- Injected `bash:` makes it stubbable (`repo.rb`); the `_Bash` interface in the signatures names what it needs (`exec`, `capture`).
-- Signatures: `sig/gitflash/repo.rbs` (Repo, `_Bash`) and `sig/gitflash/records.rbs` (`Branch`, `Commit`, `Result`, `Error`, `UsageError`, only what Repo's signatures need). CI runs `rbs -I sig validate` and the Repo and CLI specs under `rbs/test` with `RBS_TEST_TARGET=Gitflash::Repo`.
+- Injected `bash:` makes it stubbable (`repo.rb`).
 
 ## Connected to
 
@@ -39,7 +38,6 @@ Service layer shared by CLI and integrations. Parsing git output stays here and 
 - **Hits:** all branch/commit commands; [[branch]] / [[commit]] parsing; `spec/lib/gitflash/repo_spec.rb`; [[undo]] and [[hook-install]] via `toplevel` / `main_root`.
 - **Does not hit:** [[ui-output]], [[json-schema]] (unless a returned field changes), [[snapshot-store]], [[restore]].
 - Changing a git format string without [[branch]].parse breaks silently.
-- A new, renamed or retyped method, or a changed field of a returned record: update `sig/gitflash/`. CI's `rbs/test` step fails on a call that does not match.
 
 ## Surfaces
 

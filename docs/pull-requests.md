@@ -13,7 +13,6 @@ Settle the direction first. For a new command, a changed default or a contract c
 1. Run what CI runs and keep the output:
    - `bundle exec rspec`. CI also fails below 85% suite coverage or 70% for one file.
    - `bundle exec rubocop`
-   - `bundle exec rbs -I sig validate` when `sig/` or `Repo` changed
    - `sh docs/map/_meta/sync-twins.sh`, then `ruby docs/map/_meta/check.rb`, after updating the cards listed in `docs/map/effects/CONTEXT.md`
 2. If the change alters what a command does, run the command in a scratch repository and keep the real output. `--json` output is best. A claim that it works is not evidence.
 3. Remove everything the task did not need: unrelated refactors, renamed variables, reformatted lines.

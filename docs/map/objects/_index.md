@@ -9,7 +9,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `command-descriptions`: help text per command. verified. `command_descriptions.yml`, `lib/gitflash/configuration.rb`
 
 ## core
-- `repo`: branches, commits, HEAD through git, RBS signatures in `sig/`. verified. `lib/gitflash/repo.rb`, `sig/gitflash/{repo,records}.rbs`
+- `repo`: branches, commits, HEAD through git. verified. `lib/gitflash/repo.rb`
 - `branch`: branch record, with reflog activity. verified. `lib/gitflash/{branch,branch_activity}.rb`
 - `commit`: commit record. verified. `lib/gitflash/commit.rb`
 - `config`: settings files `.gitflash.yml`, `~/.config/gitflash.yml`. verified. `lib/gitflash/{config,config_keys}.rb`

@@ -19,7 +19,7 @@ gitflash = Ruby CLI (Thor). Safety net and cleanup for git repos that AI agents 
 
 ## Universes
 
-- **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude (PreToolUse and PostToolUse)/install/status, clean, pick, mark, worktree list/add/remove/lock/unlock/move/prune/clean, skill show/install (`skills/gitflash/SKILL.md`), completion (bash, zsh, fish), mcp (`lib/gitflash/mcp/`), Claude Code plugin (`.claude-plugin/`), `.gitflash.yml`, ownership marks (set by `wt add` and `mark`); `Repo` (RBS in `sig/`), `Ui`, snapshot classes, `schema/v1.json`, release workflow (`.github/workflows/release.yml`)
+- **live:** branches, checkout, delete, reset, undo, snapshot, snapshots, gc, hook claude (PreToolUse and PostToolUse)/install/status, clean, pick, mark, worktree list/add/remove/lock/unlock/move/prune/clean, skill show/install (`skills/gitflash/SKILL.md`), completion (bash, zsh, fish), mcp (`lib/gitflash/mcp/`), Claude Code plugin (`.claude-plugin/`), `.gitflash.yml`, ownership marks (set by `wt add` and `mark`); `Repo`, `Ui`, snapshot classes, `schema/v1.json`, release workflow (`.github/workflows/release.yml`)
 - **ghost:** none. `docs/ROADMAP.md` Deferred items are not planned.
 - **leftover:** none found
 

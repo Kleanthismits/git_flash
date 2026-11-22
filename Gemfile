@@ -10,7 +10,6 @@ group :development do
   gem 'awesome_print'
   gem 'json_schemer', '~> 2.4'
   gem 'pry', '~> 0.16.1'
-  gem 'rbs', '~> 4.0'
   gem 'rspec', '~> 3.0'
   gem 'rubocop', '~> 1.92'
   gem 'rubocop-performance', '~> 1.21'

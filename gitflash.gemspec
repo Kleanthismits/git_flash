@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   spec.executables = ['gitflash']
 
   # prevents Gem::InvalidSpecificationException
-  spec.files = Dir.glob('lib/**/*') + Dir.glob('sig/**/*.rbs') + %w[
+  spec.files = Dir.glob('lib/**/*') + %w[
     bin/gitflash CHANGELOG.md LICENSE README.md command_descriptions.yml schema/v1.json
     skills/gitflash/SKILL.md
   ]

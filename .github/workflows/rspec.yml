@@ -52,10 +52,6 @@ jobs:
         git diff --exit-code -- AGENTS.md docs/map
         ruby docs/map/_meta/check.rb
 
-    - name: Validate the RBS signatures
-      if: matrix.ruby-version == '3.3'
-      run: bundle exec rbs -I sig validate
-
     - name: Run RSpec
       run: bundle exec rspec
 
@@ -67,16 +63,3 @@ jobs:
         minimum_file_coverage: 70
         github_token: ${{ secrets.GITHUB_TOKEN }}
         check_job_name: build (3.3)
-
-    # Every call Repo gets in these specs is checked against sig/gitflash/repo.rbs. Runs after
-    # the coverage check, which reads the coverage of the full run.
-    - name: Check Repo against its signatures
-      if: matrix.ruby-version == '3.3'
-      env:
-        # bundler/setup first: rbs/test alone loads the default json before the Gemfile's one
-        RUBYOPT: -rbundler/setup -rrbs/test/setup
-        RBS_TEST_TARGET: Gitflash::Repo
-        RBS_TEST_OPT: -I sig
-        RBS_TEST_RAISE: 'true'
-        RBS_TEST_LOGLEVEL: error
-      run: bundle exec rspec spec/lib/gitflash/repo_spec.rb spec/lib/gitflash/cli_spec.rb
