@@ -1,7 +1,7 @@
 # Effects: what to open before a change
 
 Catalog, not a waterfall. Card and this file disagree: fix the card.
-Verified at dde88fd on 2026-10-03.
+Verified at 6fad98e plus phase 5 on 2026-11-22.
 
 ## Inside the tree
 
@@ -30,6 +30,7 @@ Verified at dde88fd on 2026-10-03.
 | where the hook is installed | [[hook-install]], [[repo]] (`toplevel`, `main_root`) |
 | worktree fields or `wt` commands | [[worktrees]], [[worktree-commands]], [[json-schema]] |
 | what `wt remove` saves or how undo brings a worktree back | [[worktree-commands]], [[worktree-revival]], [[restore]], [[undo]], [[state-capture]] |
+| a command, option or enum, or an argument that names a branch | [[completion]] (built from the Thor tree; check `spec/lib/gitflash/completion_spec.rb`) |
 | a command's flags or arguments, or its dry-run plan | the command card, [[mcp]] (`Tools::ALL` argv; the token needs a stable dry-run plan) |
 | MCP tools, their schema or the token flow | [[mcp]], [[json-schema]] |
 | what agents are told to run | [[skill]] (`skills/gitflash/SKILL.md`), and every card it names |
@@ -41,12 +42,14 @@ Nothing in `lib/` names these. They break silently.
 
 | Consumer | Points at | Breaks if |
 |---|---|---|
-| `gitflash.gemspec:26-29` file list | `lib/**/*`, `bin/gitflash`, `command_descriptions.yml`, `schema/v1.json`, `skills/gitflash/SKILL.md` | any is moved or renamed; gem ships without it |
+| `gitflash.gemspec` file list | `lib/**/*`, `bin/gitflash`, `command_descriptions.yml`, `schema/v1.json`, `skills/gitflash/SKILL.md` | any is moved or renamed; gem ships without it |
 | `gitflash.gemspec:23` | executable `gitflash` | binary renamed |
 | `.claude-plugin/plugin.json` | `gitflash hook claude`, `gitflash mcp`, `skills/`, `Gitflash::VERSION` | any is renamed or moved, or the version is bumped without it (`spec/plugin_spec.rb` fails); see [[plugin]] |
 | `Mcp::Runner::BIN`, `LIB` (`lib/gitflash/mcp/runner.rb`) | `bin/gitflash`, `lib/` | either moved; every tool returns a `failed` envelope |
-| `Configuration::Descriptions` (`lib/gitflash/configuration.rb:15`) | `command_descriptions.yml` one level above `lib/` | file moved |
+| `Configuration::Descriptions::FILE` (`lib/gitflash/configuration.rb`) | `command_descriptions.yml` one level above `lib/` | file moved |
 | `Cli::SCHEMA_PATH` (`lib/gitflash/cli.rb:10`) | `schema/v1.json` | file moved |
+| `.github/workflows/release.yml`, rubygems.org trusted publisher | the workflow file name, the `release` environment, `v*` tags matching `Gitflash::VERSION` | file or environment renamed: rubygems.org refuses the publish. Tag without the version: the workflow stops before publishing |
+| shell rc files (`source <(gitflash completion zsh)`), saved fish/zsh scripts | `gitflash completion`, the `_gitflash` / `__gitflash_*` function names | command renamed; saved scripts complete old commands until regenerated |
 | `schema/v1.json:3` `$id` | GitHub URL on `main` | repo or path renamed |
 | README, `docs/json-contract.md`, `docs/agent-integrations.md` | `schema/v1.json`, `skills/gitflash/SKILL.md` (README by GitHub URL on `main`, so it works on rubygems.org) | file moved |
 | `docs/pull-requests.md` (high tier lists), `REVIEW.md` | command names, class names (`Cleanup`, `Protection`, `Restore`, `WorktreeRevival`, `Snapshot`, `Snapshots`, `SnapshotCheck`, `StateCapture`, `HookInstall`), `REF_PREFIX`, `lib/gitflash/hook/`, `lib/gitflash/mcp/`, the CI checks in `.github/workflows/rspec.yml`, `spec/plugin_spec.rb`, the `exit-codes` card path | any is renamed, moved or split: a destructive path drops out of the high tier without notice |

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'benchmark'
-
 RSpec.describe Gitflash::CherryPick::LogParser do
   describe '.stat' do
     {
@@ -23,7 +21,10 @@ RSpec.describe Gitflash::CherryPick::LogParser do
 
     it 'handles a very long run of digits in linear time' do
       long = "#{'9' * 200_000} files changed, #{'9' * 200_000} insertions(+)"
-      elapsed = Benchmark.realtime { described_class.stat(long) }
+      # Process.clock_gettime, not Benchmark: benchmark is not a default gem from Ruby 4.0
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      described_class.stat(long)
+      elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
       expect(elapsed).to be < 1
     end
   end

@@ -132,13 +132,17 @@ All of them use the same JSON contract.
    - Every destructive call snapshots first, so `undo` is always available. Sampling and roots are not used (deprecated in the 2026-07-28 specification).
 3. **Claude Code plugin** — implemented. `.claude-plugin/plugin.json` declares the skill (`skills/`), the MCP server (`gitflash mcp`) and the hook from phase 2 (PreToolUse and PostToolUse, snapshot mode) inline, so the repository root needs no `.mcp.json` or `hooks/`; `.claude-plugin/marketplace.json` lists it. Installed with `/plugin marketplace add Kleanthismits/git_flash` and `/plugin install gitflash@gitflash`.
 
-### Phase 5 — Distribution and codebase (alongside)
+### Phase 5 — Distribution and codebase (0.9.0) — implemented, in beta (0.9.0.beta1)
 
-- **Trusted publishing:** a tag push releases the gem from GitHub Actions (`rubygems/release-gem`, `id-token: write`).
-- **Dependabot** for Bundler and GitHub Actions.
-- **CI:** add Ruby 3.5/head with failures allowed.
-- **Code:** replace the Struct builder in `Configuration::Descriptions` with a frozen Hash or `Data`; add RBS signatures for `Repo`.
-- **Shell completions** for zsh, bash and fish.
+- **Trusted publishing** — implemented. `.github/workflows/release.yml` runs on a `v*` tag push: it checks the tag against `Gitflash::VERSION`, runs RSpec and publishes with `rubygems/release-gem` (`id-token: write`, `release` environment). rubygems.org must list the repository, `release.yml` and the `release` environment as a trusted publisher.
+- **Dependabot** for Bundler and GitHub Actions — done before this phase (`.github/dependabot.yml`).
+- **CI** — implemented. Ruby 4.0 (the release first planned as 3.5) runs as a normal job; check names stay `build (3.3)` and `build (3.4)`. Head is not run: Ruby's development build failed in Bundler setup, before any spec, so it showed a red check that said nothing about gitflash.
+- **Code** — implemented. `Configuration::Descriptions` reads `command_descriptions.yml` into a frozen Hash of `Data` records (`description(:name)`). RBS signatures for `Repo`: considered, not done. The JSON contract specs and the specs against real repositories already catch a wrong return shape, nothing checks `Repo`'s callers without a type checker, and the signatures are one more file to update with every `Repo` change.
+- **Shell completions** — implemented. `gitflash completion bash|zsh|fish`, generated from the Thor command tree; branch names come from `git for-each-ref`, so completing never starts Ruby.
+
+### Next — toward 1.0
+
+- **Homebrew formula** — not started. A gem is installed for one Ruby: in a repository whose `.ruby-version` names another Ruby, rbenv and similar managers find no `gitflash`. An agent runs gitflash in whatever repository it works in, and the Claude Code plugin starts `gitflash mcp` and the hook the same way, so a missing command makes them fail. A formula installs gitflash with Homebrew's own Ruby and its gems in one place, so one `gitflash` stays on `PATH` whatever Ruby a project uses. Install with `brew install` from a tap first (`Kleanthismits/homebrew-tap`); homebrew-core asks for a project with more users. The release workflow can update the formula's URL and sha256 on each `v*` tag. RubyGems stays the main channel and covers platforms Homebrew does not.
 
 ### Deferred
 
@@ -147,7 +151,6 @@ Human-only features that other tools already cover well:
 - a stash picker
 - a richer interactive checkout menu (recent-first sorting and remote branches are still useful in `branches --json`)
 - a `wt switch` shell function
-- a Homebrew formula
 
 ## Out of scope
 

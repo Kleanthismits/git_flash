@@ -1,0 +1,48 @@
+name: Release
+
+# Pushing a version tag (v0.9.0, v0.9.0.beta1) publishes the gem to RubyGems.org through
+# trusted publishing: no API key is stored in the repository. rubygems.org must list this
+# repository, this workflow file and the `release` environment as a trusted publisher.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: release
+
+    permissions:
+      # rake release pushes the tag only when it is missing; on a tag push it is there already
+      contents: read
+      # trusted publishing: exchange the GitHub OIDC token for a short-lived RubyGems key
+      id-token: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@20eb24b0d509e2b9ed9b6d42ddfeb992915e0564 # v1.341.0
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+
+    - name: Check that the tag matches the gem version
+      run: |
+        version="$(ruby -Ilib -e 'require "gitflash/version"; print Gitflash::VERSION')"
+        if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+          echo "Tag $GITHUB_REF_NAME does not match Gitflash::VERSION $version"
+          exit 1
+        fi
+
+    - name: Run RSpec
+      run: bundle exec rspec
+
+    - name: Publish the gem
+      uses: rubygems/release-gem@5c53f5308233b7c0f47411f0471b3faae6fa57b2 # v1.4.2

@@ -8,12 +8,14 @@ permissions:
 
 jobs:
   build:
+    # Keeps the check names `build (3.3)` and `build (3.4)`; the coverage step names one
+    name: build (${{ matrix.ruby-version }})
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['3.3', '3.4']
+        ruby-version: ['3.3', '3.4', '4.0']
 
     steps:
     - name: Checkout code
@@ -26,6 +28,10 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true
+
+    # The completion specs run the scripts in each shell; the runner has only bash
+    - name: Install fish and zsh
+      run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends fish zsh
 
     - name: Run RuboCop
       run: bundle exec rubocop

@@ -105,7 +105,7 @@ module Gitflash
     end
 
     desc 'remove [WORKTREE...]', 'Remove worktrees (paths or branch names), saving a snapshot first'
-    long_desc descriptions.worktree_remove.long
+    long_desc description(:worktree_remove).long
     option :force, type: :boolean, default: false,
                    desc: 'Remove locked worktrees and worktrees with uncommitted changes'
     def remove(*worktrees)

@@ -34,6 +34,7 @@ Format: `slug`: what it is. Status. Source. All verified 2026-10-03 at `dde88fd`
 - `snapshot-commands`: snapshot, snapshots, gc. verified. `lib/gitflash/commands/{snapshot_create,snapshot_list,gc}.rb`
 - `skill`: Agent Skill file, `skill show` and `skill install`. verified. `lib/gitflash/{skill_cli,commands/skill_install}.rb`, `skills/gitflash/SKILL.md`
 - `mcp`: `gitflash mcp` stdio server, tool table, elicitation, two-call token flow. verified. `lib/gitflash/mcp/{server,tools,runner,confirmation,elicitation,plan_change}.rb`
+- `completion`: `gitflash completion bash|zsh|fish`, scripts built from the Thor tree. verified. `lib/gitflash/completion.rb`, `lib/gitflash/completion/{view.rb,*.erb}`
 - `change-flow`: plan, confirm, snapshot, execute, report. verified. `lib/gitflash/commands/base.rb`
 
 ## snapshots

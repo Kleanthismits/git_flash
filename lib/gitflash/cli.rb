@@ -35,8 +35,8 @@ module Gitflash
     class_option :dry_run, type: :boolean, default: false,
                            desc: 'Show what would happen without changing anything'
 
-    desc 'branches', descriptions.branches.short
-    long_desc descriptions.branches.long
+    desc 'branches', description(:branches).short
+    long_desc description(:branches).long
     option :merged, type: :boolean, desc: 'Branches merged into the default branch'
     option :gone, type: :boolean, desc: 'Branches whose upstream branch was deleted'
     option :stale, type: :numeric, banner: 'DAYS', desc: 'Branches without commits for DAYS days'
@@ -44,22 +44,22 @@ module Gitflash
       run_command('branches', Commands::Branches)
     end
 
-    desc 'checkout [BRANCH]', descriptions.checkout.short
-    long_desc descriptions.checkout.long
+    desc 'checkout [BRANCH]', description(:checkout).short
+    long_desc description(:checkout).long
     def checkout(branch = nil)
       run_command('checkout', Commands::Checkout, *[branch].compact)
     end
 
-    desc 'delete [BRANCH...]', descriptions.delete.short
-    long_desc descriptions.delete.long
+    desc 'delete [BRANCH...]', description(:delete).short
+    long_desc description(:delete).long
     option :force, type: :boolean, default: false,
                    desc: 'Delete branches even if they have unmerged changes'
     def delete(*branches)
       run_command('delete', Commands::Delete, *branches)
     end
 
-    desc 'mark [BRANCH...]', descriptions.mark.short
-    long_desc descriptions.mark.long
+    desc 'mark [BRANCH...]', description(:mark).short
+    long_desc description(:mark).long
     option :owner, type: :string, enum: Ownership::OWNERS,
                    desc: 'agent or human (default: human in a terminal, agent otherwise)'
     option :clear, type: :boolean, default: false, desc: 'Remove the mark'
@@ -67,8 +67,8 @@ module Gitflash
       run_command('mark', Commands::Mark, *branches)
     end
 
-    desc 'clean', descriptions.clean.short
-    long_desc descriptions.clean.long
+    desc 'clean', description(:clean).short
+    long_desc description(:clean).long
     option :merged, type: :boolean, desc: 'Branches merged into the default branch'
     option :gone, type: :boolean, desc: 'Branches whose upstream branch was deleted'
     option :stale, type: :string, banner: 'DAYS', lazy_default: '',
@@ -80,16 +80,16 @@ module Gitflash
       run_command('clean', Commands::Clean)
     end
 
-    desc 'reset [COMMIT]', descriptions.reset.short
-    long_desc descriptions.reset.long
+    desc 'reset [COMMIT]', description(:reset).short
+    long_desc description(:reset).long
     option :hard, type: :boolean, default: false, desc: 'Discard all current changes'
     option :soft, type: :boolean, default: false, desc: 'Keep changes staged'
     def reset(commit = nil)
       run_command('reset', Commands::Reset, *[commit].compact)
     end
 
-    desc 'undo [SNAPSHOT]', descriptions.undo.short
-    long_desc descriptions.undo.long
+    desc 'undo [SNAPSHOT]', description(:undo).short
+    long_desc description(:undo).long
     def undo(snapshot = nil)
       run_command('undo', Commands::Undo, *[snapshot].compact)
     end
@@ -99,8 +99,8 @@ module Gitflash
       run_command('snapshots', Commands::SnapshotList)
     end
 
-    desc 'snapshot', descriptions.snapshot.short
-    long_desc descriptions.snapshot.long
+    desc 'snapshot', description(:snapshot).short
+    long_desc description(:snapshot).long
     option :message, type: :string, desc: 'Why the snapshot was taken'
     option :scope, type: :array, banner: 'PARTS',
                    desc: 'Parts to save: branches head worktree stashes (default: all)'
@@ -128,8 +128,8 @@ module Gitflash
     desc 'skill SUBCOMMAND', 'The Agent Skill that teaches agents to use gitflash'
     subcommand 'skill', SkillCli
 
-    desc 'pick [SOURCE] [SHA...]', descriptions.pick.short
-    long_desc descriptions.pick.long
+    desc 'pick [SOURCE] [SHA...]', description(:pick).short
+    long_desc description(:pick).long
     option :list, type: :boolean, desc: 'List the commits of SOURCE that are not on this branch yet'
     option :commit, type: :boolean, default: true,
                     desc: 'Create a commit per pick; --no-commit only stages the changes'
@@ -176,6 +176,25 @@ module Gitflash
     desc 'schema', 'Print the JSON Schema of the --json output'
     def schema
       puts File.read(SCHEMA_PATH)
+    end
+
+    desc 'completion SHELL', 'Print the shell completion script for bash, zsh or fish'
+    long_desc <<~TEXT
+      Prints a completion script for SHELL (bash, zsh or fish) on stdout. It completes commands,
+      worktree, hook and skill subcommands, options and their values, local branch names for
+      arguments that take a branch or worktree, and file names for paths. Completing runs git,
+      never gitflash.
+
+      bash:  add `source <(gitflash completion bash)` to ~/.bashrc
+      zsh:   add `source <(gitflash completion zsh)` to ~/.zshrc after compinit, or save the
+             output as _gitflash in a directory of $fpath
+      fish:  mkdir -p ~/.config/fish/completions
+             gitflash completion fish > ~/.config/fish/completions/gitflash.fish
+
+      Run it again after upgrading gitflash to complete new commands and options.
+    TEXT
+    def completion(shell)
+      puts Completion.new.script(shell)
     end
 
     desc 'version', 'Print the gitflash version'

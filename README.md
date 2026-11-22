@@ -79,6 +79,16 @@ Requires Ruby 3.3+ and git 2.36+ (the worktree commands read `git worktree list 
 
 Prerelease versions (named like `0.7.0.beta3`) are only installed when you ask for them: `gem install gitflash --pre`, or the exact version in a Gemfile.
 
+Shell completion for commands, options, branch names and paths:
+
+```bash
+echo 'source <(gitflash completion zsh)' >> ~/.zshrc     # after compinit
+echo 'source <(gitflash completion bash)' >> ~/.bashrc
+mkdir -p ~/.config/fish/completions && gitflash completion fish > ~/.config/fish/completions/gitflash.fish
+```
+
+Run it again after upgrading gitflash; `gitflash help completion` has the details.
+
 ## Quick start for agents
 
 Pick one. Details for each are in [Agent integrations](https://github.com/Kleanthismits/git_flash/blob/main/docs/agent-integrations.md).
@@ -113,6 +123,7 @@ Run `gitflash` inside a git repository for the list, and `gitflash help <command
 | `gitflash skill install`, `skill show` | Install or print the gitflash Agent Skill |
 | `gitflash mcp` | Run an MCP server for the current repository on stdio |
 | `gitflash schema` | Print the JSON Schema of the `--json` output |
+| `gitflash completion SHELL` | Print the completion script for `bash`, `zsh` or `fish` |
 | `gitflash version` | Print the installed version (also `--version`, `-v`) |
 
 ## Undo
@@ -177,7 +188,9 @@ After checking out the repository, run `bin/setup` to install dependencies. Then
 
 To install the gem from your checkout, run `bundle exec rake install`.
 
-To release, bump the version in `lib/gitflash/version.rb` and `.claude-plugin/plugin.json` (a spec checks they match), move the `[Unreleased]` notes in `CHANGELOG.md` under the new version, and run `bundle exec rake release`. It tags the version, pushes the tag and publishes the gem to [rubygems.org](https://rubygems.org/gems/gitflash).
+The first release needs two settings made once by the maintainer: a GitHub environment named `release`, and a trusted publisher on rubygems.org for this repository, the workflow `release.yml` and the environment `release`. Without them the Release workflow cannot publish.
+
+To release, bump the version in `lib/gitflash/version.rb` and `.claude-plugin/plugin.json` (a spec checks they match), move the `[Unreleased]` notes in `CHANGELOG.md` under the new version, and merge it into `main`. Then tag that commit and push the tag: `git tag v0.9.0 && git push origin v0.9.0`. The Release workflow checks the tag against the version, runs the specs and publishes the gem to [rubygems.org](https://rubygems.org/gems/gitflash) through trusted publishing; no RubyGems key is stored anywhere.
 
 ## Contributing
 

@@ -1,0 +1,51 @@
+#compdef gitflash
+# gitflash completion for zsh. Load it with: source <(gitflash completion zsh)
+# or save it as _gitflash in a directory of $fpath.
+_gitflash() {
+  local -a found items
+  local i w skip=0
+  for ((i = 2; i < CURRENT; i++)); do
+    w=${words[i]}
+    if ((skip)); then skip=0; continue; fi
+    case $w in
+      (<%= tree.value_switches.join('|') %>) skip=1; continue ;;
+      (-*) continue ;;
+    esac
+    found+=("$w")
+  done
+  local cmd=${found[1]-} prev=${words[CURRENT-1]}
+  local n=$(( ${#found} - 1 ))
+<% tree.aliases.each do |from, to| -%>
+  [[ $cmd == <%= from %> ]] && cmd=<%= to %>
+<% end -%>
+  case $cmd in (<%= tree.groups.join('|') %>) if ((n > 0)); then cmd="$cmd ${found[2]}"; n=$((n - 1)); fi ;; esac
+  case "$cmd $prev" in
+<% value_cases.each do |pattern, value| -%>
+    (<%= pattern %>) <%= zsh_action(value) %>; return ;;
+<% end -%>
+  esac
+  if [[ $PREFIX == -* ]]; then
+    items=(<%= described_options(tree.global_options) %>)
+    case $cmd in
+<% commands_with_options.each do |command| -%>
+      ('<%= command.path %>') items+=(<%= described_options(command.options) %>) ;;
+<% end -%>
+    esac
+    _describe -t options option items
+    return
+  fi
+  case "$cmd $n" in
+    (' -1') items=(<%= described(tree.children) %>); _describe -t commands command items ;;
+<% tree.groups.each do |group| -%>
+    ('<%= group %> 0') items=(<%= described(tree.children(group)) %>); _describe -t commands command items ;;
+<% end -%>
+<% argument_cases.each do |pattern, value| -%>
+    (<%= pattern %>) <%= zsh_action(value) %> ;;
+<% end -%>
+  esac
+}
+if [[ $funcstack[1] == _gitflash ]]; then
+  _gitflash "$@"
+else
+  compdef _gitflash gitflash
+fi
