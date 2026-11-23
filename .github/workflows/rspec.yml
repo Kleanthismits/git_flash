@@ -4,11 +4,10 @@ on: [push, pull_request]
 
 permissions:
   contents: read
-  checks: write
 
 jobs:
   build:
-    # Keeps the check names `build (3.3)` and `build (3.4)`; the coverage step names one
+    # Keeps the check names `build (3.3)` and `build (3.4)`, which branch protection may require
     name: build (${{ matrix.ruby-version }})
     runs-on: ubuntu-latest
 
@@ -43,14 +42,6 @@ jobs:
         git diff --exit-code -- AGENTS.md docs/map
         ruby docs/map/_meta/check.rb
 
+    # Fails below 85% line coverage, or 70% for one file (spec/spec_helper.rb)
     - name: Run RSpec
       run: bundle exec rspec
-
-    # Using the current repo to perform coverage analysis
-    - uses: joshmfrankel/simplecov-check-action@e4d24394253366c3b96d9e73e9b68127b2bad081 # 1.1.0
-      if: matrix.ruby-version == '3.3'
-      with:
-        minimum_suite_coverage: 85
-        minimum_file_coverage: 70
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        check_job_name: build (3.3)
