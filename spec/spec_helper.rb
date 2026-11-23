@@ -5,6 +5,14 @@ SimpleCov::Formatter::LcovFormatter.config.report_with_single_file = true
 SimpleCov.formatter = SimpleCov::Formatter::LcovFormatter
 SimpleCov.start do
   skip 'lib/gitflash/version.rb'
+  # CI runs the whole suite and fails below these. Locally a run of a few spec files would
+  # always be under them, so they are checked only when CI is set.
+  if ENV['CI']
+    coverage(:line) do
+      minimum 85
+      minimum 70, per: :file
+    end
+  end
 end
 
 require 'gitflash'

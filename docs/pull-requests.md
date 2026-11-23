@@ -11,7 +11,7 @@ Settle the direction first. For a new command, a changed default or a contract c
 ## Before you open it
 
 1. Run what CI runs and keep the output:
-   - `bundle exec rspec`. CI also fails below 85% suite coverage or 70% for one file.
+   - `CI=1 bundle exec rspec`. With `CI` set, the run fails below 85% line coverage or 70% for one file, as in CI.
    - `bundle exec rubocop`
    - `sh docs/map/_meta/sync-twins.sh`, then `ruby docs/map/_meta/check.rb`, after updating the cards listed in `docs/map/effects/CONTEXT.md`
 2. If the change alters what a command does, run the command in a scratch repository and keep the real output. `--json` output is best. A claim that it works is not evidence.
